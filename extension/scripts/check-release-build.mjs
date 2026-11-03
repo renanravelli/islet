@@ -42,6 +42,21 @@ for (const key of ["web_accessible_resources", "optional_permissions", "external
   if (key in manifest) problems.push(`manifest has ${key}`);
 }
 
+// The script in Meet's own world (ADR 0005) only reschedules animation frames: no extension
+// APIs, no messaging, no DOM reads.
+const PAGE_WORLD_FORBIDDEN =
+  /\bchrome\.|postMessage|querySelector|getElementBy|innerText|textContent/;
+for (const script of manifest.content_scripts ?? []) {
+  if (script.world !== "MAIN") continue;
+  for (const file of script.js ?? []) {
+    if (PAGE_WORLD_FORBIDDEN.test(readFileSync(join(dist, file), "utf8"))) {
+      problems.push(`${file} runs in Meet's world and does more than schedule frames`);
+    }
+  }
+}
+const pageWorld = (manifest.content_scripts ?? []).filter((s) => s.world === "MAIN").length;
+if (pageWorld > 1) problems.push("more than one content script in Meet's world");
+
 if (problems.length > 0) {
   console.error(`Release build check failed:\n- ${problems.join("\n- ")}`);
   process.exit(1);

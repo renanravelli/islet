@@ -32,7 +32,7 @@ Windows, Linux and other meeting apps (Teams, Zoom, Slack) without implementing 
    reasons; the island shows a discreet indicator instead of wrong data.
 
 Decisions and their rationale live in `docs/adr/` (0001 monorepo/Tauri, 0002 bridge, 0003
-`Unknown` policy, 0004 selectors as data). Read the relevant ADR before changing those areas.
+`Unknown` policy, 0004 selectors as data, 0005 keeping Meet rendering while hidden). Read the relevant ADR before changing those areas.
 
 ## Layout
 
@@ -118,7 +118,11 @@ onboarding step or settings pane.
 ## Extension
 
 - Permissions are `nativeMessaging` and `https://meet.google.com/*` only; a test fails on
-  anything more. No `web_accessible_resources`: the content script is a standalone IIFE.
+  anything more. No `web_accessible_resources`: the content scripts are standalone IIFEs.
+- Two content scripts. The adapter (`src/content/meet/index.ts`) runs in the isolated world.
+  `keep-rendering.ts` runs in Meet's world at `document_start` and only reschedules animation
+  frames while the tab is hidden, because Meet does not update its controls otherwise (ADR
+  0005). The release check fails if it does anything more.
 - Every Meet DOM dependency goes through `selectors.json`; nothing in the adapter queries the
   page directly. Selector keys are opaque `provider_details` in the core and must match
   `islet-provider-meet` (a test checks).
@@ -230,6 +234,10 @@ Every open item lives here, not in an assistant's memory. Remove an item when it
       53 to 59 ms). Probable cause, per the owner: the mic was also toggled by hand around then.
       Watch for it in the next session.
   - **Later:** the English round; until then no key lists `en` in `verifiedIn`.
+  - With Chrome in the background (ADR 0005): confirm the island stays in sync after 10+
+    minutes hidden, and whether the active speaker is detected while hidden.
+  - The hand reads `Unknown` for about 200 ms while its label changes; the island may need to
+    hold the last known hand state briefly, like the speaker.
   - **After Phase 5:** check that `focus_tab` brings Chrome to the front from another app on
     macOS, and that a connection from another macOS user is refused by the bridge.
 - **Phase 5, to check by hand on the Mac (owner):** the acceptance list in section 7 of

@@ -10,7 +10,10 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     crx({
       manifest: manifest as ManifestV3Export,
-      contentScripts: { standaloneFiles: ["src/content/meet/index.ts"] },
+      // Both content scripts are standalone IIFEs: no loader, no web_accessible_resources.
+      contentScripts: {
+        standaloneFiles: ["src/content/meet/index.ts", "src/content/meet/keep-rendering.ts"],
+      },
     }),
   ],
   build: { target: "chrome105", sourcemap: false },

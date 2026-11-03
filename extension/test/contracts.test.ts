@@ -57,6 +57,18 @@ describe("manifest", () => {
     expect(manifest).not.toHaveProperty("optional_permissions");
   });
 
+  it("runs only the frame scheduler in Meet's own world (ADR 0005)", () => {
+    const main = manifest.content_scripts.filter((c) => "world" in c && c.world === "MAIN");
+    expect(main).toEqual([
+      {
+        matches: ["https://meet.google.com/*"],
+        js: ["src/content/meet/keep-rendering.ts"],
+        run_at: "document_start",
+        world: "MAIN",
+      },
+    ]);
+  });
+
   it("uses the native host name of the app", () => {
     expect(bridgeLib).toContain(`pub const BUNDLE_ID: &str = "${HOST_NAME}";`);
   });
