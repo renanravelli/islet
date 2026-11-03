@@ -25,6 +25,10 @@ content script (meet.google.com) ⇄ service worker ⇄ native host (stdio) ⇄ 
   testable without a socket.
 - Every message carries `v: 1`. Messages larger than **64 KB** are rejected on both sides
   (Chrome's own limits are 1 MB host → extension and 64 MiB extension → host).
+- The extension's heartbeat is the unchanged `session.update`, re-sent every 5 s. The native host
+  reports its own failures to the extension as `error { code }` (for example `app_not_running`).
+- Within `v: 1` the protocol only grows optional fields; peers ignore fields they do not know.
+  Anything else needs a new version, and a peer rejects versions it does not speak.
 
 ### Native host lifecycle
 

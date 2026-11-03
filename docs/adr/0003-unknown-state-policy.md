@@ -18,6 +18,12 @@ microphone as live, or a live one as muted, is worse than showing nothing.
 4. When a provider cannot read part of the state, the session is marked `health: degraded` with
    explicit reasons. A session without a heartbeat for 10 s becomes `degraded` with reason
    `stale`. The island shows a discreet indicator with a tooltip instead of wrong data.
+5. **What we can no longer vouch for is not shown.** A stale session shows mic, camera and hand
+   as `Unknown` and drops the active speaker and signals until the next update. An ended session
+   offers no controls. Both rules live in the core, so every shell gets them.
+6. The primary session is the one with the mic or camera `On`; then the most recently _changed_
+   active one; then the most recently ended one. Unchanged heartbeats do not count as changes, so
+   two open calls do not swap places every few seconds, and `Unknown` never counts as `On`.
 
 ## Consequences
 

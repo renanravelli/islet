@@ -78,13 +78,27 @@ Rust crate packages are prefixed `islet-` so none is named `core`.
 pnpm install                                         # JS dependencies
 pnpm lint                                            # Biome (lint + format check)
 pnpm format                                          # Biome, apply fixes
+pnpm typecheck                                       # tsc --noEmit in every package
 cargo fmt --all --check
 cargo clippy --workspace --all-targets -- -D warnings
-cargo test --workspace
+cargo test --workspace                               # also regenerates the protocol TS types
 ```
 
-Commands for the extension, the desktop app and code generation are added here as each phase
-lands.
+Commands for the extension and the desktop app are added here as each phase lands.
+
+## Bridge protocol
+
+- `crates/protocol` is the source of truth. `cargo test` regenerates
+  `packages/protocol-ts/src/generated/protocol.ts` (ts-rs, via `TS_RS_EXPORT_DIR` in
+  `.cargo/config.toml`). Commit the regenerated file with the Rust change; a stale file is a bug.
+- `packages/protocol-ts/src/index.ts` mirrors `PROTOCOL_VERSION` and `MAX_MESSAGE_BYTES`; a Rust
+  test fails if they drift.
+- `crates/protocol/fixtures/` holds one synthetic JSON per message. They are the compatibility
+  contract: every fixture must decode and re-encode unchanged, on both sides.
+- Within `v: 1`, only add optional fields. New variants, renamed or newly required fields need a
+  new protocol version.
+- Types that hold names, titles or meeting codes implement `Debug` by hand and redact them.
+  Protocol errors keep only the line and column of a JSON error, never its text.
 
 ## Verifying work
 

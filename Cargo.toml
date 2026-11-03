@@ -9,6 +9,15 @@ rust-version = "1.99"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/renanravelli/islet"
 
+[workspace.dependencies]
+islet-core = { path = "crates/core" }
+islet-protocol = { path = "crates/protocol" }
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+thiserror = "2.0.21"
+tokio = "1.54.1"
+ts-rs = "12.0.1"
+
 [workspace.lints.rust]
 unsafe_code = "forbid"
 

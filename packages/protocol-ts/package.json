@@ -1,0 +1,17 @@
+{
+  "name": "@islet/protocol-ts",
+  "version": "0.1.0",
+  "private": true,
+  "description": "TypeScript types for the Islet bridge protocol, generated from crates/protocol.",
+  "license": "MIT OR Apache-2.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "~7.0.2"
+  }
+}

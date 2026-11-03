@@ -1,0 +1,12 @@
+{
+  "v": 1,
+  "type": "session.update",
+  "tab_id": 1234,
+  "meeting_code": "abc-defg-hij",
+  "started_at": 1793700000000,
+  "self": { "mic": "unknown", "cam": "off", "hand": "off" },
+  "signals": {},
+  "capabilities": ["toggle_cam", "leave", "focus_tab"],
+  "health": "degraded",
+  "degraded_reasons": ["mic_button", "active_speaker", "participant_count"]
+}

@@ -1,0 +1,81 @@
+use std::future::Future;
+use std::pin::Pin;
+
+use tokio::sync::mpsc;
+
+use crate::reducer::Event;
+use crate::{
+    CapabilitySet, Command, CommandError, EndReason, ProviderId, SessionKey, SessionState,
+};
+
+/// The future returned by [`Provider::execute`].
+pub type CommandFuture<'a> = Pin<Box<dyn Future<Output = Result<(), CommandError>> + Send + 'a>>;
+
+/// A meeting app adapter, such as Google Meet. The core and the UI never know which provider is
+/// behind a session; they only see what it reports and the commands it declares.
+pub trait Provider: Send + Sync + 'static {
+    fn id(&self) -> ProviderId;
+
+    /// Every command this provider can perform. Session capabilities outside this set are
+    /// dropped, so the UI never renders an undeclared control.
+    fn capabilities(&self) -> CapabilitySet;
+
+    /// Called once, when the provider is registered. From then on the provider reports its
+    /// sessions through `sink`.
+    fn subscribe(&self, sink: EventSink);
+
+    /// Performs `command` on the provider's session `session_id`.
+    ///
+    /// Resolve with `Ok` only once the provider has observed the change. Do not report the new
+    /// state optimistically: send it through the [`EventSink`] when it is confirmed. The
+    /// manager gives up after the command timeout and reports [`CommandError::Timeout`].
+    fn execute(&self, session_id: &str, command: Command) -> CommandFuture<'_>;
+}
+
+/// What a provider reports about one of its sessions.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SessionEvent {
+    /// The full current state. Send it whenever something changes and, unchanged, as a
+    /// heartbeat: a session without updates for the stale timeout is marked degraded.
+    Updated {
+        id: String,
+        state: SessionState,
+    },
+    Ended {
+        id: String,
+        reason: EndReason,
+    },
+}
+
+/// The provider's channel into the [`SessionManager`](crate::SessionManager).
+///
+/// It stamps every event with the provider's id, so a provider cannot report sessions of
+/// another one.
+#[derive(Debug, Clone)]
+pub struct EventSink {
+    provider: ProviderId,
+    tx: mpsc::UnboundedSender<Event>,
+}
+
+/// The session manager has stopped.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
+#[error("the session manager has stopped")]
+pub struct ManagerStopped;
+
+impl EventSink {
+    pub(crate) fn new(provider: ProviderId, tx: mpsc::UnboundedSender<Event>) -> Self {
+        Self { provider, tx }
+    }
+
+    pub fn send(&self, event: SessionEvent) -> Result<(), ManagerStopped> {
+        let event = match event {
+            SessionEvent::Updated { id, state } => {
+                Event::Updated(SessionKey::new(self.provider.clone(), id), state)
+            }
+            SessionEvent::Ended { id, reason } => {
+                Event::Ended(SessionKey::new(self.provider.clone(), id), reason)
+            }
+        };
+        self.tx.send(event).map_err(|_| ManagerStopped)
+    }
+}
