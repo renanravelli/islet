@@ -19,6 +19,7 @@ export class MeetSession {
     private readonly root: Node,
     private readonly post: (message: TabToWorker) => void,
     private readonly now: () => number = Date.now,
+    private readonly hidden: () => boolean = () => document.hidden,
   ) {}
 
   start(): void {
@@ -45,6 +46,13 @@ export class MeetSession {
   }
 
   private schedule(): void {
+    // Hidden, Meet renders about once a second (ADR 0005) and each render arrives as one batch
+    // of mutations; a debounce timer, which Chrome also throttles to a second, would only add
+    // that much delay.
+    if (this.hidden()) {
+      this.check(false);
+      return;
+    }
     clearTimeout(this.debounce);
     this.debounce = setTimeout(() => this.check(false), DEBOUNCE_MS);
   }

@@ -202,8 +202,8 @@ and every UI string. Where it and the design canvas differ, the spec wins.
    a component has text outside it. Product and language names, which are not copy, live in
    `src/shared/meet.ts`.
 6. **The island window is exactly the island's contour** (`island_layout`): no invisible area
-   takes clicks. The active speaker is held 2 s after Meet's indicator goes off, because it
-   follows the voice's level; the speaker strategy only sees remote participants so far.
+   takes clicks. The active speaker is held 3 s after Meet's indicator goes off, because it
+   follows the voice's level (gaps of up to 2 s between words, plus ~1 s with Chrome hidden).
 7. **Onboarding and settings windows open hidden** with the theme's background and show once
    the page has painted (`window_ready`), so dark mode never flashes white.
 

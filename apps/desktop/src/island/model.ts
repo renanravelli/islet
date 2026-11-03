@@ -38,8 +38,12 @@ export function avatarColor(name: string | null | undefined): string | undefined
   return AVATAR_COLORS[hash % AVATAR_COLORS.length];
 }
 
-/** How long a speaker stays shown after Meet's indicator goes off: it flickers with the voice. */
-export const SPEAKER_HOLD_MS = 2000;
+/**
+ * How long a speaker stays shown after Meet's indicator goes off: it follows the voice's level.
+ * Measured 2026-11-03 while one person spoke without stopping: the indicator went off for up to
+ * 2 s between words, and Chrome in the background adds about a second (ADR 0005).
+ */
+export const SPEAKER_HOLD_MS = 3000;
 /** The expanded island collapses after this long without the pointer over it. */
 export const IDLE_COLLAPSE_MS = 6000;
 

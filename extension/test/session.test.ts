@@ -6,6 +6,7 @@ import { button, FIXTURES, load } from "./dom";
 
 let sent: TabToWorker[];
 let session: MeetSession;
+let hidden = false;
 
 function start(html: string): void {
   load(html);
@@ -15,6 +16,7 @@ function start(html: string): void {
     document,
     (m) => sent.push(m),
     () => 1_793_700_000_000,
+    () => hidden,
   );
   session.start();
 }
@@ -23,11 +25,22 @@ const updates = () => sent.filter((m) => m.kind === "update");
 
 beforeEach(() => vi.useFakeTimers());
 afterEach(() => {
+  hidden = false;
   session.stop();
   vi.useRealTimers();
 });
 
 describe("MeetSession", () => {
+  it("sends a change at once while the tab is hidden, without the debounce", async () => {
+    start(FIXTURES.inCallEn);
+    hidden = true;
+    button(/microphone/).setAttribute("data-is-muted", "true");
+    await vi.advanceTimersByTimeAsync(0);
+    expect(updates()).toHaveLength(2);
+    const last = updates().at(-1);
+    expect(last?.kind === "update" && last.state.self.mic).toBe("off");
+  });
+
   it("reports a call at once, with when it started", () => {
     start(FIXTURES.inCallEn);
     expect(sent).toHaveLength(1);
