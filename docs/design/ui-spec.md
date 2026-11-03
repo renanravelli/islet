@@ -296,6 +296,7 @@ These complement the visual spec in the kickoff and the approved canvas:
 
 - **Chat is hidden in v0.1.** The Meet provider does not declare a chat capability, and the UI renders only declared controls. The expanded state has five buttons: Microfone, Câmera, Levantar mão, Abrir aba, Sair.
 - **`Unknown` is drawn distinctly.** Mic, camera or hand in `Unknown` uses a neutral icon in `--island-text-2` with the aria-label `island.unknown`. Never show it as "on".
+- **Camera indicator (the owner's request, 2026-11-03; not in the canvas):** while the camera is `On`, the compact island and the pill show a camera icon in the right ear, between the raised hand and the mic, with the aria-label `island.cam`. Off or `Unknown`: no icon. When the right ear's items do not fit its 88 pt, both ears widen by the same amount, so the notch stays centered and nothing slides under it.
 - **Degraded indicator:** a small `--island-attention` dot at the end of the right ear, with tooltip `island.degraded_tooltip`.
 - **Names off:** when `show_participant_names` is off, there are no names and no initials; a generic avatar is shown.
 

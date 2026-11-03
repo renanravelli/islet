@@ -79,10 +79,42 @@ export function mode(session: MeetingSession | null, ui: UiState, settings: AppS
 }
 
 /** The island window's size: exactly its contour, so no invisible area takes clicks. */
+/**
+ * The right ear's items, measured in Chrome with the island's font (12 pt semibold, tabular
+ * digits): a timer digit is 7.9 wide and a colon 4; icons are 14, the degraded dot 6, gaps 7.
+ */
+const EAR_ITEMS = { icon: 14, dot: 6, gap: 7, digit: 7.9, colon: 4 } as const;
+
+/**
+ * The width of each ear around the notch: the mock's 88, or more when the right ear holds the
+ * hand, the camera, an hour-long timer or the degraded dot, so nothing slides under the notch.
+ * Both ears match, which keeps the notch centered.
+ */
+export function earWidth(
+  session: MeetingSession | null,
+  m: Mode,
+  now: number,
+  endedDuration?: number,
+): number {
+  if (!session) return SIZE.ear;
+  const timer = duration(endedDuration ?? now - session.started_at);
+  const colons = timer.split(":").length - 1;
+  const items = [(timer.length - colons) * EAR_ITEMS.digit + colons * EAR_ITEMS.colon];
+  if (m !== "ended") {
+    items.push(EAR_ITEMS.icon);
+    if (session.cam === "on") items.push(EAR_ITEMS.icon);
+    if (session.hand === "on") items.push(EAR_ITEMS.icon);
+    if (session.health.status !== "ok") items.push(EAR_ITEMS.dot);
+  }
+  const content = items.reduce((sum, w) => sum + w, 0) + EAR_ITEMS.gap * (items.length - 1);
+  return Math.max(SIZE.ear, Math.ceil(content));
+}
+
 export function contour(
   m: Mode,
   geometry: Geometry,
   hovered = false,
+  ear: number = SIZE.ear,
 ): { width: number; height: number } {
   const top = geometry.has_notch ? geometry.top_inset : SIZE.pillHeight;
   switch (m) {
@@ -91,7 +123,10 @@ export function contour(
     case "compact":
     case "ended": {
       const base = geometry.has_notch
-        ? { width: Math.max(SIZE.compactWidth, geometry.notch_width + 2 * SIZE.ear), height: top }
+        ? {
+            width: Math.max(SIZE.compactWidth, geometry.notch_width + 2 * (ear + SIZE.earPadding)),
+            height: top,
+          }
         : { width: SIZE.pillWidth, height: SIZE.pillHeight };
       return hovered && m === "compact"
         ? {

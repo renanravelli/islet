@@ -6,7 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { api, on } from "../shared/api";
 import { useEndedDuration, useHeldSpeaker, useLastSpeaker, useNow } from "./hooks";
 import { IslandView } from "./IslandView";
-import { contour, IDLE_COLLAPSE_MS, mode as modeOf, type UiState } from "./model";
+import { contour, earWidth, IDLE_COLLAPSE_MS, mode as modeOf, type UiState } from "./model";
 
 /** The island's resize transition: the panel shrinks once it is over. */
 const SHRINK_DELAY_MS = 280;
@@ -53,7 +53,12 @@ export function Island({
 
   // Tell the shell the contour; it moves and resizes the panel to match. Growing, the panel
   // resizes first and the island animates inside it; shrinking, the island animates first.
-  const { width, height } = contour(mode, info.geometry, hovered);
+  const { width, height } = contour(
+    mode,
+    info.geometry,
+    hovered,
+    earWidth(session, mode, now, endedDuration),
+  );
   const shown = useRef({ width: 0, height: 0 });
   useEffect(() => {
     const send = () => {

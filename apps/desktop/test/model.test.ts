@@ -5,6 +5,7 @@ import {
   contour,
   controls,
   duration,
+  earWidth,
   initials,
   mode,
   SIZE,
@@ -75,14 +76,36 @@ describe("mode", () => {
 describe("contour", () => {
   it("matches the mock's sizes", () => {
     expect(contour("compact", notch)).toEqual({ width: 390, height: 32 });
+    // A wide notch keeps both ears and their padding clear of it.
     expect(contour("compact", { ...notch, notch_width: 250 })).toEqual({
-      width: 250 + 2 * SIZE.ear,
+      width: 250 + 2 * (SIZE.ear + SIZE.earPadding),
       height: 32,
     });
     expect(contour("compact", noNotch)).toEqual({ width: 340, height: 34 });
     expect(contour("expanded", notch)).toEqual({ width: 560, height: 32 + SIZE.expandedBody });
     expect(contour("alert", notch)).toEqual({ width: 440, height: 32 + SIZE.alertBody });
     expect(contour("hidden", notch)).toEqual({ width: 0, height: 0 });
+  });
+});
+
+describe("earWidth", () => {
+  const minute = 60_000;
+  it("keeps the mock's 88 while the right ear fits", () => {
+    expect(earWidth(session(), "compact", 32 * minute)).toBe(SIZE.ear);
+    // The camera, the mic and a minutes timer: 14 + 14 + 36 + 2 gaps of 7.
+    expect(earWidth(session({ cam: "on" }), "compact", 32 * minute)).toBe(SIZE.ear);
+    expect(earWidth(null, "compact", 0)).toBe(SIZE.ear);
+  });
+
+  it("widens both ears when the right one holds more, so nothing hides under the notch", () => {
+    const busy = session({ cam: "on", hand: "on" });
+    // 3 icons + "32:10" (4 digits, a colon) + 3 gaps = 42 + 35.6 + 21.
+    expect(earWidth(busy, "compact", 32 * minute + 10_000)).toBe(99);
+    const hourIn = earWidth(busy, "compact", 62 * minute);
+    expect(hourIn).toBeGreaterThan(99);
+    expect(contour("compact", notch, false, hourIn).width).toBe(185 + 2 * (hourIn + 14));
+    // Ended shows only the timer.
+    expect(earWidth(busy, "ended", 0, 62 * minute)).toBe(SIZE.ear);
   });
 });
 

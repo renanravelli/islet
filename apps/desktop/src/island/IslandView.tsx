@@ -23,6 +23,7 @@ import {
   contour,
   controls,
   duration,
+  earWidth,
   initials,
   type Mode,
   SIZE,
@@ -71,7 +72,12 @@ export function IslandView(props: IslandViewProps) {
   const { mode, geometry } = props;
   const reduced = useReducedMotion();
   if (mode === "hidden" || !props.session) return null;
-  const { width, height } = contour(mode, geometry, props.hovered);
+  const { width, height } = contour(
+    mode,
+    geometry,
+    props.hovered,
+    earWidth(props.session, mode, props.now, props.endedDuration),
+  );
   const pill = !geometry.has_notch;
   const radius =
     mode === "expanded"
@@ -186,6 +192,17 @@ function MicStatus({ session }: { session: MeetingSession }) {
   );
 }
 
+/** Shown only while the camera is on, so the user knows they are on video. */
+function CamStatus({ session }: { session: MeetingSession }) {
+  const t = useT();
+  if (session.cam !== "on") return null;
+  return (
+    <span className="status-icon" role="img" aria-label={t("island.cam")}>
+      <CamIcon size={14} />
+    </span>
+  );
+}
+
 function HandStatus({ session }: { session: MeetingSession }) {
   const t = useT();
   if (session.hand !== "on") return null;
@@ -267,9 +284,10 @@ function EndedLabel() {
 function Compact(props: IslandViewProps) {
   const session = props.session as MeetingSession;
   const ended = props.mode === "ended";
+  const ear = { width: earWidth(session, props.mode, props.now, props.endedDuration) };
   return (
     <Expandable props={props} className={`compact ${ended ? "ended" : ""}`}>
-      <span className="ear left">
+      <span className="ear left" style={ear}>
         {ended ? (
           <EndedLabel />
         ) : (
@@ -280,8 +298,9 @@ function Compact(props: IslandViewProps) {
         )}
       </span>
       <span className="notch-gap" style={{ width: props.geometry.notch_width }} />
-      <span className="ear right">
+      <span className="ear right" style={ear}>
         {!ended && <HandStatus session={session} />}
+        {!ended && <CamStatus session={session} />}
         {!ended && <MicStatus session={session} />}
         <Timer session={session} now={props.now} endedDuration={props.endedDuration} />
         {!ended && <DegradedDot session={session} />}
@@ -309,6 +328,7 @@ function Pill(props: IslandViewProps) {
       <span className="pill-title">{ended ? "" : (session.title ?? "")}</span>
       <span className="pill-side">
         {!ended && <HandStatus session={session} />}
+        {!ended && <CamStatus session={session} />}
         {!ended && <MicStatus session={session} />}
         <Timer session={session} now={props.now} endedDuration={props.endedDuration} />
         {!ended && <DegradedDot session={session} />}

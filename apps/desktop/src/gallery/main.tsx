@@ -88,6 +88,20 @@ const EXTRA: Case[] = [
     notch,
     96,
   ],
+  ["Camera on", "compact", { cam: "on" }, notch, 96],
+  [
+    "Camera on, hand raised, an hour in, degraded: wider ears",
+    "compact",
+    {
+      cam: "on",
+      hand: "on",
+      started_at: now - 3_725_000,
+      health: { status: "degraded", reasons: ["stale"], provider_details: [] },
+    },
+    notch,
+    96,
+  ],
+  ["Pill, camera on, hand raised", "compact", { cam: "on", hand: "on" }, noNotch, 96],
   [
     "Expanded, muted, camera on, hand raised",
     "expanded",

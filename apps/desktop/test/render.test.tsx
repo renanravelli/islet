@@ -94,6 +94,16 @@ describe("island", () => {
     expect(container.querySelector(".timer")?.textContent).toBe("1:00");
   });
 
+  it("shows the camera icon only while the camera is on", () => {
+    const camera = () => container.querySelector(".ear.right [aria-label='Câmera']");
+    render("compact", { cam: "on" });
+    expect(camera()).not.toBeNull();
+    render("compact", { cam: "off" });
+    expect(camera()).toBeNull();
+    render("compact", { cam: "unknown" });
+    expect(camera()).toBeNull();
+  });
+
   it("an unknown mic is drawn as unknown, never as on", () => {
     render("compact");
     expect(container.querySelector(".status-icon.unknown")?.getAttribute("aria-label")).toBe(

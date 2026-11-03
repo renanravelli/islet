@@ -198,7 +198,8 @@ and every UI string. Where it and the design canvas differ, the spec wins.
 4. **Chat is hidden in v0.1.** The UI renders only the controls the provider declares, and no
    provider declares chat. Everything else follows the canvas's "Estados da ilha" board 1:1;
    `gallery.html` draws the same rows with the same data for comparison. Deliberate
-   differences: no chat, no camera dot, no pre-call reminder (out of scope), and the alert's
+   differences: no chat, no camera dot, no pre-call reminder (out of scope), a camera icon
+   in the right ear while the camera is on (ears widen when it does not fit), and the alert's
    amber glow is drawn inside the contour (rule 6); shadows outside the contour are the macOS
    window shadow (`IslandLayout.shadow`).
 5. **Avatars:** initials on the canvas's three colors, given in the order people first appear
