@@ -53,13 +53,24 @@ Rust crate packages are prefixed `islet-` so none is named `core`.
 
 ## Toolchain
 
-- **`rust-toolchain.toml` is the source of truth** for Rust (used by CI and by anyone without
-  asdf). **`.tool-versions`** (asdf) pins `rust`, `nodejs` and `pnpm` for local use.
-  **Keep both in sync:** when bumping Rust, change both files in the same commit. Node and pnpm
-  versions must also match `package.json` (`engines.node`, `packageManager`).
+- **Version pins, and which files must change together** (same commit):
+  - Rust: `rust-toolchain.toml` (source of truth, used by CI and by anyone without asdf) and
+    `.tool-versions`.
+  - Node: `.tool-versions` and `engines.node` in `package.json`.
+  - pnpm: only `packageManager` in `package.json`. asdf has no pnpm plugin; install pnpm with
+    Homebrew, corepack or npm.
 - Universal macOS builds need `rustup target add aarch64-apple-darwin x86_64-apple-darwin`.
 - TypeScript 7 is used only for `tsc --noEmit`. If any tool needs the TypeScript JS API, fall
   back to TypeScript 6.x.
+
+## Unsafe code
+
+- The portable crates (`islet-protocol`, `islet-core`, `islet-provider-meet`,
+  `islet-provider-demo`, `islet-native-host`) inherit `unsafe_code = "forbid"` from the workspace.
+- `apps/desktop/src-tauri` declares its own `[lints]` with `unsafe_code = "deny"` and allows it
+  only in `src/platform/macos.rs` (`#![allow(unsafe_code)]`). Nowhere else.
+- Every `unsafe` block carries a `// SAFETY:` comment explaining why it is sound.
+  `clippy::undocumented_unsafe_blocks` is enabled in every crate and fails the build without it.
 
 ## Commands
 
