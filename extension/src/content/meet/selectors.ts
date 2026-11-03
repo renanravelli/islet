@@ -28,7 +28,7 @@ export interface SelectorEntry {
   strategies: Strategy[];
   /** For toggles: how to read on/off from the resolved element. */
   state?: StateRule[];
-  /** For the active speaker: where the name is, inside the resolved tile. */
+  /** For the active speaker and the participant tiles: where the name is, inside a tile. */
   name?: Strategy[];
   /** For the participant count: where the number is, inside the resolved element. */
   count?: Strategy[];
@@ -48,7 +48,9 @@ export type ReportedKey =
 export type SelectorKey =
   | ReportedKey
   /** The host's "leave, do not end the call for everyone" choice. Never reported. */
-  | "justLeaveButton";
+  | "justLeaveButton"
+  /** Every participant tile, for the avatar row. Optional and never reported. */
+  | "participantTile";
 
 export interface Registry {
   version: number;
@@ -74,6 +76,7 @@ export const DEGRADED_REASON: Record<ReportedKey, DegradedReason> = {
 export const SELECTOR_KEYS: SelectorKey[] = [
   ...(Object.keys(DEGRADED_REASON) as ReportedKey[]),
   "justLeaveButton",
+  "participantTile",
 ];
 
 const compiled = new Map<string, RegExp>();

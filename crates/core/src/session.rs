@@ -80,6 +80,8 @@ pub struct SessionState {
     /// Experimental.
     pub active_speaker: Option<Speaker>,
     pub participant_count: Option<u32>,
+    /// Up to [`MAX_PARTICIPANTS`] people in the call, for the avatar row.
+    pub participants: Vec<Speaker>,
     pub signals: Signals,
     /// Commands this session supports right now. The UI renders only these.
     pub capabilities: CapabilitySet,
@@ -96,12 +98,16 @@ impl fmt::Debug for SessionState {
             .field("hand", &self.hand)
             .field("active_speaker", &self.active_speaker)
             .field("participant_count", &self.participant_count)
+            .field("participants", &self.participants)
             .field("signals", &self.signals)
             .field("capabilities", &self.capabilities)
             .field("health", &self.health)
             .finish()
     }
 }
+
+/// How many participants the island's avatar row shows; a provider's extra ones are dropped.
+pub const MAX_PARTICIPANTS: usize = 3;
 
 /// A participant. `display_name` is `None` when names are hidden
 /// ([`Settings::show_participant_names`](crate::Settings)); `Debug` redacts it.

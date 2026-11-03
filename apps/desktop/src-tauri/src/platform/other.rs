@@ -38,6 +38,7 @@ pub fn place_island(
     label: &str,
     place: Option<((f64, f64), (f64, f64))>,
     _focus: bool,
+    _shadow: bool,
 ) {
     let Some(window) = app.get_webview_window(label) else {
         return;

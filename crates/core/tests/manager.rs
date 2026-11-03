@@ -306,6 +306,7 @@ fn named_state() -> SessionState {
     SessionState {
         title: Some("Synthetic title".into()),
         active_speaker: Some(Speaker::new("Alex Example")),
+        participants: vec![Speaker::new("Alex Example"), Speaker::new("Sam Example")],
         health: Health::degraded([DegradedReason::Unreadable(Field::Mic)])
             .with_details(ProviderDetail::new("micButton")),
         ..state(Toggle::Unknown)
@@ -328,9 +329,12 @@ async fn hidden_names_never_reach_the_snapshot() {
     let json = serde_json::to_string(&hidden).unwrap();
     assert!(!json.contains("Alex"), "{json}");
     assert!(!json.contains("Synthetic title"), "{json}");
+    assert!(!json.contains("Sam"), "{json}");
     let session = hidden.primary.unwrap();
     // Someone is still speaking; who is not shown.
     assert_eq!(session.state.active_speaker, Some(Speaker::anonymous()));
+    // The avatar row keeps its size, with generic avatars.
+    assert_eq!(session.state.participants, vec![Speaker::anonymous(); 2]);
     assert_eq!(session.state.title, None);
 
     handle.set_settings(Settings::default());

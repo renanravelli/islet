@@ -48,7 +48,11 @@ started_at: number, mic: Toggle, cam: Toggle, hand: Toggle,
 /**
  * Experimental.
  */
-active_speaker: Speaker | null, participant_count: number | null, signals: Signals, 
+active_speaker: Speaker | null, participant_count: number | null, 
+/**
+ * Up to [`MAX_PARTICIPANTS`] people in the call, for the avatar row.
+ */
+participants: Array<Speaker>, signals: Signals, 
 /**
  * Commands this session supports right now. The UI renders only these.
  */
@@ -99,7 +103,11 @@ started_at: number, mic: Toggle, cam: Toggle, hand: Toggle,
 /**
  * Experimental.
  */
-active_speaker: Speaker | null, participant_count: number | null, signals: Signals, 
+active_speaker: Speaker | null, participant_count: number | null, 
+/**
+ * Up to [`MAX_PARTICIPANTS`] people in the call, for the avatar row.
+ */
+participants: Array<Speaker>, signals: Signals, 
 /**
  * Commands this session supports right now. The UI renders only these.
  */

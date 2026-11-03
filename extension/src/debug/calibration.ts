@@ -353,6 +353,9 @@ class Runner {
     const safe: Record<string, unknown> = { ...state, meeting_code: "[meeting-code]" };
     if (state.title !== undefined) safe.title = "[title]";
     if (state.active_speaker !== undefined) safe.active_speaker = { display_name: "[name]" };
+    if (state.participants !== undefined) {
+      safe.participants = state.participants.map(() => ({ display_name: "[name]" }));
+    }
     const observed: Observed = {
       inCall: this.deps.adapter.detectInCall(),
       state: safe,

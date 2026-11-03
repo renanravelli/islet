@@ -55,7 +55,12 @@ export type IslandLayout = { visible: boolean, width: number, height: number,
 /**
  * Expanded: the panel takes keyboard focus (Esc) and collapses when it loses it.
  */
-focused: boolean, };
+focused: boolean, 
+/**
+ * Expanded, the alert and the no-notch pill cast the system window shadow, drawn by macOS
+ * outside the panel, so the panel stays the island's exact size.
+ */
+shadow: boolean, };
 
 /**
  * The UI language: the system's, or a fixed one.

@@ -137,6 +137,7 @@ mod tests {
                 display_name: "Alex Example".into(),
             }),
             participant_count: None,
+            participants: None,
             signals: Signals::default(),
             capabilities: vec![Action::ToggleMic, Action::Leave],
             health: Health::Ok,

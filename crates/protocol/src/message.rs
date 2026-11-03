@@ -127,6 +127,10 @@ pub struct SessionUpdate {
     pub active_speaker: Option<ActiveSpeaker>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub participant_count: Option<u32>,
+    /// A few people in the call (the extension sends up to 3), in the order Meet shows their
+    /// tiles, for the island's avatar row. Fewer than `participant_count` is normal.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub participants: Option<Vec<Participant>>,
     pub signals: Signals,
     /// Actions this tab can perform right now.
     pub capabilities: Vec<Action>,
@@ -146,6 +150,7 @@ impl fmt::Debug for SessionUpdate {
             .field("self_state", &self.self_state)
             .field("active_speaker", &self.active_speaker)
             .field("participant_count", &self.participant_count)
+            .field("participants", &self.participants)
             .field("signals", &self.signals)
             .field("capabilities", &self.capabilities)
             .field("health", &self.health)
@@ -182,6 +187,21 @@ pub struct ActiveSpeaker {
 impl fmt::Debug for ActiveSpeaker {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("ActiveSpeaker")
+            .field("display_name", &Redacted)
+            .finish()
+    }
+}
+
+// `Debug` redacts the name.
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[ts(export, export_to = "protocol-ts/src/generated/protocol.ts")]
+pub struct Participant {
+    pub display_name: String,
+}
+
+impl fmt::Debug for Participant {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Participant")
             .field("display_name", &Redacted)
             .finish()
     }

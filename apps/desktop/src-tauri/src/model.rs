@@ -89,6 +89,9 @@ pub struct IslandLayout {
     pub height: f64,
     /// Expanded: the panel takes keyboard focus (Esc) and collapses when it loses it.
     pub focused: bool,
+    /// Expanded, the alert and the no-notch pill cast the system window shadow, drawn by macOS
+    /// outside the panel, so the panel stays the island's exact size.
+    pub shadow: bool,
 }
 
 /// Static facts the windows need.

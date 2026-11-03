@@ -221,6 +221,9 @@ impl Actor {
             if session.state.active_speaker.is_some() {
                 session.state.active_speaker = Some(Speaker::anonymous());
             }
+            for participant in &mut session.state.participants {
+                *participant = Speaker::anonymous();
+            }
         }
         let providers = self
             .statuses

@@ -67,6 +67,8 @@ pub use island::{create_island, place_island};
 /// syntax requires `-> ()`.
 #[allow(clippy::unused_unit)]
 mod island {
+    use std::time::Duration;
+
     use tauri::{AppHandle, Emitter, LogicalPosition, LogicalSize, Manager, WebviewUrl, Wry};
     use tauri_nspanel::{
         CollectionBehavior, ManagerExt, PanelBuilder, PanelLevel, StyleMask, TrackingAreaOptions,
@@ -154,11 +156,31 @@ mod island {
     }
 
     /// Shows the island at `origin` with `size`, or hides it. Main thread only.
+    /// macOS draws a transparent window's shadow from its painted pixels, and caches it. The
+    /// island repaints during its resize transition (260 ms), so the shadow is recomputed once
+    /// the page has painted the new size and again after the transition.
+    fn refresh_shadow(app: &AppHandle, label: &str) {
+        for delay in [Duration::from_millis(60), Duration::from_millis(320)] {
+            let app = app.clone();
+            let label = label.to_owned();
+            std::thread::spawn(move || {
+                std::thread::sleep(delay);
+                let handle = app.clone();
+                let _ = app.run_on_main_thread(move || {
+                    if let Ok(panel) = handle.get_webview_panel(&label) {
+                        panel.as_panel().invalidateShadow();
+                    }
+                });
+            });
+        }
+    }
+
     pub fn place_island(
         app: &AppHandle,
         label: &str,
         place: Option<((f64, f64), (f64, f64))>,
         focus: bool,
+        shadow: bool,
     ) {
         let Ok(panel) = app.get_webview_panel(label) else {
             return;
@@ -171,7 +193,11 @@ mod island {
             Some(((x, y), (width, height))) => {
                 let _ = window.set_size(LogicalSize::new(width, height));
                 let _ = window.set_position(LogicalPosition::new(x, y));
+                panel.set_has_shadow(shadow);
                 panel.show();
+                if shadow {
+                    refresh_shadow(app, label);
+                }
                 if focus {
                     panel.make_key_window();
                 } else if panel.as_panel().isKeyWindow() {

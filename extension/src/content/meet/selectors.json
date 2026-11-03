@@ -1,6 +1,6 @@
 {
   "$comment": "Every DOM dependency of the Meet adapter (docs/adr/0004). Strategies are tried in order; regexes are case-insensitive and every locale is tried. A key is verified only when it was confirmed in a real call; verifiedIn lists the Meet languages it was confirmed in. jsname/jscontroller values come from the owner's inspection and the calibration runner in a real pt-BR call on 2026-11-03 (docs/meet-adapter/reports/); Google can rename them, so each key keeps a label-based fallback. Unverified strategies are educated guesses. See docs/meet-adapter/calibration.md.",
-  "version": 5,
+  "version": 6,
   "updated": "2026-11-03",
   "keys": {
     "leaveButton": {
@@ -217,6 +217,21 @@
         }
       ],
       "verifiedIn": ["pt-BR"]
+    },
+    "participantTile": {
+      "$comment": "UNVERIFIED: every participant tile, for the island's avatar row. The same tiles the activeSpeaker strategy matches, which found both a remote name and the user's own in the 2026-11-03 session; the name is the tile's span.notranslate.",
+      "verified": false,
+      "required": false,
+      "strategies": [
+        {
+          "css": "[data-participant-id]"
+        }
+      ],
+      "name": [
+        {
+          "css": "span.notranslate"
+        }
+      ]
     }
   }
 }

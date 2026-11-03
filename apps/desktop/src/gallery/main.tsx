@@ -9,95 +9,162 @@ import { IslandView } from "../island/IslandView";
 import type { Mode } from "../island/model";
 import "../shared/tokens.css";
 
+// The same data as the approved canvas ("Estados da ilha"), so both can be compared 1:1.
+const DURATION_MS = (32 * 60 + 10) * 1000;
 const now = Date.now();
 const base: MeetingSession = {
   key: { provider: "demo", id: "gallery" },
   status: { phase: "active" },
-  title: "Weekly design review",
-  started_at: now - 754_000,
+  title: "Daily · Squad Checkout",
+  started_at: now - DURATION_MS,
   mic: "on",
   cam: "off",
   hand: "off",
-  active_speaker: { display_name: "Alex Rivera" },
-  participant_count: 6,
+  active_speaker: { display_name: "Ana Souza" },
+  participant_count: 8,
+  participants: ["Ana Souza", "Bruno Lima", "Carla Mendes"].map((display_name) => ({
+    display_name,
+  })),
   signals: { speaking_while_muted: false },
   capabilities: ["toggle_mic", "toggle_cam", "toggle_hand", "leave", "focus_tab"],
   health: { status: "ok" },
 };
-const notch: Geometry = { has_notch: true, notch_width: 185, top_inset: 32 };
+const notch: Geometry = { has_notch: true, notch_width: 186, top_inset: 32 };
 const noNotch: Geometry = { has_notch: false, notch_width: 0, top_inset: 25 };
 
-const cases: [string, Mode, Partial<MeetingSession>, Geometry][] = [
-  ["compact", "compact", {}, notch],
+type Case = [string, Mode, Partial<MeetingSession>, Geometry, number];
+
+/** The canvas board's rows, in its order and with its frame heights. */
+const CANVAS: Case[] = [
+  ["Compacta · em call", "compact", {}, notch, 96],
   [
-    "compact, muted, hand raised, degraded",
+    "Compacta · no mudo",
+    "compact",
+    { mic: "off", hand: "on", active_speaker: { display_name: "Bruno Lima" } },
+    notch,
+    96,
+  ],
+  ["Expandida", "expanded", {}, notch, 300],
+  [
+    "Alerta · falando no mudo",
+    "alert",
+    { mic: "off", signals: { speaking_while_muted: true } },
+    notch,
+    170,
+  ],
+  ["Sem notch · monitor externo", "compact", {}, noNotch, 96],
+  ["Encerrada", "ended", { status: { phase: "ended", reason: "call_ended" } }, notch, 96],
+];
+
+/** States the canvas does not draw. */
+const EXTRA: Case[] = [
+  [
+    "Degraded, nobody speaking",
     "compact",
     {
       mic: "off",
-      hand: "on",
       active_speaker: null,
       health: { status: "degraded", reasons: ["stale"], provider_details: [] },
     },
     notch,
+    96,
   ],
   [
-    "compact, unknown mic, names hidden",
+    "Unknown mic, names hidden",
     "compact",
     { mic: "unknown", active_speaker: { display_name: null } },
     notch,
+    96,
   ],
-  ["ended", "ended", { status: { phase: "ended", reason: "call_ended" } }, notch],
-  ["expanded", "expanded", {}, notch],
   [
-    "expanded, muted, camera on, hand raised",
+    "Expanded, muted, camera on, hand raised",
     "expanded",
     { mic: "off", cam: "on", hand: "on" },
     notch,
+    300,
   ],
   [
-    "expanded, unknown states, no speaker",
+    "Expanded, unknown states, nobody speaking",
     "expanded",
-    {
-      mic: "unknown",
-      cam: "unknown",
-      hand: "unknown",
-      active_speaker: null,
-      capabilities: ["toggle_mic", "toggle_cam", "toggle_hand", "leave", "focus_tab"],
-    },
+    { mic: "unknown", cam: "unknown", hand: "unknown", active_speaker: null },
     notch,
+    300,
   ],
-  ["alert", "alert", { mic: "off", signals: { speaking_while_muted: true } }, notch],
-  ["pill (no notch)", "compact", {}, noNotch],
-  ["pill expanded (no notch)", "expanded", {}, noNotch],
+  ["Pill expanded", "expanded", {}, noNotch, 300],
 ];
 
-const locale = (new URLSearchParams(location.search).get("locale") as Locale) || "en";
+const locale = (new URLSearchParams(location.search).get("locale") as Locale) || "pt-BR";
+
+/** A frame like the canvas's: an 860 pt strip with the menu bar and the island at the top. */
+function Frame({ c: [label, mode, overrides, geometry, height] }: { c: Case }) {
+  const session = { ...base, ...overrides };
+  const pill = !geometry.has_notch;
+  return (
+    <div style={{ display: "flex", gap: 40, alignItems: "flex-start" }}>
+      <div style={{ width: 300, font: "600 18px var(--font)", color: "#1D1D1F" }}>{label}</div>
+      <div
+        style={{
+          position: "relative",
+          width: 860,
+          height,
+          border: "1px solid #E3E3E8",
+          borderRadius: 12,
+          overflow: "hidden",
+          background: "#F7F7F8",
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            inset: "0 0 auto 0",
+            height: pill ? 25 : 37,
+            background: "#E9E9EC",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            top: pill ? 33 : 0,
+            left: 0,
+            right: 0,
+            display: "flex",
+            justifyContent: "center",
+          }}
+        >
+          <IslandView
+            mode={mode}
+            session={session}
+            speaker={session.active_speaker}
+            geometry={geometry}
+            now={now}
+            endedDuration={mode === "ended" ? DURATION_MS : undefined}
+            interactive
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function Gallery() {
   return (
     <LocaleProvider locale={locale}>
       <div
-        style={{ display: "grid", gap: 24, padding: 24, background: "#7a8a99", minHeight: "100vh" }}
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 32,
+          padding: 56,
+          background: "#FAFAFB",
+          minHeight: "100vh",
+        }}
       >
-        {cases.map(([label, mode, overrides, geometry]) => {
-          const session = { ...base, ...overrides };
-          return (
-            <section key={label}>
-              <div style={{ font: "12px var(--font)", color: "#fff", marginBottom: 6 }}>
-                {label}
-              </div>
-              <IslandView
-                mode={mode}
-                session={session}
-                speaker={session.active_speaker}
-                geometry={geometry}
-                now={now}
-                endedDuration={mode === "ended" ? 754_000 : undefined}
-                interactive
-              />
-            </section>
-          );
-        })}
+        {CANVAS.map((c) => (
+          <Frame key={c[0]} c={c} />
+        ))}
+        {EXTRA.map((c) => (
+          <Frame key={c[0]} c={c} />
+        ))}
       </div>
     </LocaleProvider>
   );

@@ -5,12 +5,12 @@ use std::time::Duration;
 
 use islet_core::{
     Command, CommandError, DegradedReason, EndReason, Field, Health, MeetingSession,
-    ProviderDetail, SessionHandle, SessionKey, SessionManager, SessionStatus, Timings, Toggle,
-    UiSnapshot,
+    ProviderDetail, SessionHandle, SessionKey, SessionManager, SessionStatus, Speaker, Timings,
+    Toggle, UiSnapshot,
 };
 use islet_protocol::{
     self as wire, Action, ActiveSpeaker, AppMessage, CommandErrorCode, CommandResult,
-    ExtensionMessage, Hello, SelfState, SessionEnded, SessionUpdate, Signals,
+    ExtensionMessage, Hello, Participant, SelfState, SessionEnded, SessionUpdate, Signals,
 };
 use islet_provider_meet::{BridgeEvent, MEET, MeetProvider};
 use tokio::sync::{mpsc, watch};
@@ -107,6 +107,14 @@ fn update(tab_id: u32) -> SessionUpdate {
             display_name: "Alex Example".into(),
         }),
         participant_count: Some(4),
+        participants: Some(
+            ["Alex Example", "Sam Example", "Jo Example", "Kim Example"]
+                .into_iter()
+                .map(|name| Participant {
+                    display_name: name.into(),
+                })
+                .collect(),
+        ),
         signals: Signals {
             speaking_while_muted: Some(true),
         },
@@ -133,6 +141,11 @@ async fn maps_session_updates() {
         Some("Alex Example".to_owned())
     );
     assert_eq!(session.state.participant_count, Some(4));
+    // The avatar row shows three; the rest are dropped.
+    assert_eq!(
+        session.state.participants,
+        ["Alex Example", "Sam Example", "Jo Example"].map(Speaker::new)
+    );
     assert!(session.state.signals.speaking_while_muted);
     assert_eq!(
         session.state.capabilities.iter().collect::<Vec<_>>(),

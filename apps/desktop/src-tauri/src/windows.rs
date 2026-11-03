@@ -47,7 +47,7 @@ pub fn place(app: &AppHandle, layout: IslandLayout) {
         _ => None,
     };
     tracing::debug!(?place, focused = layout.focused, "island layout");
-    platform::place_island(app, ISLAND, place, layout.focused);
+    platform::place_island(app, ISLAND, place, layout.focused, layout.shadow);
 }
 
 fn background(theme: Theme) -> Color {

@@ -27,6 +27,7 @@ describe("readState", () => {
       self: { mic: "on", cam: "off", hand: "off" },
       active_speaker: { display_name: "Alex Example" },
       participant_count: 5,
+      participants: [{ display_name: "Alex Example" }, { display_name: "Sam Example" }],
       signals: { speaking_while_muted: false },
       capabilities: ["toggle_mic", "toggle_cam", "toggle_hand", "leave", "focus_tab"],
       health: "ok",
@@ -66,13 +67,29 @@ describe("readState", () => {
     expect(JSON.stringify(adapter().readState())).not.toContain("chat line");
   });
 
-  it("does not report the meeting code as the title (instant meetings)", () => {
+  it("shows the meeting code as the title in an instant meeting, as Meet does", () => {
     load(FIXTURES.inCallEn);
     const title = document.querySelector("[jsname=NeC6gb]");
     if (title) title.textContent = "abc-defg-hij";
     const { state, failed } = adapter().readState();
-    expect(state.title).toBeUndefined();
+    expect(state.title).toBe("abc-defg-hij");
     expect(failed).toEqual([]);
+  });
+
+  it("names up to three participants, each once, in page order", () => {
+    load(FIXTURES.inCallEn);
+    const toolbar = document.querySelector("[role=toolbar]");
+    for (const name of ["Sam Example", "Jo Example", "Kim Example"]) {
+      const tile = document.createElement("div");
+      tile.setAttribute("data-participant-id", name);
+      tile.innerHTML = `<span class="notranslate">${name}</span>`;
+      toolbar?.before(tile);
+    }
+    expect(adapter().readState().state.participants).toEqual([
+      { display_name: "Alex Example" },
+      { display_name: "Sam Example" },
+      { display_name: "Jo Example" },
+    ]);
   });
 
   it("keeps names and titles short", () => {

@@ -1,6 +1,6 @@
 // The Meet adapter: reads the call state from the page and performs commands (docs/adr/0004).
 //
-// It reads only the call controls, the active speaker tile, the participant count, the
+// It reads only the call controls, the participant tiles' names, the participant count, the
 // meeting title and Meet's "are you talking?" notice, each through selectors.json. It never
 // reads the chat, never captures audio or video and makes no network requests.
 
@@ -8,6 +8,7 @@ import type { Action, CommandErrorCode, DegradedReason, Toggle } from "@islet/pr
 import type { TabAction, TabState } from "../../shared/messages";
 import {
   DEGRADED_REASON,
+  matchAll,
   type Registry,
   type ReportedKey,
   readToggle,
@@ -27,7 +28,9 @@ const MAX_TEXT = 200;
 const ENDS_FOR_EVERYONE = /encerrar|para todos|for everyone|for all|end (the )?(call|meeting)/i;
 
 const MEETING_CODE = /^\/([a-z]{3}-[a-z]{4}-[a-z]{3})(?:[/?#]|$)/;
-const MEETING_CODE_TEXT = /^[a-z]{3}-[a-z]{4}-[a-z]{3}$/i;
+
+/** How many names the avatar row needs (islet-core's MAX_PARTICIPANTS). */
+export const MAX_PARTICIPANTS = 3;
 
 const TOGGLES = [
   { action: "toggle_mic", key: "micButton", field: "mic" },
@@ -83,10 +86,10 @@ export class MeetAdapter {
     if (leave) capabilities.push("leave");
     capabilities.push("focus_tab");
 
-    // In an instant meeting the title slot shows the meeting code: that is not a title.
-    const shown = text(this.find("meetingTitle"));
-    const title = shown !== undefined && MEETING_CODE_TEXT.test(shown) ? undefined : shown;
-    if (shown === undefined) fail("meetingTitle");
+    // In an instant meeting the title slot shows the meeting code; the island shows it too,
+    // as Meet does.
+    const title = text(this.find("meetingTitle"));
+    if (title === undefined) fail("meetingTitle");
 
     let activeSpeaker: string | undefined;
     const tile = this.find("activeSpeaker");
@@ -113,8 +116,27 @@ export class MeetAdapter {
     if (title !== undefined) state.title = title;
     if (activeSpeaker !== undefined) state.active_speaker = { display_name: activeSpeaker };
     if (participants !== undefined) state.participant_count = participants;
+    const people = this.participants();
+    if (people.length > 0) state.participants = people;
     if (degraded.length > 0) state.degraded_reasons = degraded;
     return { state, failed: [...failed] };
+  }
+
+  /** Up to MAX_PARTICIPANTS names from the participant tiles, in page order, each once. */
+  private participants(): { display_name: string }[] {
+    const entry = this.registry.keys.participantTile;
+    for (const strategy of entry.strategies) {
+      const tiles = matchAll(this.root, strategy);
+      if (tiles.length === 0) continue;
+      const names: string[] = [];
+      for (const tile of tiles) {
+        const name = text(resolve(tile, entry.name ?? []));
+        if (name !== undefined && !names.includes(name)) names.push(name);
+        if (names.length === MAX_PARTICIPANTS) break;
+      }
+      return names.map((display_name) => ({ display_name }));
+    }
+    return [];
   }
 
   /** Clicks the control and waits until the change shows on the page. */

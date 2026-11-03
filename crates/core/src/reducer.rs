@@ -264,6 +264,7 @@ mod tests {
             hand: Toggle::Off,
             active_speaker: Some(Speaker::new("Alex Example")),
             participant_count: Some(3),
+            participants: Vec::new(),
             signals: Signals {
                 speaking_while_muted: true,
             },

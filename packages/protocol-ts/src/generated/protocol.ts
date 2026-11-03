@@ -58,6 +58,8 @@ export type Hello = { extension_version: string,
  */
 browser: string, };
 
+export type Participant = { display_name: string, };
+
 /**
  * The `v` field of every message. It serializes as `1`, and deserializing any other value fails,
  * so a message from an incompatible peer cannot be mistaken for a valid one.
@@ -79,7 +81,12 @@ started_at: number,
 /**
  * The user's own media state.
  */
-self: SelfState, active_speaker?: ActiveSpeaker, participant_count?: number, signals: Signals, 
+self: SelfState, active_speaker?: ActiveSpeaker, participant_count?: number, 
+/**
+ * A few people in the call (the extension sends up to 3), in the order Meet shows their
+ * tiles, for the island's avatar row. Fewer than `participant_count` is normal.
+ */
+participants?: Array<Participant>, signals: Signals, 
 /**
  * Actions this tab can perform right now.
  */

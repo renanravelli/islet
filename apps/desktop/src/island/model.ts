@@ -28,14 +28,24 @@ export const SIZE = {
 } as const;
 
 /** Avatar backgrounds from the canvas; white initials pass 4.5:1 on each. */
-const AVATAR_COLORS = ["#5E5CE6", "#0B7A75", "#B4581E", "#48484A"] as const;
+const AVATAR_COLORS = ["#5E5CE6", "#0B7A75", "#B4581E"] as const;
+/** Names seen so far and their color, in memory only (never stored or logged). */
+const avatarColors = new Map<string, string>();
+const MAX_REMEMBERED = 200;
 
-/** A stable color per name, so a speaker keeps the same avatar during the call. */
+/**
+ * A color per person, given in the order people first appear, as the canvas shows them: the
+ * first three people never share a color, and each keeps theirs while the app runs.
+ */
 export function avatarColor(name: string | null | undefined): string | undefined {
   if (!name) return undefined;
-  let hash = 0;
-  for (const ch of name) hash = (hash * 31 + (ch.codePointAt(0) ?? 0)) >>> 0;
-  return AVATAR_COLORS[hash % AVATAR_COLORS.length];
+  let color = avatarColors.get(name);
+  if (color === undefined) {
+    if (avatarColors.size >= MAX_REMEMBERED) avatarColors.clear();
+    color = AVATAR_COLORS[avatarColors.size % AVATAR_COLORS.length] as string;
+    avatarColors.set(name, color);
+  }
+  return color;
 }
 
 /**

@@ -1,6 +1,14 @@
 import type { AppSettings, Geometry, MeetingSession } from "@islet/ui-types";
 import { describe, expect, it } from "vitest";
-import { contour, controls, duration, initials, mode, SIZE } from "../src/island/model";
+import {
+  avatarColor,
+  contour,
+  controls,
+  duration,
+  initials,
+  mode,
+  SIZE,
+} from "../src/island/model";
 
 const settings: AppSettings = {
   language: "auto",
@@ -24,6 +32,7 @@ function session(overrides: Partial<MeetingSession> = {}): MeetingSession {
     hand: "off",
     active_speaker: { display_name: "Alex Example" },
     participant_count: 3,
+    participants: [],
     signals: { speaking_while_muted: false },
     capabilities: ["toggle_mic", "toggle_cam", "toggle_hand", "leave", "focus_tab"],
     health: { status: "ok" },
@@ -122,5 +131,15 @@ describe("formatting", () => {
     expect(initials("Sam")).toBe("S");
     expect(initials(null)).toBeNull();
     expect(initials("  ")).toBeNull();
+  });
+});
+
+describe("avatarColor", () => {
+  it("gives the first three people different colors and keeps each one's", () => {
+    const names = ["Color Test A", "Color Test B", "Color Test C"];
+    const colors = names.map(avatarColor);
+    expect(new Set(colors).size).toBe(3);
+    expect(names.map(avatarColor)).toEqual(colors);
+    expect(avatarColor(null)).toBeUndefined();
   });
 });

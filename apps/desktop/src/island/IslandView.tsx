@@ -121,7 +121,8 @@ function Avatar({ speaker, size }: { speaker: Speaker | null; size: number }) {
       style={{
         width: size,
         height: size,
-        fontSize: Math.round(size * 0.4),
+        // As in the canvas: 8 pt initials at 20, 9 at 24, 15 at 44.
+        fontSize: Math.round(size * (size >= 40 ? 0.34 : 0.38)),
         background: avatarColor(speaker?.display_name),
       }}
       aria-hidden="true"
@@ -367,11 +368,7 @@ function Expanded(props: IslandViewProps) {
             {name && <span className="name">{name}</span>}
             <Wave bars={WAVE.expanded} active={speaker !== null} />
           </span>
-          {session.participant_count !== null && (
-            <span className="participants">
-              {t("island.participants", { n: session.participant_count })}
-            </span>
-          )}
+          <Participants session={session} />
         </div>
       </div>
       <div className="controls">
@@ -398,6 +395,29 @@ function Expanded(props: IslandViewProps) {
         })}
       </div>
     </div>
+  );
+}
+
+/** The avatar row: a few known participants, "+N" for the rest, and the count. */
+function Participants({ session }: { session: MeetingSession }) {
+  const t = useT();
+  const count = session.participant_count;
+  const shown = session.participants;
+  if (count === null && shown.length === 0) return null;
+  const rest = count === null ? 0 : count - shown.length;
+  return (
+    <span className="participants">
+      {shown.length > 0 && (
+        <span className="avatar-stack" aria-hidden="true">
+          {shown.map((p, i) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: names may repeat or be hidden
+            <Avatar key={i} speaker={p} size={24} />
+          ))}
+          {rest > 0 && <span className="avatar more">+{rest}</span>}
+        </span>
+      )}
+      {count !== null && t("island.participants", { n: count })}
+    </span>
   );
 }
 

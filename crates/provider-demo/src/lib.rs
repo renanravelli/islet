@@ -318,6 +318,10 @@ impl Player {
                 hand: Toggle::Off,
                 active_speaker: None,
                 participant_count: Some(participants),
+                participants: ["Alex Rivera", "Sam Taylor", "Jordan Kim"]
+                    .into_iter()
+                    .map(Speaker::new)
+                    .collect(),
                 signals: Signals::default(),
                 capabilities: CapabilitySet::all(),
                 health: Health::Ok,

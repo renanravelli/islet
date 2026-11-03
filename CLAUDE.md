@@ -196,15 +196,23 @@ and every UI string. Where it and the design canvas differ, the spec wins.
 3. **Every UI string comes from the pt-BR/en dictionary in section 6 of the spec.** No hard-coded
    text in components.
 4. **Chat is hidden in v0.1.** The UI renders only the controls the provider declares, and no
-   provider declares chat.
-5. **Strings are generated, not copied:** `apps/desktop/src/i18n/strings.json` comes from
+   provider declares chat. Everything else follows the canvas's "Estados da ilha" board 1:1;
+   `gallery.html` draws the same rows with the same data for comparison. Deliberate
+   differences: no chat, no camera dot, no pre-call reminder (out of scope), and the alert's
+   amber glow is drawn inside the contour (rule 6); shadows outside the contour are the macOS
+   window shadow (`IslandLayout.shadow`).
+5. **Avatars:** initials on the canvas's three colors, given in the order people first appear
+   (memory only). The expanded island shows up to three participants (`MAX_PARTICIPANTS` in
+   `islet-core`), "+N" for the rest, and the count. With names off, the core makes them
+   anonymous and the UI draws generic avatars.
+6. **Strings are generated, not copied:** `apps/desktop/src/i18n/strings.json` comes from
    section 6 of the spec (`pnpm --filter @islet/desktop strings`); tests fail if it drifts or if
    a component has text outside it. Product and language names, which are not copy, live in
    `src/shared/meet.ts`.
-6. **The island window is exactly the island's contour** (`island_layout`): no invisible area
+7. **The island window is exactly the island's contour** (`island_layout`): no invisible area
    takes clicks. The active speaker is held 3 s after Meet's indicator goes off, because it
    follows the voice's level (gaps of up to 2 s between words, plus ~1 s with Chrome hidden).
-7. **Onboarding and settings windows open hidden** with the theme's background and show once
+8. **Onboarding and settings windows open hidden** with the theme's background and show once
    the page has painted (`window_ready`), so dark mode never flashes white.
 
 ## Pending by phase
@@ -218,8 +226,10 @@ Every open item lives here, not in an assistant's memory. Remove an item when it
       session alternating who speaks.
     - `mutedSpeakingNotice`: not detected; confirm whether the notice appeared and its exact
       pt-BR text, then redo `runCalibration("muted-speaking")`.
-    - `meetingTitle`: only the instant-meeting case (the code, dropped) is known; check a
-      calendar meeting.
+    - `meetingTitle`: only the instant-meeting case is known, where Meet shows the meeting code
+      in the title slot (the island shows it too, as Meet does); check a calendar meeting.
+    - `participantTile`: unverified (the speaker strategy's tiles and name); check the avatar
+      row's names with 3+ people, and whether Meet renders a person in two tiles.
     - Short session (2026-11-03): `justLeaveButton` verified in pt-BR (left in 674 ms, the
       call went on). Silence gave no false speaker. Only the iPhone's tile ever lit up, also in
       the "Mac talks" step (detected after 55 s, with the Mac's mic off at capture): the

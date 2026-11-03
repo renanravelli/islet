@@ -20,6 +20,7 @@ const session: MeetingSession = {
   hand: "off",
   active_speaker: { display_name: null },
   participant_count: 4,
+  participants: [],
   signals: { speaking_while_muted: false },
   capabilities: ["toggle_mic", "toggle_cam", "leave"],
   health: { status: "ok" },

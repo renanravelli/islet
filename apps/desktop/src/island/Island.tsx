@@ -62,6 +62,7 @@ export function Island({
         width,
         height,
         focused: mode === "expanded",
+        shadow: mode === "expanded" || mode === "alert" || !info.geometry.has_notch,
       });
     };
     const shrinks = width < shown.current.width || height < shown.current.height;
