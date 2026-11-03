@@ -277,6 +277,16 @@ Every open item lives here, not in an assistant's memory. Remove an item when it
   - The release attaches `islet-extension-<version>.zip` (built `extension/dist`), as
     `docs/install-extension.md` describes.
   - Issue template "Meet UI changed", which `docs/install-extension.md` mentions.
+- **Next version, extension install (the owner's decision, 2026-11-03):** v0.1 keeps the
+  manual "Load unpacked" guide; non-technical users get stuck on onboarding step 2.
+  - Publish the extension on the Chrome Web Store as unlisted (the owner's account). On macOS
+    nothing else can install it for the user: off-store external installs are refused, and
+    branded Chrome dropped `--load-extension` in 137. Then set `EXTENSION_STORE_URL` and add the
+    store's ID to `crates/bridge/extension-ids.txt`.
+  - Optionally, also write `~/Library/Application Support/Google/Chrome/External
+    Extensions/<id>.json` (`external_update_url`), so Chrome asks to enable it on its next start.
+  - Step 2 waits forever without a `meet.google.com` tab, since the extension connects only
+    while one exists (ADR 0002), and nothing tells the user: add an "open Meet" step and button.
 
 ## Git
 
