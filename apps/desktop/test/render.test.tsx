@@ -38,7 +38,12 @@ afterEach(() => {
   container.remove();
 });
 
-function render(mode: Mode, overrides: Partial<MeetingSession> = {}, onCommand = vi.fn()) {
+function render(
+  mode: Mode,
+  overrides: Partial<MeetingSession> = {},
+  onCommand = vi.fn(),
+  lastSpeaker: MeetingSession["active_speaker"] = null,
+) {
   const s = { ...session, ...overrides };
   act(() =>
     root.render(
@@ -47,6 +52,7 @@ function render(mode: Mode, overrides: Partial<MeetingSession> = {}, onCommand =
           mode={mode}
           session={s}
           speaker={s.active_speaker}
+          lastSpeaker={lastSpeaker}
           geometry={geometry}
           now={60_000}
           interactive
@@ -59,6 +65,20 @@ function render(mode: Mode, overrides: Partial<MeetingSession> = {}, onCommand =
 }
 
 describe("island", () => {
+  it("with nobody speaking, shows the last speaker as such: no ring, no moving wave", () => {
+    render("expanded", { active_speaker: null }, vi.fn(), { display_name: "Alex Example" });
+    expect(container.querySelector(".speaking-label")?.textContent).toBe("Falou por último");
+    expect(container.querySelector(".speaking-name .name")?.textContent).toBe("Alex Example");
+    expect(container.querySelector(".speaker-tile")?.className).not.toContain("is-speaking");
+    expect(container.querySelector(".wave.active")).toBeNull();
+
+    render("expanded", { active_speaker: { display_name: "Sam Example" } }, vi.fn(), {
+      display_name: "Alex Example",
+    });
+    expect(container.querySelector(".speaking-label")?.textContent).toBe("Falando agora");
+    expect(container.querySelector(".speaking-name .name")?.textContent).toBe("Sam Example");
+  });
+
   it("compact is one labelled button that expands", () => {
     render("compact");
     const button = container.querySelector("button");

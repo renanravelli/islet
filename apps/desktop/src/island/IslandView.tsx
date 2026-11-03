@@ -34,6 +34,8 @@ export interface IslandViewProps {
   session: MeetingSession | null;
   /** The speaker to show, held briefly by the caller so it does not flicker. */
   speaker: Speaker | null;
+  /** Who spoke last, shown (as such) while nobody is speaking. */
+  lastSpeaker?: Speaker | null;
   geometry: Geometry;
   now: number;
   /** For an ended session: how long the call lasted. */
@@ -113,11 +115,20 @@ export function IslandView(props: IslandViewProps) {
   );
 }
 
-function Avatar({ speaker, size }: { speaker: Speaker | null; size: number }) {
+function Avatar({
+  speaker,
+  size,
+  speaking = speaker !== null,
+}: {
+  speaker: Speaker | null;
+  size: number;
+  /** The green ring; off for the last speaker. */
+  speaking?: boolean;
+}) {
   const letters = initials(speaker?.display_name);
   return (
     <span
-      className={`avatar ${speaker ? "is-speaking" : ""}`}
+      className={`avatar ${speaking ? "is-speaking" : ""}`}
       style={{
         width: size,
         height: size,
@@ -258,7 +269,11 @@ function Compact(props: IslandViewProps) {
           <EndedLabel />
         ) : (
           <>
-            <Avatar speaker={props.speaker} size={20} />
+            <Avatar
+              speaker={props.speaker ?? props.lastSpeaker ?? null}
+              speaking={props.speaker !== null}
+              size={20}
+            />
             <Wave bars={WAVE.compact} active={props.speaker !== null} />
           </>
         )}
@@ -285,7 +300,11 @@ function Pill(props: IslandViewProps) {
           <EndedLabel />
         ) : (
           <>
-            <Avatar speaker={props.speaker} size={20} />
+            <Avatar
+              speaker={props.speaker ?? props.lastSpeaker ?? null}
+              speaking={props.speaker !== null}
+              size={20}
+            />
             <Wave bars={WAVE.pill} active={props.speaker !== null} />
           </>
         )}
@@ -335,7 +354,9 @@ function Expanded(props: IslandViewProps) {
   const t = useT();
   const session = props.session as MeetingSession;
   const speaker = props.speaker;
-  const name = speaker?.display_name ?? null;
+  // Nobody speaking: the last speaker, labelled as such, without the ring or a moving wave.
+  const shown = speaker ?? props.lastSpeaker ?? null;
+  const name = shown?.display_name ?? null;
   return (
     <div className="expanded">
       <TopStrip
@@ -359,11 +380,13 @@ function Expanded(props: IslandViewProps) {
       />
       <div className="speaking">
         <div className={`speaker-tile ${speaker ? "is-speaking" : ""}`} aria-hidden="true">
-          <Avatar speaker={speaker} size={44} />
+          <Avatar speaker={shown} speaking={speaker !== null} size={44} />
           {name && <span className="tile-name">{name}</span>}
         </div>
         <div className="speaking-text">
-          <span className="speaking-label">{t("island.speaking_now")}</span>
+          <span className="speaking-label">
+            {t(!speaker && shown ? "island.last_speaker" : "island.speaking_now")}
+          </span>
           <span className="speaking-name">
             {name && <span className="name">{name}</span>}
             <Wave bars={WAVE.expanded} active={speaker !== null} />
@@ -411,7 +434,7 @@ function Participants({ session }: { session: MeetingSession }) {
         <span className="avatar-stack" aria-hidden="true">
           {shown.map((p, i) => (
             // biome-ignore lint/suspicious/noArrayIndexKey: names may repeat or be hidden
-            <Avatar key={i} speaker={p} size={24} />
+            <Avatar key={i} speaker={p} speaking={false} size={24} />
           ))}
           {rest > 0 && <span className="avatar more">+{rest}</span>}
         </span>

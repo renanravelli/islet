@@ -4,7 +4,7 @@
 import type { AppInfo, AppSettings, Command, UiSnapshot } from "@islet/ui-types";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, on } from "../shared/api";
-import { useEndedDuration, useHeldSpeaker, useNow } from "./hooks";
+import { useEndedDuration, useHeldSpeaker, useLastSpeaker, useNow } from "./hooks";
 import { IslandView } from "./IslandView";
 import { contour, IDLE_COLLAPSE_MS, mode as modeOf, type UiState } from "./model";
 
@@ -28,6 +28,7 @@ export function Island({
   const [ui, setUi] = useState<UiState>({ expanded: false, alertDismissed: false });
   const mode = modeOf(session, ui, settings);
   const speaker = useHeldSpeaker(session);
+  const lastSpeaker = useLastSpeaker(session, speaker);
   const now = useNow(session?.status.phase === "active");
   const endedDuration = useEndedDuration(session);
   const idle = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -152,6 +153,7 @@ export function Island({
         mode={mode}
         session={session}
         speaker={speaker}
+        lastSpeaker={lastSpeaker}
         geometry={info.geometry}
         now={now}
         endedDuration={endedDuration}

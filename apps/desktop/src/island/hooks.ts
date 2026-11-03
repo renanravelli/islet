@@ -43,6 +43,29 @@ export function useHeldSpeaker(session: MeetingSession | null): Speaker | null {
   return current ?? held;
 }
 
+/**
+ * Who spoke last in this session, so the island is not left without a face when nobody is
+ * speaking. It is shown as the last speaker, never as speaking. A different session starts
+ * fresh.
+ */
+export function useLastSpeaker(
+  session: MeetingSession | null,
+  speaker: Speaker | null,
+): Speaker | null {
+  const sessionId = session ? `${session.key.provider}/${session.key.id}` : null;
+  const [last, setLast] = useState<{ id: string | null; speaker: Speaker | null }>({
+    id: sessionId,
+    speaker: null,
+  });
+  useEffect(() => {
+    setLast((prev) => {
+      if (prev.id !== sessionId) return { id: sessionId, speaker };
+      return speaker ? { id: sessionId, speaker } : prev;
+    });
+  }, [sessionId, speaker]);
+  return last.id === sessionId ? last.speaker : null;
+}
+
 /** For an ended session: the call's length, frozen when it ended. */
 export function useEndedDuration(session: MeetingSession | null): number | undefined {
   const frozen = useRef<{ id: string; ms: number } | null>(null);

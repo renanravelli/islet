@@ -436,6 +436,7 @@ All UI text comes from this dictionary. `{x}` marks an interpolation; `**…**` 
 | `island.expand`           | Expandir controles da reunião                                                | Expand meeting controls                                                 |
 | `island.collapse`         | Recolher a ilha                                                              | Collapse the island                                                     |
 | `island.speaking_now`     | Falando agora                                                                | Speaking now                                                            |
+| `island.last_speaker`     | Falou por último                                                             | Last speaker                                                            |
 | `island.participants`     | {n} na chamada                                                               | {n} in the call                                                         |
 | `island.you`              | Você                                                                         | You                                                                     |
 | `island.mic`              | Microfone                                                                    | Microphone                                                              |

@@ -32,7 +32,8 @@ const base: MeetingSession = {
 const notch: Geometry = { has_notch: true, notch_width: 186, top_inset: 32 };
 const noNotch: Geometry = { has_notch: false, notch_width: 0, top_inset: 25 };
 
-type Case = [string, Mode, Partial<MeetingSession>, Geometry, number];
+/** Label, mode, data, geometry, frame height and, optionally, who spoke last. */
+type Case = [string, Mode, Partial<MeetingSession>, Geometry, number, string?];
 
 /** The canvas board's rows, in its order and with its frame heights. */
 const CANVAS: Case[] = [
@@ -58,6 +59,15 @@ const CANVAS: Case[] = [
 
 /** States the canvas does not draw. */
 const EXTRA: Case[] = [
+  ["Nobody speaking, last speaker", "compact", { active_speaker: null }, notch, 96, "Bruno Lima"],
+  [
+    "Expanded, nobody speaking, last speaker",
+    "expanded",
+    { active_speaker: null },
+    notch,
+    300,
+    "Bruno Lima",
+  ],
   [
     "Degraded, nobody speaking",
     "compact",
@@ -96,7 +106,7 @@ const EXTRA: Case[] = [
 const locale = (new URLSearchParams(location.search).get("locale") as Locale) || "pt-BR";
 
 /** A frame like the canvas's: an 860 pt strip with the menu bar and the island at the top. */
-function Frame({ c: [label, mode, overrides, geometry, height] }: { c: Case }) {
+function Frame({ c: [label, mode, overrides, geometry, height, last] }: { c: Case }) {
   const session = { ...base, ...overrides };
   const pill = !geometry.has_notch;
   return (
@@ -135,6 +145,7 @@ function Frame({ c: [label, mode, overrides, geometry, height] }: { c: Case }) {
             mode={mode}
             session={session}
             speaker={session.active_speaker}
+            lastSpeaker={last ? { display_name: last } : null}
             geometry={geometry}
             now={now}
             endedDuration={mode === "ended" ? DURATION_MS : undefined}
