@@ -1,0 +1,316 @@
+/* The island and the pill are always black, in both themes, and draw no camera dot. */
+
+.island {
+  position: relative;
+  overflow: hidden;
+  background: var(--island-bg);
+  color: var(--island-text);
+  font-family: var(--font);
+}
+
+.island-content {
+  width: 100%;
+  height: 100%;
+}
+
+.compact {
+  all: unset;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+div.compact {
+  cursor: default;
+}
+.compact:focus-visible {
+  outline: 2px solid var(--island-primary);
+  outline-offset: -2px;
+}
+.ear {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 88px;
+  flex: none;
+  height: 100%;
+}
+.ear.left {
+  padding-left: 14px;
+}
+.ear.right {
+  padding-right: 14px;
+  justify-content: flex-end;
+}
+.island.pill .ear {
+  width: auto;
+  flex: 1;
+}
+.notch-gap {
+  flex: 1;
+}
+
+.avatar {
+  flex: none;
+  border-radius: 50%;
+  background: var(--island-control);
+  color: var(--island-text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.avatar.speaking {
+  box-shadow: 0 0 0 2px var(--island-speaking);
+}
+
+.wave {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  height: 12px;
+}
+.wave i {
+  width: 2px;
+  height: 3px;
+  border-radius: 1px;
+  background: var(--island-text-2);
+}
+.wave.active i {
+  background: var(--island-speaking);
+  animation: wave 0.9s ease-in-out infinite;
+}
+.wave.active i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.wave.active i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+.wave.active i:nth-child(4) {
+  animation-delay: 0.45s;
+}
+@keyframes wave {
+  0%,
+  100% {
+    height: 3px;
+  }
+  50% {
+    height: 12px;
+  }
+}
+
+.status-icon {
+  display: inline-flex;
+  color: var(--island-text);
+}
+.status-icon.danger {
+  color: var(--island-danger);
+}
+.status-icon.attention {
+  color: var(--island-attention);
+}
+.status-icon.unknown {
+  color: var(--island-text-2);
+}
+
+.timer {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--island-text);
+}
+.ended-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--island-text-2);
+}
+
+.degraded-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--island-attention);
+  flex: none;
+}
+
+/* Expanded: 560 wide, padding 0 20 18. */
+.expanded {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 0 20px 18px;
+}
+.top-strip {
+  display: flex;
+  align-items: center;
+  flex: none;
+}
+.top-strip .title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  color: var(--island-text-2);
+}
+.top-strip .notch-gap {
+  flex: none;
+}
+.top-right {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.collapse {
+  all: unset;
+  width: 24px;
+  height: 24px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--island-text-2);
+  cursor: pointer;
+}
+.collapse:hover,
+.collapse:focus-visible {
+  background: var(--island-control);
+  color: var(--island-text);
+}
+
+.speaking {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+.speaking-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.speaking-label {
+  font-size: 11px;
+  color: var(--island-text-2);
+}
+.speaking-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.participants {
+  font-size: 12px;
+  color: var(--island-text-2);
+}
+
+.controls {
+  display: flex;
+  justify-content: center;
+  gap: 28px;
+  margin-top: auto;
+}
+.control {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 56px;
+}
+.control-button {
+  all: unset;
+  width: 44px;
+  height: 44px;
+  border-radius: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--island-control);
+  color: var(--island-text);
+  cursor: pointer;
+}
+.control-button:focus-visible {
+  outline: 2px solid var(--island-primary);
+  outline-offset: 2px;
+}
+.control-button.look-off {
+  background: #ffffff;
+  color: #000000;
+}
+.control-button.look-raised {
+  background: var(--island-attention);
+  color: #000000;
+}
+.control-button.look-unknown {
+  color: var(--island-text-2);
+}
+.control-button.look-danger {
+  background: var(--island-danger);
+  color: #ffffff;
+}
+.control-label {
+  font-size: 11px;
+  color: var(--island-text-2);
+  white-space: nowrap;
+}
+
+/* Alert: 440 wide, amber outline and glow, inside the contour so it takes no extra clicks. */
+.island.mode-alert {
+  box-shadow:
+    inset 0 0 0 1.5px var(--island-attention),
+    inset 0 0 18px color-mix(in srgb, var(--island-attention) 35%, transparent);
+}
+.alert {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.alert-body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px 0 18px;
+}
+.alert-text {
+  flex: 1;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+.alert-button {
+  all: unset;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 15px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.alert-button.dismiss {
+  background: var(--island-control);
+  color: var(--island-text);
+}
+.alert-button.unmute {
+  background: var(--island-primary);
+  color: #ffffff;
+}
+.alert-button:focus-visible {
+  outline: 2px solid var(--island-text);
+  outline-offset: 2px;
+}
+
+/* Last: it overrides .top-strip .notch-gap for the pill. */
+.island.pill .compact .notch-gap {
+  display: none;
+}

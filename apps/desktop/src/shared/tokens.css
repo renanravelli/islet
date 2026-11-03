@@ -1,0 +1,120 @@
+/* Design tokens from docs/design/ui-spec.md, section 1. Windows follow the macOS appearance
+   live; the island's tokens never change with the theme. */
+
+:root {
+  color-scheme: light dark;
+  --bg-window: #ffffff;
+  --bg-content: #f7f7f8;
+  --bg-sidebar: #efeff2;
+  --bg-group: #ffffff;
+  --bg-subtle: #f2f2f4;
+  --bg-preview: #f5f5f7;
+  --bg-menubar: #e9e9ec;
+  --border: #e3e3e8;
+  --separator: #ececef;
+  --border-control: #c7c7cc;
+  --dot-inactive: #d1d1d6;
+  --text-primary: #1d1d1f;
+  --text-secondary: #48484a;
+  --text-tertiary: #6e6e73;
+  --accent-fill: #0b63ce;
+  --accent-text: #0b63ce;
+  --success-text: #1a7f37;
+  --success-bg: #e8f5ec;
+  --success-banner-text: #14532d;
+  --warning-bg: #fff1dc;
+  --warning-text: #8a4b00;
+  --disabled-bg: #e8e8ed;
+  --disabled-text: #8e8e93;
+  --switch-off-track: #e9e9eb;
+  --switch-off-ring: #8e8e93;
+  --keycap-shadow: #c7c7cc;
+
+  --island-bg: #000000;
+  --island-text: #ffffff;
+  --island-text-2: #a1a1a6;
+  --island-control: #2c2c2e;
+  --island-speaking: #32d74b;
+  --island-danger: #ff453a;
+  --island-attention: #ff9f0a;
+  --island-primary: #0b63ce;
+
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  font-family: var(--font);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-window: #1c1c1e;
+    --bg-content: #1c1c1e;
+    --bg-sidebar: #252527;
+    --bg-group: #2c2c2e;
+    --bg-subtle: #3a3a3c;
+    --bg-preview: #2a2a2c;
+    --bg-menubar: #2c2c2e;
+    --border: #3a3a3c;
+    --separator: #38383a;
+    --border-control: #545458;
+    --dot-inactive: #545458;
+    --text-primary: #f5f5f7;
+    --text-secondary: #d1d1d6;
+    --text-tertiary: #98989d;
+    --accent-text: #4c9bff;
+    --success-text: #30d158;
+    --success-bg: #1e3a27;
+    --success-banner-text: #b7f0c8;
+    --warning-bg: #3d2a0f;
+    --warning-text: #ffb340;
+    --disabled-bg: #3a3a3c;
+    --disabled-text: #7c7c80;
+    --switch-off-track: #3a3a3c;
+    --keycap-shadow: #1c1c1e;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: default;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* !important is the point here: reduced motion must win over every component's animation. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    /* biome-ignore lint/complexity/noImportantStyles: see above */
+    animation-duration: 0s !important;
+    /* biome-ignore lint/complexity/noImportantStyles: see above */
+    animation-iteration-count: 1 !important;
+    /* biome-ignore lint/complexity/noImportantStyles: see above */
+    transition-duration: 0s !important;
+  }
+}
+
+/* The island window itself is transparent: only the island's contour is drawn. */
+body.window-island,
+body.window-island #root {
+  background: transparent;
+  overflow: hidden;
+}

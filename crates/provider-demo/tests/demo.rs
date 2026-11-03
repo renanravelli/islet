@@ -185,3 +185,36 @@ async fn rejects_commands_for_another_session() {
         Err(CommandError::NoSession)
     );
 }
+
+#[tokio::test(start_paused = true)]
+async fn the_switch_ends_the_demo_and_restarts_it() {
+    let (provider, switch) = DemoProvider::switchable(joined_only(), false);
+    let handle = SessionManager::new(Timings::default())
+        .with_provider(Arc::new(provider))
+        .spawn();
+    let mut snapshot = handle.snapshot();
+    // Off: nothing plays.
+    sleep(Duration::from_secs(30)).await;
+    assert_eq!(snapshot.borrow_and_update().primary, None);
+
+    switch.set(true);
+    assert!(switch.is_on());
+    let first = next_primary(&mut snapshot).await;
+    assert_eq!(first.key.id, "demo-1");
+
+    switch.set(false);
+    assert_eq!(
+        next_primary(&mut snapshot).await.status,
+        SessionStatus::Ended {
+            reason: EndReason::Closed
+        }
+    );
+    assert_eq!(next(&mut snapshot).await.primary, None);
+    assert_eq!(
+        handle.execute(first.key, Command::ToggleMic).await,
+        Err(CommandError::NoSession)
+    );
+
+    switch.set(true);
+    assert_eq!(next_primary(&mut snapshot).await.key.id, "demo-2");
+}

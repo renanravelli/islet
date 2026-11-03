@@ -4,7 +4,7 @@
 //! [`Script::tour`] walks through every state the island can show. Commands work like a real
 //! provider: the change is reported only after a short "confirmation" delay.
 
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use islet_core::{
@@ -12,7 +12,7 @@ use islet_core::{
     Field, Health, Provider, ProviderDetail, ProviderId, SessionEvent, SessionState, Signals,
     Speaker, Toggle,
 };
-use tokio::sync::{mpsc, oneshot};
+use tokio::sync::{mpsc, oneshot, watch};
 use tokio::time::{Instant, sleep, sleep_until};
 
 pub const DEMO: ProviderId = ProviderId::from_static("demo");
@@ -111,6 +111,22 @@ pub struct DemoProvider {
     script: Script,
     requests: mpsc::UnboundedSender<Request>,
     inbox: Mutex<Option<mpsc::UnboundedReceiver<Request>>>,
+    switch: DemoSwitch,
+}
+
+/// Turns a [`DemoProvider`] on and off while it runs: the tray's "Modo demo".
+#[derive(Debug, Clone)]
+pub struct DemoSwitch(Arc<watch::Sender<bool>>);
+
+impl DemoSwitch {
+    /// Off ends the demo session and stops the script; on starts the script from the top.
+    pub fn set(&self, on: bool) {
+        self.0.send_replace(on);
+    }
+
+    pub fn is_on(&self) -> bool {
+        *self.0.borrow()
+    }
 }
 
 struct Request {
@@ -120,13 +136,22 @@ struct Request {
 }
 
 impl DemoProvider {
+    /// A demo that plays from the start.
     pub fn new(script: Script) -> Self {
+        Self::switchable(script, true).0
+    }
+
+    /// A demo that plays only while its switch is on.
+    pub fn switchable(script: Script, on: bool) -> (Self, DemoSwitch) {
         let (requests, inbox) = mpsc::unbounded_channel();
-        Self {
+        let switch = DemoSwitch(Arc::new(watch::channel(on).0));
+        let provider = Self {
             script,
             requests,
             inbox: Mutex::new(Some(inbox)),
-        }
+            switch: switch.clone(),
+        };
+        (provider, switch)
     }
 }
 
@@ -146,6 +171,7 @@ impl Provider for DemoProvider {
             let player = Player {
                 sink,
                 inbox,
+                on: self.switch.0.subscribe(),
                 session: None,
                 cycle: 0,
                 last_sent: Instant::now(),
@@ -171,6 +197,7 @@ impl Provider for DemoProvider {
 struct Player {
     sink: EventSink,
     inbox: mpsc::UnboundedReceiver<Request>,
+    on: watch::Receiver<bool>,
     session: Option<(String, SessionState)>,
     cycle: u32,
     last_sent: Instant,
@@ -179,31 +206,70 @@ struct Player {
 impl Player {
     async fn run(mut self, script: Script) {
         loop {
+            // Off: answer nothing but commands, which find no session.
+            while !*self.on.borrow_and_update() {
+                tokio::select! {
+                    changed = self.on.changed() => if changed.is_err() { return },
+                    Some(request) = self.inbox.recv() => {
+                        let _ = request.reply.send(Err(CommandError::NoSession));
+                    }
+                }
+            }
+            match self.play(&script).await {
+                Wait::Elapsed => {}
+                Wait::Stopped => return,
+                Wait::Off => {
+                    if let Some((id, _)) = self.session.take() {
+                        let _ = self.sink.send(SessionEvent::Ended {
+                            id,
+                            reason: EndReason::Closed,
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    /// Plays the script until it ends (forever if it repeats) or the switch turns off.
+    async fn play(&mut self, script: &Script) -> Wait {
+        loop {
             for step in &script.steps {
-                if !self.wait(step.after).await {
-                    return;
+                let outcome = self.wait(step.after).await;
+                if outcome != Wait::Elapsed {
+                    return outcome;
                 }
                 self.apply(step.change.clone());
             }
             if !script.repeat {
                 // Keep answering commands and sending heartbeats.
-                while self.wait(Duration::from_secs(3600)).await {}
-                return;
+                loop {
+                    let outcome = self.wait(Duration::from_secs(3600)).await;
+                    if outcome != Wait::Elapsed {
+                        return outcome;
+                    }
+                }
             }
         }
     }
 
-    /// Waits `duration` while answering commands and sending heartbeats. Returns `false` once
-    /// the manager has stopped.
-    async fn wait(&mut self, duration: Duration) -> bool {
+    /// Waits `duration` while answering commands and sending heartbeats.
+    async fn wait(&mut self, duration: Duration) -> Wait {
         let deadline = Instant::now() + duration;
         loop {
             let heartbeat = self.last_sent + HEARTBEAT;
             tokio::select! {
-                () = sleep_until(deadline) => return true,
+                () = sleep_until(deadline) => return Wait::Elapsed,
+                changed = self.on.changed() => {
+                    if changed.is_err() {
+                        return Wait::Stopped;
+                    }
+                    if !*self.on.borrow_and_update() {
+                        return Wait::Off;
+                    }
+                }
                 () = sleep_until(heartbeat), if self.session.is_some() => {
                     if !self.send_update() {
-                        return false;
+                        return Wait::Stopped;
                     }
                 }
                 Some(request) = self.inbox.recv() => {
@@ -301,6 +367,15 @@ impl Player {
             })
             .is_ok()
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Wait {
+    Elapsed,
+    /// The switch turned off.
+    Off,
+    /// The manager has stopped.
+    Stopped,
 }
 
 fn flip(toggle: Toggle) -> Toggle {

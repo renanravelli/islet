@@ -74,6 +74,9 @@ Rust crate packages are prefixed `islet-` so none is named `core`.
   `islet-provider-demo`, `islet-native-host`) inherit `unsafe_code = "forbid"` from the workspace.
 - `apps/desktop/src-tauri` declares its own `[lints]` with `unsafe_code = "deny"` and allows it
   only in `src/platform/macos.rs` (`#![allow(unsafe_code)]`). Nowhere else.
+  `tauri-nspanel`'s `tauri_panel!` expands to `unsafe` Objective-C calls, so the island panel is
+  defined there too. The AppKit calls written by hand (screen geometry, preferred language) are
+  safe in objc2 0.6 and need no `unsafe`.
 - Every `unsafe` block carries a `// SAFETY:` comment explaining why it is sound.
   `clippy::undocumented_unsafe_blocks` is enabled in every crate and fails the build without it.
 
@@ -97,8 +100,20 @@ pnpm build                                           # release extension in exte
 pnpm --filter @islet/extension build:dev             # development extension, with isletDebug
 ```
 
-The extension loads from `extension/dist` (`docs/install-extension.md`). Commands for the desktop
-app are added in Phase 5.
+The extension loads from `extension/dist` (`docs/install-extension.md`).
+
+```sh
+pnpm --filter @islet/desktop dev:app                 # the app with hot reload (also builds the host)
+./target/debug/islet --demo                          # the app in demo mode, after a build
+pnpm --filter @islet/desktop strings                 # regenerate the UI strings from the UI spec
+pnpm --filter @islet/desktop build:app               # Islet.app with the native host inside
+pnpm --filter @islet/desktop build:app:universal     # the same, universal (lipo'd sidecar)
+```
+
+`http://localhost:1420/gallery.html?locale=pt-BR` on the dev server shows every island state
+with synthetic data (development only; not in the build). Outside Tauri the windows use an
+in-memory stand-in for the shell (`src/shared/api.ts`); `?step=` and `?pane=` open a given
+onboarding step or settings pane.
 
 ## Extension
 
@@ -178,6 +193,15 @@ and every UI string. Where it and the design canvas differ, the spec wins.
    text in components.
 4. **Chat is hidden in v0.1.** The UI renders only the controls the provider declares, and no
    provider declares chat.
+5. **Strings are generated, not copied:** `apps/desktop/src/i18n/strings.json` comes from
+   section 6 of the spec (`pnpm --filter @islet/desktop strings`); tests fail if it drifts or if
+   a component has text outside it. Product and language names, which are not copy, live in
+   `src/shared/meet.ts`.
+6. **The island window is exactly the island's contour** (`island_layout`): no invisible area
+   takes clicks. The active speaker is held 2 s after Meet's indicator goes off, because it
+   follows the voice's level; the speaker strategy only sees remote participants so far.
+7. **Onboarding and settings windows open hidden** with the theme's background and show once
+   the page has painted (`window_ready`), so dark mode never flashes white.
 
 ## Pending by phase
 
@@ -208,19 +232,12 @@ Every open item lives here, not in an assistant's memory. Remove an item when it
   - **Later:** the English round; until then no key lists `en` in `verifiedIn`.
   - **After Phase 5:** check that `focus_tab` brings Chrome to the front from another app on
     macOS, and that a connection from another macOS user is refused by the bridge.
-- **Phase 5 (desktop app):**
-  - Apply the unsafe rules for `src-tauri` (see "Unsafe code").
-  - The manifest repair routine from Phase 3 (`islet_bridge::manifest::ensure_chrome_manifest`) is
-    the one routine behind all three entry points: every app start, step 2 of the onboarding
-    (when the step mounts) and the "Reinstalar ponte do Chrome" button. The binary path changes
-    when the app is moved, e.g. to `/Applications`.
-  - Glue the bridge socket server to `islet-provider-meet`.
-  - "Saúde do adaptador" shows `Health::Degraded.provider_details` as they come (the failing
-    selector keys); the diagnostics include them too.
-  - The onboarding's "Não conectou? Ver solução de problemas" opens
-    `docs/install-extension.md#troubleshooting` on GitHub.
-  - The app's own logs go to `islet_bridge::path::log_dir()` (the native host already writes
-    there), so "Abrir pasta" shows both.
+- **Phase 5, to check by hand on the Mac (owner):** the acceptance list in section 7 of
+  `docs/design/ui-spec.md`, in the real app: light/dark switching while a window is open, no
+  white flash, the tray icon tinting, VoiceOver on every control, the island over full-screen
+  apps and on every Space, the pill on an external display without a notch, ⌃⌥I and ⌃⌥M, Esc /
+  click outside / 6 s collapse, launch at login, and the app moved to `/Applications` (its
+  manifest is repaired on the next start).
 - **Phase 6 (docs):**
   - `CONTRIBUTING.md`: ways to install pnpm (Homebrew, corepack, npm).
   - Biome formats Markdown. If it rewrites the README's centered HTML header, the badges or the
@@ -228,8 +245,11 @@ Every open item lives here, not in an assistant's memory. Remove an item when it
   - Threat model: the development extension ID can be reproduced by anyone from the public key.
   - `docs/testing/manual-checklist.md`, including the Meet section `calibration.md` points to.
 - **Phase 7 (CI):**
-  - After `cargo test`, fail if `packages/protocol-ts` (and later `packages/ui-types`) changed
+  - After `cargo test`, fail if `packages/protocol-ts` or `packages/ui-types` changed
     (`git diff --exit-code`).
+  - Build the desktop app only on macOS (`pnpm --filter @islet/desktop build:app:universal`);
+    the portable crates' matrix must use `-p`, since `islet-desktop` needs Tauri's system
+    libraries on Linux.
   - Run `pnpm test` (which includes the fixture sanitization test) and `pnpm build` (which
     includes the release build check) on every push.
   - The release attaches `islet-extension-<version>.zip` (built `extension/dist`), as

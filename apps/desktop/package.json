@@ -1,0 +1,36 @@
+{
+  "name": "@islet/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The Islet desktop app: Tauri 2 shell and React UI.",
+  "license": "MIT OR Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "strings": "node scripts/gen-strings.mjs",
+    "tauri": "tauri",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "build:app": "bash ../../scripts/build-sidecar.sh && tauri build --config src-tauri/tauri.bundle.json",
+    "build:app:universal": "bash ../../scripts/build-sidecar.sh --universal && tauri build --target universal-apple-darwin --config src-tauri/tauri.bundle.json",
+    "dev:app": "cargo build -q -p islet-native-host && tauri dev"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "2.12.4",
+    "motion": "14.9.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "@islet/ui-types": "workspace:*",
+    "@tauri-apps/cli": "2.12.4",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.2.1",
+    "jsdom": "30.1.3",
+    "typescript": "~7.0.2",
+    "vite": "8.3.5",
+    "vitest": "5.1.0"
+  }
+}

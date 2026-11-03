@@ -1,0 +1,227 @@
+/* Onboarding window: 720×520, titlebar overlay, footer 76 pt (ui-spec section 3). */
+
+.onboarding {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+.onb-content {
+  flex: 1;
+  padding: 44px 56px 0;
+  overflow: hidden;
+}
+.onb-footer {
+  height: 76px;
+  flex: none;
+  border-top: 1px solid var(--separator);
+  padding: 0 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.onb-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.mark {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.mark-pill {
+  width: 40px;
+  height: 22px;
+  border-radius: 11px;
+  background: #000000;
+  display: inline-flex;
+  align-items: center;
+  padding-left: 6px;
+}
+.mark-pill::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--island-speaking);
+}
+.wordmark {
+  font: 700 15px var(--font);
+}
+.onb-title {
+  margin-top: 24px;
+  font: 700 26px / 1.2 var(--font);
+}
+.onb-title.compact-top {
+  margin-top: 8px;
+}
+.onb-body {
+  margin-top: 10px;
+  font: 15px / 1.55 var(--font);
+  color: var(--text-secondary);
+  max-width: 560px;
+}
+
+.preview-card {
+  position: relative;
+  margin-top: 22px;
+  height: 124px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--bg-preview);
+  overflow: hidden;
+}
+.preview-menubar {
+  height: 37px;
+  background: var(--bg-menubar);
+}
+.preview-island {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.preview-caption {
+  position: absolute;
+  left: 14px;
+  bottom: 10px;
+  font: 12px var(--font);
+  color: var(--text-tertiary);
+}
+.privacy-line,
+.menubar-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  font: 13px / 1.4 var(--font);
+  color: var(--text-secondary);
+}
+
+.onb-group {
+  margin-top: 20px;
+}
+.ok-text {
+  font: 600 13px var(--font);
+  color: var(--success-text);
+  padding-right: 8px;
+}
+.waiting-text {
+  font: 13px var(--font);
+  color: var(--text-secondary);
+  padding-right: 8px;
+}
+.number-badge {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--bg-subtle);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font: 600 13px var(--font);
+}
+.troubleshoot {
+  display: block;
+  margin-left: -10px;
+}
+.success-banner {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--success-bg);
+  color: var(--success-banner-text);
+  font: 13px / 1.45 var(--font);
+}
+.note {
+  margin-top: 14px;
+  font: 12px / 1.45 var(--font);
+  color: var(--text-tertiary);
+}
+
+.pip-columns {
+  display: flex;
+  gap: 24px;
+  margin-top: 20px;
+}
+.pip-steps {
+  flex: 1;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.pip-steps li {
+  display: flex;
+  gap: 12px;
+  font: 14px / 1.45 var(--font);
+  color: var(--text-secondary);
+}
+.pip-number {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--accent-fill);
+  color: #ffffff;
+  font: 700 13px / 26px var(--font);
+  text-align: center;
+}
+.pip-illustration {
+  width: 250px;
+  flex: none;
+  padding: 14px;
+  border-radius: 12px;
+  background: var(--bg-preview);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pip-label {
+  font: 600 12px var(--font);
+  color: var(--text-secondary);
+}
+.pip-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--accent-fill);
+  color: #ffffff;
+  font: 600 12px var(--font);
+}
+.pip-bar {
+  height: 10px;
+  border-radius: 5px;
+  background: var(--border);
+}
+.pip-bar.short {
+  width: 60%;
+}
+.tip {
+  display: flex;
+  gap: 8px;
+  margin-top: 18px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--bg-preview);
+  font: 12px / 1.5 var(--font);
+  color: var(--text-secondary);
+}
+.tip svg {
+  flex: none;
+  margin-top: 1px;
+}
+
+.done-circle {
+  margin-top: 8px;
+}
+.keycap-column {
+  width: 96px;
+  display: inline-flex;
+  justify-content: flex-end;
+  padding-right: 8px;
+}

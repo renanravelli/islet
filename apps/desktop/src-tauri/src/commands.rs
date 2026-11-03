@@ -1,0 +1,250 @@
+//! Commands the UI invokes, and the events the shell emits to every window:
+//! `snapshot` (UiSnapshot), `preview` (the onboarding's demo UiSnapshot), `settings`
+//! (AppSettings) and `app-info` (AppInfo).
+
+use std::sync::Arc;
+
+use islet_core::{
+    Command, CommandError, SessionKey, SessionManager, Settings, Timings, UiSnapshot,
+};
+use islet_provider_demo::{DemoProvider, Script};
+use tauri::{AppHandle, Emitter, Manager, State, WebviewWindow};
+use tauri_plugin_autostart::ManagerExt as _;
+
+use crate::bridge;
+use crate::model::{AppInfo, AppSettings, BridgeState, Geometry, IslandLayout, Link};
+use crate::platform;
+use crate::state::{AppState, lock};
+use crate::{tray, windows};
+
+pub fn info(app: &AppHandle) -> AppInfo {
+    let state = app.state::<AppState>();
+    let anchor = *lock(&state.anchor);
+    AppInfo {
+        version: app.package_info().version.to_string(),
+        system_language: state.system_language.clone(),
+        geometry: Geometry {
+            has_notch: anchor.is_some_and(|a| a.has_notch),
+            notch_width: anchor.map_or(0.0, |a| a.notch_width),
+            top_inset: anchor.map_or(32.0, |a| a.top_inset),
+        },
+        shortcuts: *lock(&state.shortcuts),
+        bridge: lock(&state.bridge).clone(),
+        demo: state.demo.is_on(),
+    }
+}
+
+pub fn emit_info(app: &AppHandle) {
+    let _ = app.emit("app-info", info(app));
+}
+
+#[tauri::command]
+pub fn app_info(app: AppHandle) -> AppInfo {
+    info(&app)
+}
+
+#[tauri::command]
+pub fn snapshot(state: State<'_, AppState>) -> UiSnapshot {
+    state.sessions.snapshot().borrow().clone()
+}
+
+/// The onboarding's live preview: its own demo, independent of real calls.
+#[tauri::command]
+pub fn preview_snapshot(app: AppHandle) -> UiSnapshot {
+    let state = app.state::<AppState>();
+    let handle = state.preview.get_or_init(|| {
+        let handle = tauri::async_runtime::block_on(async {
+            SessionManager::new(Timings::default())
+                .with_provider(Arc::new(DemoProvider::new(Script::tour())))
+                .spawn()
+        });
+        let mut updates = handle.snapshot();
+        let app = app.clone();
+        tauri::async_runtime::spawn(async move {
+            while updates.changed().await.is_ok() {
+                let snapshot = updates.borrow_and_update().clone();
+                let _ = app.emit_to(windows::ONBOARDING, "preview", snapshot);
+            }
+        });
+        handle
+    });
+    handle.snapshot().borrow().clone()
+}
+
+#[tauri::command]
+pub async fn execute(
+    state: State<'_, AppState>,
+    key: SessionKey,
+    command: Command,
+) -> Result<(), CommandError> {
+    let sessions = state.sessions.clone();
+    sessions.execute(key, command).await
+}
+
+#[tauri::command]
+pub fn settings(state: State<'_, AppState>) -> AppSettings {
+    lock(&state.settings).clone()
+}
+
+#[tauri::command]
+pub fn set_settings(app: AppHandle, settings: AppSettings) -> AppSettings {
+    let state = app.state::<AppState>();
+    *lock(&state.settings) = settings.clone();
+    if let Err(error) = state.settings_file.save(&settings) {
+        tracing::warn!(%error, "cannot save the settings");
+    }
+    state.sessions.set_settings(Settings {
+        show_participant_names: settings.show_participant_names,
+    });
+    let _ = app.emit("settings", &settings);
+    tray::refresh(&app);
+    settings
+}
+
+#[tauri::command]
+pub fn finish_onboarding(app: AppHandle) {
+    let mut settings = lock(&app.state::<AppState>().settings).clone();
+    settings.onboarding_completed_at = Some(now_iso8601());
+    set_settings(app.clone(), settings);
+    if let Some(window) = app.get_webview_window(windows::ONBOARDING) {
+        let _ = window.close();
+    }
+}
+
+#[tauri::command]
+pub fn island_layout(app: AppHandle, layout: IslandLayout) {
+    let handle = app.clone();
+    let _ = app.run_on_main_thread(move || windows::place(&handle, layout));
+}
+
+/// A window's page has painted: show it (see `windows`).
+#[tauri::command]
+pub fn window_ready(window: WebviewWindow) {
+    if window.label() != windows::ISLAND {
+        let _ = window.show();
+        let _ = window.set_focus();
+    }
+}
+
+#[tauri::command]
+pub fn open_window(app: AppHandle, label: String) {
+    if label == windows::ONBOARDING || label == windows::SETTINGS {
+        windows::open(&app, &label);
+    }
+}
+
+#[tauri::command]
+pub fn repair_bridge(app: AppHandle) -> BridgeState {
+    let result = bridge::repair_manifest();
+    *lock(&app.state::<AppState>().bridge) = result.clone();
+    emit_info(&app);
+    result
+}
+
+#[tauri::command]
+pub fn autostart(app: AppHandle) -> bool {
+    app.autolaunch().is_enabled().unwrap_or(false)
+}
+
+/// Turns launch at login on or off and returns the real state afterwards.
+#[tauri::command]
+pub fn set_autostart(app: AppHandle, on: bool) -> Result<bool, String> {
+    let launcher = app.autolaunch();
+    let result = if on {
+        launcher.enable()
+    } else {
+        launcher.disable()
+    };
+    result.map_err(|error| {
+        tracing::warn!(%error, "cannot change launch at login");
+        "launch at login could not be changed".to_owned()
+    })?;
+    Ok(launcher.is_enabled().unwrap_or(on))
+}
+
+/// The redacted diagnostics for "Copy diagnostics": no names, titles or meeting codes.
+#[tauri::command]
+pub async fn diagnostics(app: AppHandle) -> String {
+    let state = app.state::<AppState>();
+    let core = state.sessions.diagnostics().await;
+    let info = info(&app);
+    let bridge = match &info.bridge {
+        BridgeState::Unknown => "unknown".to_owned(),
+        BridgeState::Ready => "ready".to_owned(),
+        BridgeState::Error { summary } => format!("error: {summary}"),
+    };
+    let mut text = format!(
+        "Islet {} ({} {})\nnotch: {}\nbridge manifest: {bridge}\nshortcuts: ⌃⌥I {}, ⌃⌥M {}\ndemo: {}\n",
+        info.version,
+        std::env::consts::OS,
+        std::env::consts::ARCH,
+        if info.geometry.has_notch { "yes" } else { "no" },
+        if info.shortcuts.toggle_island {
+            "ok"
+        } else {
+            "unavailable"
+        },
+        if info.shortcuts.toggle_mic {
+            "ok"
+        } else {
+            "unavailable"
+        },
+        if info.demo { "on" } else { "off" },
+    );
+    match core {
+        Some(core) => text.push_str(&core.to_string()),
+        None => text.push_str("session manager: stopped\n"),
+    }
+    text
+}
+
+#[tauri::command]
+pub fn open_link(link: Link) {
+    if let Err(error) = platform::open(link.url()) {
+        tracing::warn!(%error, "cannot open a link");
+    }
+}
+
+#[tauri::command]
+pub fn open_logs() {
+    if let Some(dir) = islet_bridge::path::log_dir() {
+        let _ = std::fs::create_dir_all(&dir);
+        if let Err(error) = platform::open(&dir.to_string_lossy()) {
+            tracing::warn!(%error, "cannot open the logs folder");
+        }
+    }
+}
+
+/// UTC, to the second, without a date library.
+fn now_iso8601() -> String {
+    let secs = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |d| d.as_secs());
+    let (days, rem) = (secs / 86_400, secs % 86_400);
+    // Civil date from days since 1970-01-01 (Howard Hinnant's algorithm).
+    let z = days as i64 + 719_468;
+    let era = z.div_euclid(146_097);
+    let doe = z.rem_euclid(146_097);
+    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let day = doy - (153 * mp + 2) / 5 + 1;
+    let month = if mp < 10 { mp + 3 } else { mp - 9 };
+    let year = yoe + era * 400 + i64::from(month <= 2);
+    format!(
+        "{year:04}-{month:02}-{day:02}T{:02}:{:02}:{:02}Z",
+        rem / 3600,
+        rem % 3600 / 60,
+        rem % 60
+    )
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn formats_utc_timestamps() {
+        let stamp = super::now_iso8601();
+        assert_eq!(stamp.len(), 20, "{stamp}");
+        assert!(stamp.starts_with("20") && stamp.ends_with('Z'), "{stamp}");
+    }
+}

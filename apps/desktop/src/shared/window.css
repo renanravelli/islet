@@ -1,0 +1,67 @@
+/* Regular windows (onboarding, settings): follow the macOS appearance. */
+
+body.window-onboarding {
+  background: var(--bg-window);
+  color: var(--text-primary);
+}
+body.window-settings {
+  background: var(--bg-content);
+  color: var(--text-primary);
+}
+
+/* The native titlebar overlay: let the window be dragged by its top strip. */
+.titlebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+a {
+  color: var(--accent-text);
+}
+.link-button {
+  all: unset;
+  color: var(--accent-text);
+  cursor: pointer;
+  text-decoration: underline;
+}
+.link-button:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--accent-fill) 55%, transparent);
+  outline-offset: 2px;
+}
+
+.mini-pill {
+  display: inline-flex;
+  align-items: center;
+  width: 30px;
+  height: 16px;
+  border-radius: 8px;
+  background: #000000;
+  padding-left: 4px;
+  flex: none;
+}
+.mini-pill::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--island-speaking);
+}
+
+select {
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border-control);
+  background: var(--bg-group);
+  color: var(--text-primary);
+  font: 13px var(--font);
+}
