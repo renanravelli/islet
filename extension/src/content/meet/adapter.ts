@@ -23,6 +23,7 @@ const CONFIRM_POLL_MS = 50;
 const MAX_TEXT = 200;
 
 const MEETING_CODE = /^\/([a-z]{3}-[a-z]{4}-[a-z]{3})(?:[/?#]|$)/;
+const MEETING_CODE_TEXT = /^[a-z]{3}-[a-z]{4}-[a-z]{3}$/i;
 
 const TOGGLES = [
   { action: "toggle_mic", key: "micButton", field: "mic" },
@@ -78,8 +79,10 @@ export class MeetAdapter {
     if (leave) capabilities.push("leave");
     capabilities.push("focus_tab");
 
-    const title = text(this.find("meetingTitle"));
-    if (title === undefined) fail("meetingTitle");
+    // In an instant meeting the title slot shows the meeting code: that is not a title.
+    const shown = text(this.find("meetingTitle"));
+    const title = shown !== undefined && MEETING_CODE_TEXT.test(shown) ? undefined : shown;
+    if (shown === undefined) fail("meetingTitle");
 
     let activeSpeaker: string | undefined;
     const tile = this.find("activeSpeaker");
@@ -89,7 +92,10 @@ export class MeetAdapter {
     }
 
     const count = this.find("participantCount");
-    const participants = count ? firstNumber(count) : undefined;
+    const countText = count
+      ? (resolve(count, this.registry.keys.participantCount.count ?? []) ?? count)
+      : null;
+    const participants = countText ? firstNumber(countText) : undefined;
     if (participants === undefined) fail("participantCount");
 
     const degraded: DegradedReason[] = [...failed].map((key) => DEGRADED_REASON[key]);

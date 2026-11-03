@@ -1,20 +1,23 @@
 {
-  "$comment": "Every DOM dependency of the Meet adapter (docs/adr/0004). NOT CALIBRATED: the strategies are educated guesses from Meet's known conventions and have not been checked against a real Google Meet call, so all are verified=false. Follow docs/meet-adapter/calibration.md to verify or fix them. Strategies are tried in order; regexes are case-insensitive and every locale is tried.",
-  "version": 1,
+  "$comment": "Every DOM dependency of the Meet adapter (docs/adr/0004). Strategies are tried in order; regexes are case-insensitive and every locale is tried. A key is verified only when it was confirmed in a real call; verifiedIn lists the Meet languages it was confirmed in. jsname/jscontroller values come from the owner's inspection of a real pt-BR call on 2026-11-03; Google can rename them, so each key keeps a label-based fallback. Unverified strategies are educated guesses. See docs/meet-adapter/calibration.md.",
+  "version": 2,
   "updated": "2026-11-03",
   "keys": {
     "leaveButton": {
-      "verified": false,
+      "verified": true,
+      "verifiedIn": ["pt-BR"],
       "required": true,
       "strategies": [
+        { "css": "[jsname='CQylAd']" },
         { "ariaLabel": { "en": "^leave call", "pt-BR": "^sair da chamada" }, "css": "button" }
       ]
     },
     "micButton": {
-      "verified": false,
+      "verified": true,
+      "verifiedIn": ["pt-BR"],
       "required": true,
       "strategies": [
-        { "css": "button[data-is-muted][aria-label*='icrophone' i]" },
+        { "css": "[jsname='hw0c9'][data-is-muted]" },
         {
           "ariaLabel": {
             "en": "^turn (on|off) microphone",
@@ -34,10 +37,11 @@
       ]
     },
     "camButton": {
-      "verified": false,
+      "verified": true,
+      "verifiedIn": ["pt-BR"],
       "required": true,
       "strategies": [
-        { "css": "button[data-is-muted][aria-label*='camera' i]" },
+        { "css": "[jsname='psRWwc'][data-is-muted]" },
         {
           "ariaLabel": {
             "en": "^turn (on|off) camera",
@@ -57,9 +61,11 @@
       ]
     },
     "handButton": {
+      "$comment": "Found by jsname in a real call; how it exposes its state is not confirmed yet.",
       "verified": false,
       "required": true,
       "strategies": [
+        { "css": "[jsname='FpSaz']" },
         {
           "ariaLabel": {
             "en": "^(raise|lower) hand",
@@ -85,11 +91,17 @@
       "name": [{ "css": "[data-self-name]" }, { "css": "[data-participant-name]" }]
     },
     "participantCount": {
+      "$comment": "The top bar's People button, found by hand in a real call; not confirmed through the adapter yet. span[data-avatar-count] also exists but may count only the avatars shown, so it is not used; the calibration report compares both.",
       "verified": false,
       "required": true,
       "strategies": [
+        {
+          "css": "div[role='button'][jsname='ocqpFe']",
+          "labelledBy": { "en": "^people\\b", "pt-BR": "^pessoas\\b" }
+        },
         { "ariaLabel": { "en": "^show everyone", "pt-BR": "^mostrar todos" }, "css": "button" }
-      ]
+      ],
+      "count": [{ "css": ".fs3avc" }]
     },
     "mutedSpeakingNotice": {
       "verified": false,
@@ -105,9 +117,10 @@
       ]
     },
     "meetingTitle": {
+      "$comment": "Found by hand in a real call; not confirmed through the adapter yet.",
       "verified": false,
       "required": false,
-      "strategies": [{ "attribute": { "name": "data-meeting-title" } }]
+      "strategies": [{ "css": "div[jsname='NeC6gb'][jscontroller='yEvoid']" }]
     }
   }
 }

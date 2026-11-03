@@ -120,13 +120,18 @@ describe("protocol fixtures", () => {
 describe("selectors.json", () => {
   const keys = Object.keys(DEGRADED_REASON) as SelectorKey[];
 
-  it("defines every key, none verified yet", () => {
+  it("defines every key, verified only with the languages it was confirmed in", () => {
     expect(Object.keys(SELECTORS.keys).sort()).toEqual([...keys].sort());
     for (const key of keys) {
-      expect(SELECTORS.keys[key].verified, key).toBe(false);
-      expect(SELECTORS.keys[key].strategies.length, key).toBeGreaterThan(0);
+      const entry = SELECTORS.keys[key];
+      expect(entry.strategies.length, key).toBeGreaterThan(0);
+      const locales = entry.verifiedIn ?? [];
+      expect(entry.verified, `${key}: verified needs verifiedIn, and only then`).toBe(
+        locales.length > 0,
+      );
+      for (const locale of locales) expect(["en", "pt-BR"], key).toContain(locale);
     }
-    expect(SELECTORS.version).toBe(1);
+    expect(Number.isInteger(SELECTORS.version) && SELECTORS.version >= 1).toBe(true);
     expect(SELECTORS.updated).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 

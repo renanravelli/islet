@@ -16,6 +16,8 @@ function files(dir) {
 const FORBIDDEN = [
   ["isletDebug", /isletDebug/],
   ["__ISLET_DEBUG__", /__ISLET_DEBUG__/],
+  ["the calibration runner", /calibration-report|meet-real-|isletContinue/],
+  ["the snapshot code", /calibration snapshot/],
   ["fetch", /\bfetch\s*\(/],
   ["XMLHttpRequest", /XMLHttpRequest/],
   ["WebSocket", /WebSocket/],

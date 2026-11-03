@@ -1,12 +1,19 @@
-# Calibration session: script
+# Calibration session
 
-A step-by-step for one calibration call, about 30 minutes. It produces the snapshots and notes
-that [calibration.md](calibration.md) turns into verified selectors. You need a Mac with Chrome
-and an iPhone signed in to a second Google account (the Meet app or Safari).
+One calibration call, about 20 minutes, in **Português (Brasil)**. It produces the snapshots,
+readings and report that [calibration.md](calibration.md) turns into verified selectors. The
+English round is pending: until it is done, keys are verified for pt-BR only.
+
+You need a Mac with Chrome and an iPhone signed in to a second Google account (the Meet app or
+Safari). The **calibration runner** does everything on the Mac and asks you only for what is
+physical: joining from the iPhone, talking, raising a hand. Its steps are data in
+`extension/src/debug/steps.ts`; this page describes the same steps, and a test fails if the two
+diverge.
 
 ## Before the call
 
-1. Build the **development** extension, which exposes `isletDebug` (release builds do not):
+1. Build the **development** extension, which has `isletDebug` and the runner (release builds
+   do not):
 
    ```sh
    pnpm install
@@ -16,128 +23,132 @@ and an iPhone signed in to a second Google account (the Meet app or Safari).
    Load or reload `extension/dist` in `chrome://extensions` ([install guide](../install-extension.md)).
 2. Create `extension/test/.private-names.txt` (git-ignored) with one name per line: yours, the
    iPhone account's and anyone else who may appear. The fixture test uses it to catch leaks.
-3. Set your Google Account language to **Português (Brasil)** for the first round.
-4. Keep `extension/scripts/capture-snapshot.js` open, ready to copy.
-5. Start a notes file, `calibration-notes.md`, outside the repository.
+3. Set your Google Account language to Português (Brasil). Meet follows it.
+4. **Downloads:** the runner saves about 25 files. On the first ones, Chrome asks whether
+   meet.google.com may **download multiple files**: allow it. You can take the permission back
+   afterwards in `chrome://settings/content/automaticDownloads`.
 
-**How to capture**, at every step that asks for one:
+## Run the session
 
-1. On the Meet tab, open DevTools (`⌥⌘I`) → Console, context **top**.
-2. Paste the whole `capture-snapshot.js` and press Enter. It copies the page at once.
-3. Type the names to redact (the same as in `.private-names.txt`), comma separated.
-4. Read the summary in the console, then confirm to save the file.
-5. Rename the file as the step says: `meet-real-<step>.<locale>.html`, with locale `pt-BR` in
-   the first round and `en` in the second.
-6. Next to it, write `meet-real-<step>.<locale>.expected.json` with what the page showed (the
-   step gives it).
+1. On the Mac, open `meet.new` and stop at the pre-join screen.
+2. Open DevTools (`⌥⌘I`) → Console, and set the context menu at the top (it says `top`) to
+   **Islet**, the extension's isolated world.
+3. Paste the whole `extension/scripts/calibration-runner.js` and press Enter. It asks once for
+   the names to redact (the same as in `.private-names.txt`), and detects the language from the
+   page.
+4. Follow the console. It shows **one instruction at a time**, prefixed `Islet ▸`, and waits
+   until it sees the result on the page. Nothing is drawn on the page itself, so nothing extra
+   ends up in the snapshots.
+   - If the page shows what was asked but the runner does not move on (a selector cannot see
+     it yet), run `isletContinue()`.
+   - If nothing happens, it gives up after the step's timeout and moves on. Both cases are in
+     the report.
+5. Leaving may reload the page, which stops the runner. If it does, paste the runner again and
+   run `runCalibration("left")` on the page shown after leaving.
 
-**How to check**, at every step that says `isletDebug`: switch the Console context to **Islet**
-and run the command. `isletDebug.find("<key>")` returns the element a key resolves to;
-hovering it in the Console highlights it on the page.
+Other entries, after pasting the runner once: `runCalibration("lobby")` on a pre-join screen,
+when the session started inside a call; `runCalibration("<step>")` to redo one step
+(`isletDebug.steps` lists them).
 
-## Round 1: Português (Brasil)
+**What it saves** (each snapshot goes through the same anonymization as the manual capture,
+with its summary printed in the console):
+
+- per captured step: `meet-real-<step>.<locale>.html`, `.expected.json` (what the step expects)
+  and `.observed.json` (what the adapter read, with names, the title and the meeting code
+  replaced);
+- `calibration-report.<locale>.json` before leaving and `calibration-report.<locale>.after-leave.json`
+  at the end (or `calibration-report.<locale>.<step>.json` for a single entry): expected against
+  observed per step, failed keys, where each key resolved (tag, role, jsname and the data-*
+  attributes selectors use; no text), every command with its result and time, waits and
+  measurements.
+
+## The steps
 
 ### 1. Lobby
 
-On the Mac, open `meet.new` and stop at the pre-join screen.
-
-- **Capture:** `lobby`. Expected: `{ "inCall": false }`.
-- **Check:** `isletDebug.inCall()` is `false`.
+- **Snapshot:** `meet-real-lobby.<locale>.html`, only when the session starts on the pre-join
+  screen.
+- **Expected:** `{"inCall":false}`
 
 ### 2. Both in the call
 
-Join on the Mac with the **mic on and the camera off**. Join from the iPhone with the meeting
-code and admit it.
+- **You:** "Join the call on the Mac." Then the runner sets mic on, camera off, hand down, and
+  asks: "Join from the iPhone with the meeting code, then admit it on the Mac."
+- **It waits for:** the participant count to read 2.
+- **Snapshot:** `meet-real-in-call-mic-on.<locale>.html`
+- **Expected:** `{"inCall":true,"self":{"mic":"on","cam":"off","hand":"off"},"participant_count":2}`
 
-- **Capture:** `in-call-mic-on`. Expected:
-  `{ "inCall": true, "self": { "mic": "on", "cam": "off", "hand": "off" }, "participant_count": 2 }`.
-- **Check:** `isletDebug.readState()`: `state.self` matches, `participant_count` is 2,
-  `failed` is `[]`. `isletDebug.find("micButton")`, `"camButton"`, `"handButton"` and
-  `"leaveButton"` each highlight the right button.
-- **Note:** anything in `failed`, and which button each `find` highlighted.
+### 3. Mic off, camera on, hand raised
 
-### 3. Toggle on the Mac, by hand
+- **The runner** turns the mic off, the camera on and raises your hand through
+  `isletDebug.execute`, and confirms each with `readState`. If it cannot read a state or the
+  command does not get there, it asks you to set it by hand.
+- **Snapshot:** `meet-real-in-call-mic-off.<locale>.html`
+- **Expected:** `{"inCall":true,"self":{"mic":"off","cam":"on","hand":"on"},"participant_count":2}`
 
-On the Mac's Meet page: mic off, camera on, raise your hand.
+### 4. Commands through Islet
 
-- **Capture:** `in-call-mic-off`. Expected:
-  `{ "inCall": true, "self": { "mic": "off", "cam": "on", "hand": "on" }, "participant_count": 2 }`.
-- **Check:** `isletDebug.readState().state.self` matches.
+- **The runner** toggles the mic, the camera and the hand once more through `execute`, back to
+  mic on, camera off, hand down, and records each result and how long the confirmation took.
+- **No snapshot.** Watch the iPhone: the changes should show there too.
 
-### 4. Toggle on the Mac, through Islet
+### 5. The iPhone raises its hand
 
-In the Islet console context, one at a time, watching the page and the iPhone:
+- **You:** "On the iPhone: mute, turn the camera on and raise the hand."
+- **It waits for:** a "raised a hand" label or notice on the page (a heuristic, also reported).
+- **Snapshot:** `meet-real-remote-hand.<locale>.html`. Your own state must not change: the
+  iPhone's hand must not show up as yours.
+- **Expected:** `{"inCall":true,"self":{"mic":"on","cam":"off","hand":"off"},"participant_count":2}`
+- **Then:** "Lower the iPhone's hand."
 
-```js
-await isletDebug.execute("toggle_mic"); // null = confirmed
-await isletDebug.execute("toggle_cam");
-await isletDebug.execute("toggle_hand");
-```
+### 6. Talking with the mic off
 
-- **No capture.**
-- **Check:** each returns `null` and the change shows on the Mac and on the iPhone; the state is
-  back to mic on, camera off, hand down.
-- **Note:** each result (`null`, `"not_confirmed"` or `"control_not_found"`), and anything that
-  happened on the page (a tooltip, a dialog, a delay).
-
-### 5. Toggle on the iPhone
-
-On the iPhone: mute, turn the camera on, raise the hand. Leave the Mac as it is.
-
-- **Capture:** `remote-hand`. Expected:
-  `{ "inCall": true, "self": { "mic": "on", "cam": "off", "hand": "off" }, "participant_count": 2 }`.
-- **Check:** `state.self` is still the Mac's own state. The iPhone's hand must not show up as
-  yours.
-- Lower the iPhone's hand afterwards.
-
-### 6. Talk with the mic off
-
-On the Mac, mute and keep talking until Meet shows its "are you talking?" notice. Paste the
-capture script while the notice is on screen.
-
-- **Capture:** `muted-speaking`. Expected:
-  `{ "inCall": true, "self": { "mic": "off", "cam": "off", "hand": "off" }, "speaking_while_muted": true }`.
-- **Check:** while the notice shows, `isletDebug.readState().state.signals.speaking_while_muted`
-  is `true`; after it goes away, `false`.
-- **Note:** the notice's exact text and roughly how long it stayed. The capture keeps the text
-  only if the current pattern already matches.
-- If no notice appears after about 20 s of talking, note that and move on.
+- **The runner** mutes the Mac. Then **you:**
+  "On the Mac, keep talking with the mic off until Meet shows its notice."
+- **It waits for:** `speaking_while_muted`, then captures at once, while the notice shows, and
+  measures how long it stays on screen.
+- **Snapshot:** `meet-real-muted-speaking.<locale>.html`
+- **Expected:** `{"inCall":true,"self":{"mic":"off","cam":"off","hand":"off"},"speaking_while_muted":true}`
 
 ### 7. The iPhone talks
 
-Keep the Mac muted. Unmute the iPhone and keep talking (or play audio near it) for 20 s.
-
-- **Capture:** `speaking`, while it talks. Expected:
-  `{ "inCall": true, "self": { "mic": "off", "cam": "off", "hand": "off" }, "speaking": true }`.
-- **Check:** `isletDebug.readState().state.active_speaker` holds the iPhone account's name, and
-  `isletDebug.find("activeSpeaker")` highlights its tile. Run it a few times: does it stay
-  stable, flicker, or never show?
-- **Note:** how Meet shows who is speaking (a ring, an outline, an icon), and whether the Mac's
-  own tile ever shows as speaking.
+- **You:** "Unmute the iPhone and keep talking until the runner moves on."
+- **It waits for:** an active speaker, captures, then samples it every 0.5 s for 10 s (how often
+  it is present, how often it changes; counts only, no names).
+- **Snapshot:** `meet-real-speaking.<locale>.html`
+- **Expected:** `{"inCall":true,"self":{"mic":"off","cam":"off","hand":"off"},"speaking":true}`
 
 ### 8. Leave
 
-```js
-await isletDebug.execute("leave");
-```
+- **The runner** clicks Leave through `execute`. If Meet opens a dialog, it records the labels of
+  its buttons **without clicking any** and asks you to answer it by hand.
+- **No snapshot.** The report is saved just before this step, in case leaving reloads the page.
 
-- **Check:** it returns `null` and you are out of the call. If Meet asks something first (for
-  example whether to end the call for everyone), note the dialog and its buttons and answer it
-  by hand.
-- **Capture:** `left`, on the page shown after leaving. Expected: `{ "inCall": false }`.
+### 9. After leaving
 
-## Round 2: English
+- **Snapshot:** `meet-real-left.<locale>.html`, on the page shown after leaving.
+- **Expected:** `{"inCall":false}`
 
-Switch your Google Account language to **English**, reload, and repeat steps 1 to 8 with a new
-`meet.new` meeting and the locale `en` in every file name.
+## Manual alternative
+
+If the runner cannot be used, do the steps yourself:
+
+1. Follow the steps above by hand: set the Mac's state in Meet, ask the iPhone to do its part.
+2. For each snapshot, paste `extension/scripts/capture-snapshot.js` into the Console (context
+   **Islet**). It asks for the names, prints the same summary and asks before saving.
+3. Rename the file as the step says, and write the step's **Expected** JSON next to it as
+   `meet-real-<step>.<locale>.expected.json`.
+4. Check the adapter yourself with `isletDebug.readState()`, `isletDebug.find("<key>")` and
+   `await isletDebug.execute("toggle_mic")` (and the other actions), and write the results in a
+   `calibration-notes.md` outside the repository.
 
 ## Before sending
 
-1. Copy the `.html` and `.expected.json` files into `extension/test/fixtures/`.
+1. Copy the `.html`, `.expected.json` and `.observed.json` files into `extension/test/fixtures/`.
 2. Run `pnpm --filter @islet/extension test`. The **fixtures are sanitized** suite must pass: it
    fails on e-mails, `googleusercontent.com` URLs, meeting codes and any name in
    `.private-names.txt`. The **real Meet snapshots** suite may fail; that is what calibration
    fixes.
 3. Open each file and search for every name once more.
-4. Send the files and `calibration-notes.md`, and say which Chrome version you used.
+4. Send the files and the `calibration-report.*.json` files.
 5. Rebuild the release extension afterwards (`pnpm --filter @islet/extension build`).

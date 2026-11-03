@@ -1,33 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import script from "../scripts/capture-snapshot.js?raw";
+import runnerLauncher from "../scripts/calibration-runner.js?raw";
+import captureLauncher from "../scripts/capture-snapshot.js?raw";
 import { MeetAdapter } from "../src/content/meet/adapter";
-import { SELECTORS } from "../src/content/meet/selectors";
+import { captureSnapshot, snapshot } from "../src/debug/snapshot";
 import { FIXTURES, load } from "./dom";
-
-interface Run {
-  html: string | undefined;
-  logged: string;
-}
-
-/** Runs the script the way it is meant to be used: pasted into DevTools. */
-async function capture(names: string | null, save = true): Promise<Run> {
-  let blob: Blob | undefined;
-  vi.stubGlobal("prompt", () => names);
-  vi.stubGlobal("confirm", () => save);
-  URL.createObjectURL = (b: Blob) => {
-    blob = b;
-    return "blob:snapshot";
-  };
-  URL.revokeObjectURL = () => {};
-  vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
-  const log = vi.spyOn(console, "log").mockImplementation(() => {});
-  const table = vi.spyOn(console, "table").mockImplementation(() => {});
-  vi.spyOn(console, "group").mockImplementation(() => {});
-  vi.spyOn(console, "groupEnd").mockImplementation(() => {});
-  new Function(script)();
-  const logged = JSON.stringify([...log.mock.calls, ...table.mock.calls]);
-  return { html: await blob?.text(), logged };
-}
 
 /** Sensitive things a real Meet page has and the synthetic fixture lacks. */
 function addRealWorldNoise(): void {
@@ -47,33 +23,34 @@ function addRealWorldNoise(): void {
   );
   tile?.setAttribute("data-participant-id", "spaces/AbC123xyz/devices/42");
   tile?.setAttribute("jslog", "1234; track:impression");
-  document
-    .querySelector("[data-meeting-title]")
-    ?.setAttribute("data-meeting-title", "abc-defg-hij");
+  document.querySelector("[jsname='NeC6gb']")?.append(" abc-defg-hij");
   document.querySelector("[role='toolbar']")?.insertAdjacentHTML(
     "beforeend",
     `<button aria-label="Pin Alex Example to your main screen" data-tooltip-id="tt-9"></button>
-     <button aria-label="Share alex@example.com"></button>`,
+       <button aria-label="Share alex@example.com"></button>`,
   );
 }
+
+const silent = { group() {}, groupEnd() {}, log() {}, table() {} };
 
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
+  delete (globalThis as { isletDebug?: unknown }).isletDebug;
 });
 
-describe("capture-snapshot.js", () => {
-  it("removes names, text, URLs, IDs, scripts, styles, images and the chat", async () => {
+describe("snapshot", () => {
+  it("removes names, text, URLs, IDs, scripts, styles, images and the chat", () => {
     load(FIXTURES.inCallEn);
     addRealWorldNoise();
-    const { html } = await capture("Alex Example, Sam Example");
-    expect(html).toBeDefined();
+    const { html } = snapshot({ names: ["Alex Example", "Sam Example"] });
     for (const secret of [
       "Alex",
       "Sam",
       "alex@example.com",
       "Synthetic design review",
       "chat line",
+      "In-call messages",
       "abc-defg-hij",
       "googleusercontent",
       "AbC123xyz",
@@ -90,62 +67,50 @@ describe("capture-snapshot.js", () => {
       "<img",
       "<script",
       "<style",
+      "people-label",
     ]) {
       expect(html, secret).not.toContain(secret);
     }
-    // The chat panel is not one of the kept regions, so none of it is copied.
-    expect(html).not.toContain("In-call messages");
     // A selector's data-* attribute survives, with its ID-like value replaced.
-    expect(html).toContain('data-participant-id="id-1"');
+    expect(html).toMatch(/data-participant-id="id-\d+"/);
   });
 
-  it("keeps only the relevant regions", async () => {
+  it("keeps the top bar, the controls and what selectors match", () => {
     load(FIXTURES.inCallEn);
     addRealWorldNoise();
-    const { html = "" } = await capture("");
+    const { html, regions } = snapshot({ names: [] });
     expect(html).not.toContain('class="unrelated"');
+    expect(html).toContain('jsname="NeC6gb"');
+    expect(html).toContain('jsname="ocqpFe"');
+    expect(html).toContain("data-avatar-count");
     expect(html).toContain('role="toolbar"');
-    expect(html).toContain("data-meeting-title");
-    expect(html).toContain("data-speaking");
+    expect(regions.topBar).toBe(3);
   });
 
-  it("keeps what calibration needs", async () => {
+  it("keeps what calibration needs: states, counts, labels and their links", () => {
     load(FIXTURES.inCallEn);
-    const { html = "" } = await capture("");
+    const { html } = snapshot({ names: [] });
     load(html);
     const adapter = new MeetAdapter(document);
     expect(adapter.detectInCall()).toBe(true);
-    const { state } = adapter.readState();
+    const { state, failed } = adapter.readState();
+    expect(failed).toEqual([]);
     expect(state.self).toEqual({ mic: "on", cam: "off", hand: "off" });
-    expect(state.participant_count).toBe(5); // short numbers survive
+    // The "People" label (UI text) and the number survive; the ID link is renamed, not broken.
+    expect(state.participant_count).toBe(5);
+    expect(state.title).toBe("[text]");
     expect(state.active_speaker).toEqual({ display_name: "[text]" });
   });
 
-  it("keeps the text of a notice that matches selectors.json, scrubbed", async () => {
+  it("keeps the text of a notice that matches selectors.json", () => {
     load(FIXTURES.inCallPtBr);
-    const { html = "" } = await capture("");
+    const { html } = snapshot({ names: [] });
     expect(html).toContain("Você está falando?");
     load(html);
     expect(new MeetAdapter(document).readState().state.signals.speaking_while_muted).toBe(true);
   });
 
-  it("shows a summary of what it removed before asking to save", async () => {
-    load(FIXTURES.inCallEn);
-    addRealWorldNoise();
-    const { logged } = await capture("Alex Example");
-    for (const item of [
-      "text nodes",
-      "<img> elements",
-      "attributes holding a URL",
-      "ID-like data-* values",
-      "typed names",
-    ]) {
-      expect(logged, item).toContain(item);
-    }
-    expect(logged).toContain("Pin [name] to your main screen");
-  });
-
-  it("empties a chat panel caught inside a kept region", async () => {
+  it("empties a chat panel caught inside a kept region", () => {
     load(FIXTURES.inCallEn);
     document
       .querySelector("[role='toolbar']")
@@ -153,29 +118,81 @@ describe("capture-snapshot.js", () => {
         "beforeend",
         `<div aria-label="Chat messages"><p>Synthetic message from Alex Example</p></div>`,
       );
-    const { html = "" } = await capture("");
+    const { html } = snapshot({ names: [] });
     expect(html).toContain("chat panel removed");
     expect(html).not.toContain("Synthetic message");
   });
+});
 
-  it("saves nothing when cancelled at either question", async () => {
+describe("captureSnapshot", () => {
+  it("prints a summary, then saves only after confirmation in manual mode", () => {
     load(FIXTURES.inCallEn);
-    expect((await capture(null)).html).toBeUndefined();
-    expect((await capture("", false)).html).toBeUndefined();
+    addRealWorldNoise();
+    const save = vi.fn();
+    const table = vi.fn();
+    const log = { ...silent, table };
+    expect(
+      captureSnapshot({ names: ["Alex Example"], auto: false, confirm: () => false, save, log }),
+    ).toBeNull();
+    expect(save).not.toHaveBeenCalled();
+    const summary = JSON.stringify(table.mock.calls);
+    for (const item of [
+      "text nodes",
+      "<img> elements",
+      "attributes holding a URL",
+      "ID-like data-* values",
+      "given names",
+    ]) {
+      expect(summary, item).toContain(item);
+    }
+    expect(summary).toContain("Pin [name] to your main screen");
+
+    captureSnapshot({ names: [], auto: false, confirm: () => true, save, log, fileName: "x.html" });
+    expect(save).toHaveBeenCalledWith(
+      "x.html",
+      expect.stringContaining("Islet calibration snapshot"),
+      "text/html",
+    );
   });
 
-  it("knows every data-* attribute and notice pattern selectors.json uses", () => {
-    const list = (name: string): string[] => {
-      const match = new RegExp(`const ${name} = (\\[[\\s\\S]*?\\]);`).exec(script);
-      if (!match?.[1]) throw new Error(`${name} not found`);
-      return JSON.parse(match[1].replace(/,\s*\]/, "]"));
-    };
-    const used = [...new Set(JSON.stringify(SELECTORS.keys).match(/data-[a-z0-9-]+/g))].sort();
-    expect(list("SELECTOR_DATA_ATTRIBUTES").sort()).toEqual(used);
+  it("does not ask in auto mode, and still prints the summary", () => {
+    load(FIXTURES.inCallEn);
+    const confirm = vi.fn(() => false);
+    const save = vi.fn();
+    const table = vi.fn();
+    captureSnapshot({ names: [], auto: true, confirm, save, log: { ...silent, table } });
+    expect(confirm).not.toHaveBeenCalled();
+    expect(save).toHaveBeenCalledOnce();
+    expect(table).toHaveBeenCalled();
+  });
+});
 
-    const notice = SELECTORS.keys.mutedSpeakingNotice.strategies.flatMap((s) =>
-      "text" in s ? Object.values(s.text) : [],
-    );
-    expect(list("NOTICE_PATTERNS").sort()).toEqual(notice.sort());
+describe("launchers", () => {
+  it("refuse to run without isletDebug (a release build or the wrong console context)", () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    new Function(captureLauncher)();
+    new Function(runnerLauncher)();
+    expect(error).toHaveBeenCalledTimes(2);
+    expect(String(error.mock.calls[0])).toContain("build:dev");
+  });
+
+  it("start the development build's capture and runner", () => {
+    vi.spyOn(console, "info").mockImplementation(() => {});
+    const debug = {
+      captureSnapshot: vi.fn(),
+      runCalibration: vi.fn(),
+      continue: vi.fn(),
+      selectorsVersion: 2,
+    };
+    Object.assign(globalThis, { isletDebug: debug });
+    new Function(captureLauncher)();
+    expect(debug.captureSnapshot).toHaveBeenCalledOnce();
+    new Function(runnerLauncher)();
+    expect(debug.runCalibration).toHaveBeenCalledOnce();
+    const g = globalThis as unknown as { runCalibration(e?: string): void; isletContinue(): void };
+    g.runCalibration("left");
+    expect(debug.runCalibration).toHaveBeenLastCalledWith("left");
+    g.isletContinue();
+    expect(debug.continue).toHaveBeenCalledOnce();
   });
 });

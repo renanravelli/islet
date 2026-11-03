@@ -65,9 +65,18 @@ describe("readState", () => {
     expect(JSON.stringify(adapter().readState())).not.toContain("chat line");
   });
 
+  it("does not report the meeting code as the title (instant meetings)", () => {
+    load(FIXTURES.inCallEn);
+    const title = document.querySelector("[jsname=NeC6gb]");
+    if (title) title.textContent = "abc-defg-hij";
+    const { state, failed } = adapter().readState();
+    expect(state.title).toBeUndefined();
+    expect(failed).toEqual([]);
+  });
+
   it("keeps names and titles short", () => {
     load(FIXTURES.inCallEn);
-    const title = document.querySelector("[data-meeting-title]");
+    const title = document.querySelector("[jsname=NeC6gb]");
     if (title) title.textContent = "x".repeat(500);
     expect(adapter().readState().state.title).toHaveLength(200);
   });

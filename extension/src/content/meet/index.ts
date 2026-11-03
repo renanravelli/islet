@@ -1,6 +1,9 @@
 // Content script for meet.google.com. Built as a standalone IIFE (no loader, no
 // web_accessible_resources), so the page cannot detect the extension through its files.
 
+import { continueCalibration, runCalibration } from "../../debug/calibration";
+import { captureSnapshot, type SnapshotOptions } from "../../debug/snapshot";
+import { STEPS } from "../../debug/steps";
 import type { TabAction, TabToWorker, WorkerToTab } from "../../shared/messages";
 import { TAB_PORT } from "../../shared/messages";
 import { MeetAdapter } from "./adapter";
@@ -51,10 +54,16 @@ function connect(): void {
 connect();
 session.start();
 
-// For calibration (docs/meet-adapter/calibration.md), development builds only: reachable from
-// this extension's isolated world in DevTools (the "Islet" console context), never from the
-// Meet page. Release builds drop this block; scripts/check-release-build.mjs verifies it.
+// For calibration (docs/meet-adapter/calibration-session.md), development builds only: reachable
+// from this extension's isolated world in DevTools (the "Islet" console context), never from the
+// Meet page. Release builds drop this block and the debug modules it imports;
+// scripts/check-release-build.mjs verifies it.
 if (__ISLET_DEBUG__) {
+  const askNames = () =>
+    window.prompt(
+      "Islet snapshot: names to redact, comma separated (yours and every participant's).",
+      "",
+    );
   Object.assign(globalThis, {
     isletDebug: {
       selectorsVersion: SELECTORS.version,
@@ -63,6 +72,15 @@ if (__ISLET_DEBUG__) {
       /** The element a key resolves to, or null; DevTools highlights it on hover. */
       find: (key: SelectorKey) => resolve(document, SELECTORS.keys[key].strategies),
       execute: (action: TabAction) => adapter.execute(action),
+      /** One anonymized snapshot. Without options it asks for the names and before saving. */
+      captureSnapshot(options?: Partial<SnapshotOptions>) {
+        const names = options?.names ?? askNames()?.split(",");
+        if (names === undefined) return null;
+        return captureSnapshot({ auto: false, ...options, names });
+      },
+      runCalibration: (entry?: string) => runCalibration(entry, { adapter }),
+      continue: () => continueCalibration(),
+      steps: STEPS.map((step) => step.id),
     },
   });
 }

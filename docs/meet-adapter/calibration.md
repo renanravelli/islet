@@ -1,10 +1,14 @@
 # Calibrating the Meet adapter
 
 The adapter finds Meet's controls through `extension/src/content/meet/selectors.json`
-([ADR 0004](../adr/0004-selectors-as-data.md)). **No entry has been checked against a real call
-yet**: they are educated guesses, every one is marked `"verified": false`, and the tests run
-against synthetic fixtures. This guide turns them into verified selectors, and is also the fix
-procedure when Meet changes its interface.
+([ADR 0004](../adr/0004-selectors-as-data.md)). Each key says whether it was confirmed in a real
+call (`"verified"`) and in which Meet languages (`"verifiedIn"`); the others are educated
+guesses, and the tests run against synthetic fixtures. This guide turns them into verified
+selectors, and is also the fix procedure when Meet changes its interface.
+
+The quickest way to gather everything is the **calibration runner**
+([calibration-session.md](calibration-session.md)): it drives the Mac, captures every state and
+writes a report. The sections below are the manual path and what to do with the results.
 
 You need the **development** build of the extension
 (`pnpm --filter @islet/extension build:dev`, loaded as in the
@@ -43,8 +47,10 @@ is another participant and someone speaking. For a ready-made call script, see
 ## 2. Capture anonymized snapshots
 
 For each state below, set it up in the call, then paste the contents of
-`extension/scripts/capture-snapshot.js` into the Console (context `top`). It copies only the
-control bar and call buttons, participant tiles, notices and the title. When asked, type your
+`extension/scripts/capture-snapshot.js` into the Console (context **Islet**; it uses the
+development build's capture, shared with the runner). It copies only the control bar and call
+buttons, participant tiles, notices, the top bar (title and People button), whatever a selector
+matches and the labels those point to. When asked, type your
 name and every participant's name, comma separated. It then prints a summary of everything it
 removed and asks before saving; nothing is sent.
 
@@ -97,8 +103,13 @@ pnpm --filter @islet/extension test
 Edit `selectors.json` until the real snapshots pass:
 
 - Each key has ordered `strategies`: `css`, `ariaLabel` (a regex per locale, optionally limited
-  by `css`), `text` (a regex on the text of elements matched by `css`) or `attribute`. The first
-  one that finds an element wins, so put the most specific first and keep a fallback.
+  by `css`), `labelledBy` (elements matched by `css` whose `aria-labelledby` target text matches
+  a regex per locale), `text` (a regex on the text of elements matched by `css`) or
+  `attribute`. The first one that finds an element wins, so put the most specific first and
+  keep a fallback. Google's `jsname` values are stable for a while but can change; keep a
+  label-based fallback next to them.
+- `participantCount` can say where the number is inside the element (`count`), and
+  `activeSpeaker` where the name is inside the tile (`name`).
 - Toggles also have `state` rules: an attribute with its `on` and `off` values, or `ariaLabel`
   regexes for each state. Remember that Meet labels the _action_: "Turn off microphone" means
   the mic is on.
@@ -107,8 +118,10 @@ Edit `selectors.json` until the real snapshots pass:
   tile, the participant count, the title and the "are you talking?" notice.
 - `required: true` keys mark the session degraded when missing during a call.
 
-When a key is confirmed in real snapshots in both languages, set `"verified": true`, update
-`updated` and increase `version`. Keep the synthetic fixtures: they cover edge cases.
+When a key is confirmed in real snapshots, set `"verified": true`, list the languages in
+`"verifiedIn"` (for example `["pt-BR"]` until the English round is done), update `updated` and
+increase `version`. A test rejects `verified` without `verifiedIn`. Keep the synthetic
+fixtures: they cover edge cases.
 
 ## 5. Confirm in a call
 

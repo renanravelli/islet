@@ -9,6 +9,8 @@ export type LocalePatterns = Partial<Record<Locale, string>>;
 export type Strategy =
   | { css: string }
   | { ariaLabel: LocalePatterns; css?: string }
+  /** Elements matching `css` whose `aria-labelledby` targets have a matching text. */
+  | { labelledBy: LocalePatterns; css: string }
   | { text: LocalePatterns; css: string }
   | { attribute: { name: string; value?: string } };
 
@@ -17,7 +19,10 @@ export type StateRule =
   | { ariaLabel: { on: LocalePatterns; off: LocalePatterns } };
 
 export interface SelectorEntry {
+  /** Confirmed in a real call. */
   verified: boolean;
+  /** The Meet languages it was confirmed in. */
+  verifiedIn?: Locale[];
   /** A required key that cannot be resolved during a call marks the session degraded. */
   required: boolean;
   strategies: Strategy[];
@@ -25,6 +30,8 @@ export interface SelectorEntry {
   state?: StateRule[];
   /** For the active speaker: where the name is, inside the resolved tile. */
   name?: Strategy[];
+  /** For the participant count: where the number is, inside the resolved element. */
+  count?: Strategy[];
 }
 
 export type SelectorKey =
@@ -89,24 +96,50 @@ function attributeSelector(name: string, value?: string): string {
   return value === undefined ? `[${name}]` : `[${name}=${JSON.stringify(value)}]`;
 }
 
-/** The first element any strategy finds, trying them in order. */
-export function resolve(root: ParentNode, strategies: Strategy[]): Element | null {
-  for (const strategy of strategies) {
-    let found: Element | undefined;
-    if ("ariaLabel" in strategy) {
-      found = query(root, strategy.css ?? "[aria-label]").find((el) =>
-        matchesAny(el.getAttribute("aria-label"), strategy.ariaLabel),
-      );
-    } else if ("text" in strategy) {
-      found = query(root, strategy.css).find((el) => matchesAny(el.textContent, strategy.text));
-    } else if ("attribute" in strategy) {
-      found = query(root, attributeSelector(strategy.attribute.name, strategy.attribute.value))[0];
-    } else {
-      found = query(root, strategy.css)[0];
-    }
-    if (found) return found;
+/** Every element one strategy finds, in document order. */
+export function matchAll(root: ParentNode, strategy: Strategy): Element[] {
+  if ("ariaLabel" in strategy) {
+    return query(root, strategy.css ?? "[aria-label]").filter((el) =>
+      matchesAny(el.getAttribute("aria-label"), strategy.ariaLabel),
+    );
+  }
+  if ("labelledBy" in strategy) {
+    return query(root, strategy.css).filter((el) =>
+      labelTargets(el).some((target) =>
+        matchesAny(target.textContent?.trim() ?? null, strategy.labelledBy),
+      ),
+    );
+  }
+  if ("text" in strategy) {
+    return query(root, strategy.css).filter((el) => matchesAny(el.textContent, strategy.text));
+  }
+  if ("attribute" in strategy) {
+    return query(root, attributeSelector(strategy.attribute.name, strategy.attribute.value));
+  }
+  return query(root, strategy.css);
+}
+
+/** The elements an element's `aria-labelledby` points to. */
+export function labelTargets(el: Element): Element[] {
+  const ids = el.getAttribute("aria-labelledby")?.split(/\s+/).filter(Boolean) ?? [];
+  return ids.flatMap((id) => el.ownerDocument.getElementById(id) ?? []);
+}
+
+/** The first element any strategy finds, trying them in order, and which strategy found it. */
+export function resolveWith(
+  root: ParentNode,
+  strategies: Strategy[],
+): { element: Element; strategy: number } | null {
+  for (const [index, strategy] of strategies.entries()) {
+    const [element] = matchAll(root, strategy);
+    if (element) return { element, strategy: index };
   }
   return null;
+}
+
+/** The first element any strategy finds, trying them in order. */
+export function resolve(root: ParentNode, strategies: Strategy[]): Element | null {
+  return resolveWith(root, strategies)?.element ?? null;
 }
 
 /** Reads on/off from `el` with the key's rules; `unknown` when no rule decides. */

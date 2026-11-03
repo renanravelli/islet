@@ -110,9 +110,12 @@ app are added in Phase 5.
   snapshots come only through `docs/meet-adapter/calibration.md`, anonymized and reviewed. The
   "fixtures are sanitized" test rejects e-mails, `googleusercontent.com` URLs, meeting codes and
   any name in the git-ignored `extension/test/.private-names.txt`.
-- `isletDebug` exists only in development builds (`__ISLET_DEBUG__`).
-  `scripts/check-release-build.mjs` fails a release build that contains it, a network API or
-  extra permissions.
+- `isletDebug`, the snapshot capture and the calibration runner (`src/debug/`) exist only in
+  development builds (`__ISLET_DEBUG__`). `scripts/check-release-build.mjs` fails a release
+  build that contains them, a network API or extra permissions. The pasted scripts in
+  `extension/scripts/` only start them.
+- The calibration steps are data in `src/debug/steps.ts`; `docs/meet-adapter/calibration-session.md`
+  must describe the same steps (a test checks).
 - Log through `src/shared/log.ts`: fixed text plus non-personal details, never content.
 
 ## Bridge protocol
@@ -174,9 +177,13 @@ and every UI string. Where it and the design canvas differ, the spec wins.
 Every open item lives here, not in an assistant's memory. Remove an item when it lands.
 
 - **Manual, needs a real call (owner):**
-  - **Before Phase 5:** run a calibration session (`docs/meet-adapter/calibration-session.md`)
-    and hand over the snapshots and notes; then the selectors are fixed and marked
-    `"verified": true` where they work, and what cannot be detected is reported.
+  - **Before Phase 5:** run the pt-BR calibration session with the runner
+    (`docs/meet-adapter/calibration-session.md`) and hand over the snapshots and reports; then
+    the selectors are fixed and marked verified for pt-BR where they work, and what cannot be
+    detected is reported. Already verified in pt-BR from the owner's inspection: `micButton`,
+    `camButton`, `leaveButton`. Found but unconfirmed: `handButton` (state), `participantCount`,
+    `meetingTitle`.
+  - **Later:** the English round; until then no key lists `en` in `verifiedIn`.
   - **After Phase 5:** check that `focus_tab` brings Chrome to the front from another app on
     macOS, and that a connection from another macOS user is refused by the bridge.
 - **Phase 5 (desktop app):**
