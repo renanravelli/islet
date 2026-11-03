@@ -43,11 +43,15 @@ Decisions and their rationale live in `docs/adr/` (0001 monorepo/Tauri, 0002 bri
 | `crates/provider-meet` (`islet-provider-meet`) | Meet provider; gets protocol messages over a channel                   |
 | `crates/provider-demo` (`islet-provider-demo`) | Scripted provider for demo mode and tests                              |
 | `crates/native-host` (`islet-native-host`)     | Native Messaging host: Chrome stdio ⇄ app socket                       |
+| `crates/bridge` (`islet-bridge`)               | Framing, socket server and client, socket path, host manifest install  |
 | `apps/desktop`                                 | Tauri 2 + React app; OS code in `src-tauri/src/platform/`              |
 | `extension/`                                   | Chrome MV3 extension; Meet adapter in `src/content/meet/`              |
 | `packages/protocol-ts`                         | TS types generated from `crates/protocol` — never edit by hand         |
 | `docs/`                                        | Architecture, ADRs, provider guide, calibration, manual test checklist |
 | `scripts/`                                     | Dev scripts (extension key, native host install, version bump)         |
+
+Allowed extension IDs live in `crates/bridge/extension-ids.txt`; the host manifest and the
+host's origin check both read it.
 
 Rust crate packages are prefixed `islet-` so none is named `core`.
 
@@ -82,6 +86,11 @@ pnpm typecheck                                       # tsc --noEmit in every pac
 cargo fmt --all --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace                               # also regenerates the protocol TS types
+```
+
+```sh
+scripts/gen-extension-key.sh --print                 # the extension's public key and ID
+scripts/install-native-host.sh                       # dev: register target/debug host with Chrome
 ```
 
 Commands for the extension and the desktop app are added here as each phase lands.
@@ -126,6 +135,46 @@ warnings. UI changes must also be checked in demo mode (`--demo`), with and with
   thumbnails, OS-level call detection, system-level mute, Firefox, Safari, Chrome Web Store
   publication.
 
+## Pending by phase
+
+Every open item lives here, not in an assistant's memory. Remove an item when it lands.
+
+- **Phase 4 (extension):**
+  - Put the public key from `crates/bridge/extension-ids.txt` in the extension manifest's `key`
+    and add a test that it derives to the development ID listed there.
+  - Service worker: answer `ping` with `pong` and re-send every meeting tab's state at once;
+    treat `error: app_not_running` as "app closed" without tearing down the port.
+  - Run `scripts/install-native-host.sh` against the real Chrome and load the unpacked extension.
+  - `islet-provider-meet`: map protocol ⇄ core (`selectors.json` keys → core degraded reasons,
+    session ids per connection + tab), track command ids and their results, send `ping` when a
+    host connects so the extension re-sends its state at once.
+- **Phase 5 (desktop app):**
+  - Apply the unsafe rules for `src-tauri` (see "Unsafe code").
+  - `packages/ui-types`: TS types for `UiSnapshot` and the other UI-facing core types, generated
+    with ts-rs. Never put them in `packages/protocol-ts`: the extension must not import app types.
+  - Core settings: a struct with `show_participant_names` (default on). When off, the
+    `SessionManager` strips names and titles before publishing the `UiSnapshot`; the UI never
+    receives them.
+  - Core diagnostics without personal data, for "Copy diagnostics": provider, extension version,
+    health, latest degraded reasons, time of the last update, connection state.
+  - On every start, and from "Reinstall Chrome bridge", call `islet_bridge::manifest` to check and
+    repair the host manifest (the binary path changes when the app is moved, e.g. to
+    `/Applications`).
+  - Glue the bridge socket server to `islet-provider-meet`.
+  - `docs/design/ui-spec.md` lists the failing _selector keys_ under "Saúde do adaptador": keep
+    the provider's raw keys next to the provider-agnostic `DegradedReason` (for example a
+    provider detail field) so the settings pane and the diagnostics can show them.
+- **Phase 6 (docs):**
+  - `CONTRIBUTING.md`: ways to install pnpm (Homebrew, corepack, npm).
+  - `docs/install-extension.md`: the manual "Load unpacked" guide the onboarding opens while
+    `EXTENSION_STORE_URL` is unset (`docs/design/ui-spec.md`, step 2).
+  - Biome formats Markdown. If it rewrites the README's centered HTML header, the badges or the
+    Mermaid blocks, turn Markdown formatting off.
+  - Threat model: the development extension ID can be reproduced by anyone from the public key.
+- **Phase 7 (CI):**
+  - After `cargo test`, fail if `packages/protocol-ts` (and later `packages/ui-types`) changed
+    (`git diff --exit-code`).
+
 ## Git
 
 - Conventional Commits. Default branch `main`, remote `origin`.
@@ -144,3 +193,4 @@ warnings. UI changes must also be checked in demo mode (`--demo`), with and with
 - Enable `macOSPrivateApi` / `macos-private-api` (not needed since Tauri 2.12.1).
 - Invent versions, APIs, screenshots, badges for services that do not exist, or numbers.
 - Add Tauri, UI or OS dependencies to `islet-core`.
+- Write anything but Chrome frames to the native host's stdout (logs go to stderr).

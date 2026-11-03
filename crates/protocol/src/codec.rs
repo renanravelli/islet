@@ -19,6 +19,10 @@ pub enum ProtocolError {
     MissingVersion,
     #[error("unsupported protocol version {0} (expected {PROTOCOL_VERSION})")]
     UnsupportedVersion(u64),
+    /// A `type` this version does not know, for example from a newer peer. Readers log it and
+    /// carry on; it never closes the connection.
+    #[error("unknown message type {0:?}")]
+    UnknownType(String),
     #[error("malformed message at line {line}, column {column}")]
     Malformed { line: usize, column: usize },
 }
@@ -29,7 +33,7 @@ impl ProtocolError {
         match self {
             Self::TooLarge { .. } => ErrorCode::MessageTooLarge,
             Self::MissingVersion | Self::UnsupportedVersion(_) => ErrorCode::UnsupportedVersion,
-            Self::Malformed { .. } => ErrorCode::InvalidMessage,
+            Self::UnknownType(_) | Self::Malformed { .. } => ErrorCode::InvalidMessage,
         }
     }
 
@@ -48,10 +52,13 @@ struct EnvelopeRef<'a, M> {
     message: &'a M,
 }
 
-/// Reads only `v`, so a version mismatch is reported as such and not as a confusing parse error.
+/// Reads only `v` and `type`, so a version mismatch or an unknown type is reported as such and
+/// not as a confusing parse error.
 #[derive(Deserialize)]
-struct VersionProbe {
+struct Probe {
     v: Option<u64>,
+    #[serde(rename = "type")]
+    kind: Option<String>,
 }
 
 pub(crate) fn encode<M: Serialize>(message: &M) -> Result<Vec<u8>, ProtocolError> {
@@ -65,16 +72,38 @@ pub(crate) fn encode<M: Serialize>(message: &M) -> Result<Vec<u8>, ProtocolError
     Ok(bytes)
 }
 
-pub(crate) fn decode<E: DeserializeOwned>(bytes: &[u8]) -> Result<E, ProtocolError> {
+pub(crate) fn decode<E: DeserializeOwned>(
+    bytes: &[u8],
+    known_types: &[&str],
+) -> Result<E, ProtocolError> {
     check_size(bytes.len())?;
-    let probe: VersionProbe =
-        serde_json::from_slice(bytes).map_err(|e| ProtocolError::malformed(&e))?;
+    let probe: Probe = serde_json::from_slice(bytes).map_err(|e| ProtocolError::malformed(&e))?;
     match probe.v {
         None => return Err(ProtocolError::MissingVersion),
         Some(PROTOCOL_VERSION) => {}
         Some(other) => return Err(ProtocolError::UnsupportedVersion(other)),
     }
+    if let Some(kind) = probe.kind
+        && !known_types.contains(&kind.as_str())
+    {
+        return Err(ProtocolError::UnknownType(loggable_type(kind)));
+    }
     serde_json::from_slice(bytes).map_err(|e| ProtocolError::malformed(&e))
+}
+
+/// Type names are protocol identifiers, but they still come from outside: keep them only when
+/// they look like one.
+fn loggable_type(kind: String) -> String {
+    let looks_like_a_type = !kind.is_empty()
+        && kind.len() <= 32
+        && kind
+            .bytes()
+            .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'.' || b == b'_');
+    if looks_like_a_type {
+        kind
+    } else {
+        "<invalid>".to_owned()
+    }
 }
 
 fn check_size(size: usize) -> Result<(), ProtocolError> {
@@ -167,11 +196,19 @@ mod tests {
     }
 
     #[test]
-    fn rejects_unknown_types_and_bad_json() {
-        assert!(matches!(
-            ExtensionMessage::decode(br#"{"v":1,"type":"teleport"}"#),
-            Err(ProtocolError::Malformed { .. })
-        ));
+    fn reports_unknown_types_by_name() {
+        let error = ExtensionMessage::decode(br#"{"v":1,"type":"screen.share"}"#).unwrap_err();
+        assert_eq!(error, ProtocolError::UnknownType("screen.share".into()));
+        assert_eq!(error.code(), ErrorCode::InvalidMessage);
+        // Anything that does not look like a type name is not repeated.
+        assert_eq!(
+            ExtensionMessage::decode(br#"{"v":1,"type":"Alex Example"}"#),
+            Err(ProtocolError::UnknownType("<invalid>".into()))
+        );
+    }
+
+    #[test]
+    fn rejects_bad_json() {
         assert!(matches!(
             ExtensionMessage::decode(b"[1,2]"),
             Err(ProtocolError::Malformed { .. })
@@ -180,9 +217,14 @@ mod tests {
             AppMessage::decode(b"{\"v\":1,"),
             Err(ProtocolError::Malformed { .. })
         ));
-        // A known type sent in the wrong direction is not accepted either.
-        assert!(matches!(
+        // A known type sent in the wrong direction is unknown there.
+        assert_eq!(
             AppMessage::decode(br#"{"v":1,"type":"pong"}"#),
+            Err(ProtocolError::UnknownType("pong".into()))
+        );
+        // A known type with a broken body is malformed.
+        assert!(matches!(
+            AppMessage::decode(br#"{"v":1,"type":"command","id":"x"}"#),
             Err(ProtocolError::Malformed { .. })
         ));
     }

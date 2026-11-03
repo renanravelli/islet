@@ -61,6 +61,15 @@ pub enum AppMessage {
 }
 
 impl ExtensionMessage {
+    /// Every `type` this version sends from the extension.
+    pub const TYPES: [&str; 5] = [
+        "hello",
+        "session.update",
+        "session.ended",
+        "command.result",
+        "pong",
+    ];
+
     /// Serializes the message with `v: 1`.
     pub fn encode(&self) -> Result<Vec<u8>, ProtocolError> {
         codec::encode(self)
@@ -68,11 +77,14 @@ impl ExtensionMessage {
 
     /// Parses a message, checking the size limit and the protocol version.
     pub fn decode(bytes: &[u8]) -> Result<Self, ProtocolError> {
-        codec::decode::<ExtensionEnvelope>(bytes).map(|envelope| envelope.message)
+        codec::decode::<ExtensionEnvelope>(bytes, &Self::TYPES).map(|envelope| envelope.message)
     }
 }
 
 impl AppMessage {
+    /// Every `type` this version sends to the extension.
+    pub const TYPES: [&str; 3] = ["command", "ping", "error"];
+
     /// Serializes the message with `v: 1`.
     pub fn encode(&self) -> Result<Vec<u8>, ProtocolError> {
         codec::encode(self)
@@ -80,7 +92,7 @@ impl AppMessage {
 
     /// Parses a message, checking the size limit and the protocol version.
     pub fn decode(bytes: &[u8]) -> Result<Self, ProtocolError> {
-        codec::decode::<AppEnvelope>(bytes).map(|envelope| envelope.message)
+        codec::decode::<AppEnvelope>(bytes, &Self::TYPES).map(|envelope| envelope.message)
     }
 }
 

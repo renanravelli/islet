@@ -142,3 +142,29 @@ fn typescript_constants_match() {
         islet_protocol::MAX_MESSAGE_BYTES
     )));
 }
+
+/// The fixtures cover every message type, and `TYPES` lists exactly those.
+#[test]
+fn type_lists_match_the_fixtures() {
+    for (dir, types) in [
+        ("extension", &ExtensionMessage::TYPES[..]),
+        ("app", &AppMessage::TYPES[..]),
+    ] {
+        let mut seen: Vec<String> =
+            std::fs::read_dir(format!("{}/fixtures/{dir}", env!("CARGO_MANIFEST_DIR")))
+                .unwrap()
+                .map(|entry| {
+                    let json: Value = serde_json::from_str(
+                        &std::fs::read_to_string(entry.unwrap().path()).unwrap(),
+                    )
+                    .unwrap();
+                    json["type"].as_str().unwrap().to_owned()
+                })
+                .collect();
+        seen.sort();
+        seen.dedup();
+        let mut expected: Vec<String> = types.iter().map(|t| (*t).to_owned()).collect();
+        expected.sort();
+        assert_eq!(seen, expected, "{dir}");
+    }
+}

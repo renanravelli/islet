@@ -10,3 +10,13 @@ publish = false
 
 [lints]
 workspace = true
+
+[dependencies]
+islet-bridge.workspace = true
+islet-protocol.workspace = true
+tokio = { workspace = true, features = ["io-std", "io-util", "macros", "net", "process", "rt", "sync", "time"] }
+tracing.workspace = true
+tracing-subscriber.workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["io-util", "macros", "process", "rt", "time"] }
