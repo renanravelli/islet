@@ -194,9 +194,11 @@ Every open item lives here, not in an assistant's memory. Remove an item when it
       the "Mac talks" step (detected after 55 s, with the Mac's mic off at capture): the
       speaker strategy seems to see remote speakers but not the user; it flickers with the
       audio level (2 to 4 of 20 samples), so the island needs to hold the last speaker ~2 s.
-      The only live notice text recorded while talking muted was "Seu microfone está
-      desativado.", which may be the screen-reader announcement of muting rather than the
-      "are you talking?" notice; to be confirmed by the owner.
+      The real muted notice (owner's screenshot) is a bubble above the mic button: "Você está
+      falando? O microfone está desativado. Clique no microfone para ativá-lo." The pt-BR
+      pattern matches it, but the bubble is not an alert or live region and its element is
+      unknown: inspect it (right-click → Inspect while it shows) to fix the strategy's `css`.
+      "Seu microfone está desativado." is the screen-reader announcement of muting.
     - One `toggle_mic` was not confirmed in 1.5 s in step 6 (it worked every other time, in
       53 to 59 ms). Probable cause, per the owner: the mic was also toggled by hand around then.
       Watch for it in the next session.

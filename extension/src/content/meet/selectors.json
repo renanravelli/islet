@@ -184,7 +184,7 @@
           "css": "[role='alert'], [aria-live]"
         }
       ],
-      "$comment": "UNVERIFIED: not detected in the pt-BR session. The exact pt-BR notice text, and whether it appeared, are still to be confirmed."
+      "$comment": "UNVERIFIED. The real pt-BR notice is a bubble above the mic button: \"Você está falando? O microfone está desativado. Clique no microfone para ativá-lo.\" The pt-BR pattern matches that text, but the bubble is not a [role='alert'] or [aria-live] element and its element is still unknown. \"Seu microfone está desativado.\" is a different, screen-reader announcement of muting, not this notice."
     },
     "meetingTitle": {
       "$comment": "Found in a real call. In an instant meeting it shows the meeting code, which the adapter drops; a calendar event's title is not confirmed yet.",
