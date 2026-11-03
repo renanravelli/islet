@@ -10,13 +10,7 @@
     "signals": {
       "speaking_while_muted": false
     },
-    "capabilities": [
-      "toggle_mic",
-      "toggle_cam",
-      "toggle_hand",
-      "leave",
-      "focus_tab"
-    ],
+    "capabilities": ["toggle_mic", "toggle_cam", "toggle_hand", "leave", "focus_tab"],
     "health": "ok",
     "participant_count": 2
   },
