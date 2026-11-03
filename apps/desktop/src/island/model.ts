@@ -16,12 +16,27 @@ export const SIZE = {
   pillHeight: 34,
   expandedWidth: 560,
   expandedRadius: 28,
-  /** Below the top strip: the "Speaking now" block and the row of buttons. */
-  expandedBody: 142,
+  /** Below the top strip: 14 + the 99 speaker tile + 16 + 44 buttons + 6 + 13 labels + 18. */
+  expandedBody: 210,
   alertWidth: 440,
   alertRadius: 22,
-  alertBody: 64,
+  /** Below the top strip: 10 + one 19 line + 12 + 44 buttons + 14. */
+  alertBody: 99,
+  /** Under the pointer the compact island and the pill grow a little: the hover cue. */
+  hoverGrowWidth: 16,
+  hoverGrowHeight: 3,
 } as const;
+
+/** Avatar backgrounds from the canvas; white initials pass 4.5:1 on each. */
+const AVATAR_COLORS = ["#5E5CE6", "#0B7A75", "#B4581E", "#48484A"] as const;
+
+/** A stable color per name, so a speaker keeps the same avatar during the call. */
+export function avatarColor(name: string | null | undefined): string | undefined {
+  if (!name) return undefined;
+  let hash = 0;
+  for (const ch of name) hash = (hash * 31 + (ch.codePointAt(0) ?? 0)) >>> 0;
+  return AVATAR_COLORS[hash % AVATAR_COLORS.length];
+}
 
 /** How long a speaker stays shown after Meet's indicator goes off: it flickers with the voice. */
 export const SPEAKER_HOLD_MS = 2000;
@@ -50,16 +65,27 @@ export function mode(session: MeetingSession | null, ui: UiState, settings: AppS
 }
 
 /** The island window's size: exactly its contour, so no invisible area takes clicks. */
-export function contour(m: Mode, geometry: Geometry): { width: number; height: number } {
+export function contour(
+  m: Mode,
+  geometry: Geometry,
+  hovered = false,
+): { width: number; height: number } {
   const top = geometry.has_notch ? geometry.top_inset : SIZE.pillHeight;
   switch (m) {
     case "hidden":
       return { width: 0, height: 0 };
     case "compact":
-    case "ended":
-      return geometry.has_notch
+    case "ended": {
+      const base = geometry.has_notch
         ? { width: Math.max(SIZE.compactWidth, geometry.notch_width + 2 * SIZE.ear), height: top }
         : { width: SIZE.pillWidth, height: SIZE.pillHeight };
+      return hovered && m === "compact"
+        ? {
+            width: base.width + SIZE.hoverGrowWidth,
+            height: base.height + SIZE.hoverGrowHeight,
+          }
+        : base;
+    }
     case "expanded":
       return { width: SIZE.expandedWidth, height: top + SIZE.expandedBody };
     case "alert":

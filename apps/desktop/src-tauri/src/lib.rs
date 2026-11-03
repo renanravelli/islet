@@ -30,13 +30,21 @@ use crate::state::{AppState, lock};
 /// How often the island re-reads the screen geometry (displays plugged in or out, resolution).
 const GEOMETRY_POLL: Duration = Duration::from_secs(2);
 
+/// Development only: `ISLET_ISOLATED=1` runs a second instance next to an installed Islet, with
+/// no single-instance check, no manifest repair and no global shortcuts. Use it with
+/// `ISLET_BRIDGE_SOCKET` pointing at another socket.
+fn isolated() -> bool {
+    cfg!(debug_assertions) && std::env::var_os("ISLET_ISOLATED").is_some()
+}
+
 pub fn run() {
     logging::init();
     let demo_at_start = std::env::args().any(|arg| arg == "--demo");
 
-    let app = tauri::Builder::default()
+    let mut app = tauri::Builder::default();
+    if !isolated() {
         // Must be the first plugin.
-        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+        app = app.plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             let onboarded = lock(&app.state::<AppState>().settings)
                 .onboarding_completed_at
                 .is_some();
@@ -48,7 +56,9 @@ pub fn run() {
                     windows::ONBOARDING
                 },
             );
-        }))
+        }));
+    }
+    let app = app
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_autostart::init(
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
@@ -123,10 +133,16 @@ fn setup(app: &AppHandle, demo_at_start: bool) -> tauri::Result<()> {
         layout: Mutex::new(None),
     });
 
-    *lock(&app.state::<AppState>().bridge) = bridge::repair_manifest();
+    if isolated() {
+        tracing::warn!("isolated development instance: no manifest repair, no shortcuts");
+    } else {
+        *lock(&app.state::<AppState>().bridge) = bridge::repair_manifest();
+    }
     windows::refresh_geometry(app);
     platform::create_island(app, windows::ISLAND, "island.html")?;
-    shortcuts::register(app);
+    if !isolated() {
+        shortcuts::register(app);
+    }
     tray::create(app)?;
 
     // Every snapshot goes to every window; connection changes also update the tray.
@@ -140,6 +156,18 @@ fn setup(app: &AppHandle, demo_at_start: bool) -> tauri::Result<()> {
                 .providers
                 .iter()
                 .any(|p| p.id == islet_provider_meet::MEET && p.connected);
+            // Media states and counts only: never names or titles.
+            if let Some(s) = &snapshot.primary {
+                tracing::debug!(
+                    mic = ?s.state.mic,
+                    cam = ?s.state.cam,
+                    hand = ?s.state.hand,
+                    speaker = s.state.active_speaker.is_some(),
+                    participants = ?s.state.participant_count,
+                    status = ?s.status,
+                    "snapshot emitted"
+                );
+            }
             let _ = handle.emit("snapshot", &snapshot);
             if connected != Some(now) {
                 connected = Some(now);

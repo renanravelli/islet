@@ -69,7 +69,8 @@ pub use island::{create_island, place_island};
 mod island {
     use tauri::{AppHandle, Emitter, LogicalPosition, LogicalSize, Manager, WebviewUrl, Wry};
     use tauri_nspanel::{
-        CollectionBehavior, ManagerExt, PanelBuilder, PanelLevel, StyleMask, tauri_panel,
+        CollectionBehavior, ManagerExt, PanelBuilder, PanelLevel, StyleMask, TrackingAreaOptions,
+        tauri_panel,
     };
 
     // `tauri_panel!` expands to `unsafe` Objective-C calls written by tauri-nspanel; this module is
@@ -80,6 +81,16 @@ mod island {
                 can_become_key_window: true,
                 can_become_main_window: false,
                 is_floating_panel: true
+            }
+            // Always active: the app is never frontmost, and WebKit only tracks the pointer
+            // for the active app. The panel reports enter/exit to the UI instead.
+            with: {
+                tracking_area: {
+                    options: TrackingAreaOptions::new()
+                        .active_always()
+                        .mouse_entered_and_exited(),
+                    auto_resize: true
+                }
             }
         })
 
@@ -110,6 +121,9 @@ mod island {
             )
             .with_window(|window| {
                 window
+                    // Also clears the WKWebView's own background (drawsBackground), so only the
+                    // island's contour is drawn.
+                    .transparent(true)
                     .decorations(false)
                     .resizable(false)
                     .visible(false)
@@ -124,6 +138,14 @@ mod island {
         let app_for_events = app.clone();
         handler.window_did_resign_key(move |_| {
             let _ = app_for_events.emit_to("island", "island-blur", ());
+        });
+        let app_for_enter = app.clone();
+        handler.on_mouse_entered(move |_| {
+            let _ = app_for_enter.emit_to("island", "island-hover", true);
+        });
+        let app_for_exit = app.clone();
+        handler.on_mouse_exited(move |_| {
+            let _ = app_for_exit.emit_to("island", "island-hover", false);
         });
         panel.set_event_handler(Some(handler.as_ref()));
         // The handler must outlive the panel; the app keeps both for its whole life.

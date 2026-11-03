@@ -200,3 +200,15 @@ describe("execute", () => {
     expect(await result).toBeNull();
   });
 });
+
+describe("a hidden copy of a control", () => {
+  it("reads the rendered one, not the first in the document", () => {
+    document.body.innerHTML = `
+      <div jsname="hw0c9" data-is-muted="true" id="stale"></div>
+      <div jsname="hw0c9" data-is-muted="false" id="live"></div>`;
+    // jsdom has no layout: only the live copy reports a box.
+    const live = document.getElementById("live") as HTMLElement;
+    live.getClientRects = () => [new DOMRect(0, 0, 40, 40)] as unknown as DOMRectList;
+    expect(adapter().readState().state.self.mic).toBe("on");
+  });
+});

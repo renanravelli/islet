@@ -137,13 +137,26 @@ export function labelTargets(el: Element): Element[] {
   return ids.flatMap((id) => el.ownerDocument.getElementById(id) ?? []);
 }
 
-/** The first element any strategy finds, trying them in order, and which strategy found it. */
+/**
+ * Whether the element is laid out on the page. Meet can keep a hidden copy of a control (the
+ * lobby's, for example) whose state no longer changes; the rendered one is the live one.
+ */
+function rendered(el: Element): boolean {
+  return el.getClientRects().length > 0;
+}
+
+/**
+ * The first element any strategy finds, trying them in order, and which strategy found it.
+ * Among a strategy's matches the first rendered one wins; with none rendered (or no layout, as
+ * in tests), the first match.
+ */
 export function resolveWith(
   root: ParentNode,
   strategies: Strategy[],
 ): { element: Element; strategy: number } | null {
   for (const [index, strategy] of strategies.entries()) {
-    const [element] = matchAll(root, strategy);
+    const matches = matchAll(root, strategy);
+    const element = matches.find(rendered) ?? matches[0];
     if (element) return { element, strategy: index };
   }
   return null;

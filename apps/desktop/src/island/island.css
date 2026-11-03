@@ -1,11 +1,25 @@
-/* The island and the pill are always black, in both themes, and draw no camera dot. */
+/* The island and the pill are always black, in both themes, and draw no camera dot.
+   Sizes, colors and type follow the approved canvas ("Meet Island"). */
+
+.island-root {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
 
 .island {
   position: relative;
+  flex: none;
   overflow: hidden;
   background: var(--island-bg);
   color: var(--island-text);
   font-family: var(--font);
+  /* The panel grows before the island and shrinks after it, so the contour animates. */
+  transition:
+    width 0.26s cubic-bezier(0.2, 0.8, 0.2, 1),
+    height 0.26s cubic-bezier(0.2, 0.8, 0.2, 1),
+    border-radius 0.26s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .island-content {
@@ -13,96 +27,153 @@
   height: 100%;
 }
 
+/* Compact, with a notch: 88 pt ears at both sides, 14 pt padding. */
 .compact {
   all: unset;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   width: 100%;
   height: 100%;
+  padding: 0 14px;
   cursor: pointer;
 }
 div.compact {
   cursor: default;
 }
-.compact:focus-visible {
+.compact:focus-visible,
+.pill-body:focus-visible {
   outline: 2px solid var(--island-primary);
   outline-offset: -2px;
 }
 .ear {
   display: flex;
   align-items: center;
-  gap: 6px;
   width: 88px;
   flex: none;
   height: 100%;
 }
 .ear.left {
-  padding-left: 14px;
+  gap: 8px;
 }
 .ear.right {
-  padding-right: 14px;
+  gap: 7px;
   justify-content: flex-end;
 }
-.island.pill .ear {
-  width: auto;
-  flex: 1;
-}
 .notch-gap {
+  flex: none;
+}
+
+/* No notch: a 340×34 pill, fully rounded. */
+.pill-body {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  height: 100%;
+  padding: 0 14px;
+  cursor: pointer;
+}
+div.pill-body {
+  cursor: default;
+}
+.pill-side {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+.pill-side:last-child {
+  gap: 7px;
+}
+.pill-title {
   flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--island-text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .avatar {
   flex: none;
   border-radius: 50%;
   background: var(--island-control);
-  color: var(--island-text);
+  color: #ffffff;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  letter-spacing: 0.02em;
+  transition: box-shadow 0.2s ease;
 }
-.avatar.speaking {
-  box-shadow: 0 0 0 2px var(--island-speaking);
+.compact .avatar.is-speaking,
+.pill-body .avatar.is-speaking {
+  box-shadow: 0 0 0 1.5px var(--island-speaking);
 }
 
+/* Waveform: 3 pt bars, radius 2. Idle bars rest low and gray; speaking, they move in green. */
 .wave {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
-  height: 12px;
+  flex: none;
 }
 .wave i {
-  width: 2px;
+  width: 3px;
   height: 3px;
-  border-radius: 1px;
+  border-radius: 2px;
   background: var(--island-text-2);
+  transition:
+    height 0.2s ease,
+    background-color 0.2s ease;
 }
 .wave.active i {
+  height: var(--h);
   background: var(--island-speaking);
-  animation: wave 0.9s ease-in-out infinite;
+  animation: wave 0.9s ease-in-out infinite alternate;
+}
+.wave.attention i {
+  background: var(--island-attention);
+}
+.wave.active i:nth-child(2n) {
+  animation-duration: 0.7s;
+}
+.wave.active i:nth-child(3n) {
+  animation-duration: 1.1s;
 }
 .wave.active i:nth-child(2) {
-  animation-delay: 0.15s;
+  animation-delay: -0.2s;
 }
 .wave.active i:nth-child(3) {
-  animation-delay: 0.3s;
+  animation-delay: -0.45s;
 }
 .wave.active i:nth-child(4) {
-  animation-delay: 0.45s;
+  animation-delay: -0.1s;
+}
+.wave.active i:nth-child(5) {
+  animation-delay: -0.6s;
+}
+.wave.active i:nth-child(6) {
+  animation-delay: -0.3s;
+}
+.wave.active i:nth-child(7) {
+  animation-delay: -0.75s;
 }
 @keyframes wave {
-  0%,
-  100% {
-    height: 3px;
+  from {
+    transform: scaleY(0.35);
   }
-  50% {
-    height: 12px;
+  to {
+    transform: scaleY(1);
   }
 }
 
 .status-icon {
   display: inline-flex;
+  flex: none;
   color: var(--island-text);
 }
 .status-icon.danger {
@@ -119,11 +190,15 @@ div.compact {
   font-size: 12px;
   font-weight: 600;
   color: var(--island-text);
+  white-space: nowrap;
 }
 .ended-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-size: 12px;
   font-weight: 600;
-  color: var(--island-text-2);
+  white-space: nowrap;
 }
 
 .degraded-dot {
@@ -134,8 +209,9 @@ div.compact {
   flex: none;
 }
 
-/* Expanded: 560 wide, padding 0 20 18. */
+/* Expanded: 560 wide, padding 0 20 18, radius 28. */
 .expanded {
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -146,89 +222,126 @@ div.compact {
   align-items: center;
   flex: none;
 }
+.top-left,
+.top-right {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  flex: none;
+}
+.top-right {
+  justify-content: flex-end;
+  gap: 8px;
+}
 .top-strip .title {
-  flex: 1;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 13px;
+  font-size: 12px;
   color: var(--island-text-2);
-}
-.top-strip .notch-gap {
-  flex: none;
-}
-.top-right {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
 }
 .collapse {
   all: unset;
-  width: 24px;
-  height: 24px;
-  border-radius: 12px;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 14px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--island-text-2);
-  cursor: pointer;
-}
-.collapse:hover,
-.collapse:focus-visible {
   background: var(--island-control);
   color: var(--island-text);
+  cursor: pointer;
+  transition:
+    transform 0.12s ease,
+    filter 0.12s ease;
 }
 
 .speaking {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-top: 8px;
+  gap: 16px;
+  margin-top: 14px;
+  flex: none;
+}
+.speaker-tile {
+  position: relative;
+  flex: none;
+  width: 176px;
+  height: 99px;
+  border-radius: 12px;
+  background: var(--island-control);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: box-shadow 0.2s ease;
+}
+.speaker-tile.is-speaking {
+  box-shadow: inset 0 0 0 2px var(--island-speaking);
+}
+.tile-name {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 8px;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .speaking-text {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 6px;
 }
 .speaking-label {
   font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   color: var(--island-text-2);
 }
 .speaking-name {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 15px;
+  gap: 12px;
+  min-height: 22px;
+  min-width: 0;
+}
+.speaking-name .name {
+  min-width: 0;
+  font-size: 18px;
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .participants {
+  margin-top: 6px;
   font-size: 12px;
   color: var(--island-text-2);
 }
 
 .controls {
   display: flex;
-  justify-content: center;
-  gap: 28px;
-  margin-top: auto;
+  justify-content: space-between;
+  margin-top: 16px;
+  flex: none;
 }
 .control {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  width: 56px;
+  width: 76px;
 }
 .control-button {
   all: unset;
+  position: relative;
   width: 44px;
   height: 44px;
   border-radius: 22px;
@@ -238,8 +351,14 @@ div.compact {
   background: var(--island-control);
   color: var(--island-text);
   cursor: pointer;
+  transition:
+    transform 0.12s ease,
+    filter 0.12s ease,
+    background-color 0.2s ease,
+    color 0.2s ease;
 }
-.control-button:focus-visible {
+.control-button:focus-visible,
+.collapse:focus-visible {
   outline: 2px solid var(--island-primary);
   outline-offset: 2px;
 }
@@ -260,57 +379,141 @@ div.compact {
 }
 .control-label {
   font-size: 11px;
+  line-height: 13px;
   color: var(--island-text-2);
   white-space: nowrap;
 }
 
-/* Alert: 440 wide, amber outline and glow, inside the contour so it takes no extra clicks. */
+/* Feedback: hover lifts, press sinks, a sent command spins a ring until Meet confirms it,
+   and a failed one shakes with a red ring. The state itself changes only on confirmation. */
+.control-button:hover,
+.collapse:hover,
+.alert-button:hover {
+  filter: brightness(1.22);
+}
+.control-button.look-off:hover,
+.control-button.look-raised:hover,
+.alert-button.unmute:hover {
+  filter: brightness(0.9);
+}
+.control-button:active,
+.collapse:active,
+.alert-button:active {
+  transform: scale(0.92);
+}
+.control-button.pending::after,
+.alert-button.pending::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 999px;
+  border: 2px solid transparent;
+  border-top-color: var(--island-text);
+  border-right-color: var(--island-text);
+  animation: spin 0.8s linear infinite;
+  pointer-events: none;
+}
+.control-button.pending {
+  cursor: progress;
+}
+.control-button.failed,
+.alert-button.failed {
+  box-shadow: 0 0 0 2px var(--island-danger);
+  animation: shake 0.36s ease;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes shake {
+  0%,
+  100% {
+    translate: 0;
+  }
+  25% {
+    translate: -3px;
+  }
+  75% {
+    translate: 3px;
+  }
+}
+
+/* Alert: 440 wide, padding 0 16 14, radius 22, amber outline and glow inside the contour, so
+   the panel stays exactly the island's size. */
 .island.mode-alert {
   box-shadow:
     inset 0 0 0 1.5px var(--island-attention),
-    inset 0 0 18px color-mix(in srgb, var(--island-attention) 35%, transparent);
+    inset 0 -10px 28px color-mix(in srgb, var(--island-attention) 22%, transparent);
 }
 .alert {
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   height: 100%;
+  padding: 0 16px 14px;
 }
-.alert-body {
-  flex: 1;
-  display: flex;
+.alert .top-right {
+  gap: 6px;
+}
+.alert-tag {
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
-  padding: 0 14px 0 18px;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--island-attention);
+  white-space: nowrap;
 }
 .alert-text {
-  flex: 1;
-  font-size: 12.5px;
+  margin: 10px 0 0;
+  font-size: 14px;
   font-weight: 600;
-  line-height: 1.25;
+  line-height: 19px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.alert-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
 }
 .alert-button {
   all: unset;
-  height: 30px;
-  padding: 0 12px;
-  border-radius: 15px;
-  font-size: 12px;
+  position: relative;
+  box-sizing: border-box;
+  height: 44px;
+  padding: 0 18px;
+  border-radius: 22px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
+  transition:
+    transform 0.12s ease,
+    filter 0.12s ease;
 }
 .alert-button.dismiss {
   background: var(--island-control);
   color: var(--island-text);
 }
 .alert-button.unmute {
-  background: var(--island-primary);
-  color: #ffffff;
+  background: var(--island-attention);
+  color: #000000;
 }
 .alert-button:focus-visible {
   outline: 2px solid var(--island-text);
   outline-offset: 2px;
 }
 
-/* Last: it overrides .top-strip .notch-gap for the pill. */
-.island.pill .compact .notch-gap {
-  display: none;
+/* Last: ended dims everything, the timer included. */
+.compact.ended,
+.pill-body.ended,
+.compact.ended .timer,
+.pill-body.ended .timer {
+  color: var(--island-text-2);
 }

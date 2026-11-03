@@ -1,8 +1,16 @@
-// Stroke icons (2 px, round caps and joins), drawn for Islet. Decorative unless labelled.
+// Stroke icons (2 px, round caps and joins), as drawn in the approved canvas. Decorative unless labelled.
 
 import type { ReactNode } from "react";
 
-function Icon({ size = 20, children }: { size?: number; children: ReactNode }) {
+function Icon({
+  size = 20,
+  stroke = 2,
+  children,
+}: {
+  size?: number;
+  stroke?: number;
+  children: ReactNode;
+}) {
   return (
     <svg
       width={size}
@@ -10,7 +18,7 @@ function Icon({ size = 20, children }: { size?: number; children: ReactNode }) {
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth={2}
+      strokeWidth={stroke}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
@@ -21,54 +29,66 @@ function Icon({ size = 20, children }: { size?: number; children: ReactNode }) {
   );
 }
 
-type P = { size?: number };
+type P = { size?: number; stroke?: number };
 
 export const MicIcon = ({ size }: P) => (
   <Icon size={size}>
-    <rect x="9" y="3" width="6" height="11" rx="3" />
-    <path d="M5 11a7 7 0 0 0 14 0M12 18v3" />
+    <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" />
+    <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+    <path d="M12 19v3" />
   </Icon>
 );
 export const MicOffIcon = ({ size }: P) => (
   <Icon size={size}>
-    <path d="M15 9.5V6a3 3 0 0 0-5.8-1M9 9v2a3 3 0 0 0 5.1 2.1M5 11a7 7 0 0 0 11.8 5.1M19 11a7 7 0 0 1-.4 2.3M12 18v3M3 3l18 18" />
+    <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" />
+    <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+    <path d="M12 19v3" />
+    <path d="M3 3l18 18" />
   </Icon>
 );
 export const CamIcon = ({ size }: P) => (
   <Icon size={size}>
+    <path d="M16 13l5.2 3.5a.5.5 0 0 0 .8-.4V7.9a.5.5 0 0 0-.75-.43L16 10.5" />
     <rect x="2" y="6" width="14" height="12" rx="2" />
-    <path d="M16 10l6-3v10l-6-3" />
   </Icon>
 );
 export const CamOffIcon = ({ size }: P) => (
   <Icon size={size}>
-    <path d="M10 6h4a2 2 0 0 1 2 2v4M16 16a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2M16 10l6-3v10l-4-2M3 3l18 18" />
+    <path d="M16 13l5.2 3.5a.5.5 0 0 0 .8-.4V7.9a.5.5 0 0 0-.75-.43L16 10.5" />
+    <rect x="2" y="6" width="14" height="12" rx="2" />
+    <path d="M2 2l20 20" />
   </Icon>
 );
 export const HandIcon = ({ size }: P) => (
   <Icon size={size}>
-    <path d="M8 13V5a1.5 1.5 0 0 1 3 0v6M11 10V3.5a1.5 1.5 0 0 1 3 0V10M14 10V5a1.5 1.5 0 0 1 3 0v8c0 4-2.5 8-7 8-3 0-4.5-1.5-6-4l-1.5-3a1.5 1.5 0 0 1 2.6-1.5L8 15" />
+    <path d="M18 11V6a2 2 0 0 0-4 0" />
+    <path d="M14 10V4a2 2 0 0 0-4 0v2" />
+    <path d="M10 10.5V6a2 2 0 0 0-4 0v8" />
+    <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-6-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" />
   </Icon>
 );
 export const TabIcon = ({ size }: P) => (
   <Icon size={size}>
-    <rect x="3" y="4" width="18" height="16" rx="2" />
-    <path d="M3 9h18M13 13l3 3M16 13v3h-3" />
+    <path d="M15 3h6v6" />
+    <path d="M10 14 21 3" />
+    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
   </Icon>
 );
 export const LeaveIcon = ({ size }: P) => (
   <Icon size={size}>
-    <path d="M3 15c5-5 13-5 18 0l-2.5 2.5-3-1.5v-3a12 12 0 0 0-7 0v3l-3 1.5Z" />
+    <g transform="rotate(135 12 12)">
+      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+    </g>
   </Icon>
 );
-export const ChevronUpIcon = ({ size }: P) => (
-  <Icon size={size}>
-    <path d="M6 15l6-6 6 6" />
+export const ChevronUpIcon = ({ size, stroke }: P) => (
+  <Icon size={size} stroke={stroke}>
+    <path d="M18 15l-6-6-6 6" />
   </Icon>
 );
-export const CheckIcon = ({ size }: P) => (
-  <Icon size={size}>
-    <path d="M5 12.5l4.5 4.5L19 7.5" />
+export const CheckIcon = ({ size, stroke }: P) => (
+  <Icon size={size} stroke={stroke}>
+    <path d="M20 6 9 17l-5-5" />
   </Icon>
 );
 export const WarningIcon = ({ size }: P) => (

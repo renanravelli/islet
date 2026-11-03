@@ -3,11 +3,12 @@
 
 import type { Geometry, MeetingSession, Speaker } from "@islet/ui-types";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { useT } from "../i18n/i18n";
 import {
   CamIcon,
   CamOffIcon,
+  CheckIcon,
   ChevronUpIcon,
   HandIcon,
   LeaveIcon,
@@ -16,7 +17,16 @@ import {
   PersonIcon,
   TabIcon,
 } from "../shared/icons";
-import { type Control, contour, controls, duration, initials, type Mode, SIZE } from "./model";
+import {
+  avatarColor,
+  type Control,
+  contour,
+  controls,
+  duration,
+  initials,
+  type Mode,
+  SIZE,
+} from "./model";
 import "./island.css";
 
 export interface IslandViewProps {
@@ -28,6 +38,12 @@ export interface IslandViewProps {
   now: number;
   /** For an ended session: how long the call lasted. */
   endedDuration?: number;
+  /** The pointer is over the island: the compact island grows a little. */
+  hovered?: boolean;
+  /** A command sent and not confirmed yet: its button shows it is working. */
+  pending?: Control["command"] | null;
+  /** A command that just failed: its button flashes. */
+  failed?: Control["command"] | null;
   onExpand?: () => void;
   onCollapse?: () => void;
   onCommand?: (control: Control["command"]) => void;
@@ -36,11 +52,24 @@ export interface IslandViewProps {
   interactive?: boolean;
 }
 
+/** Waveform bar heights from the canvas, per place. */
+const WAVE = {
+  compact: [6, 12, 16, 9, 5],
+  pill: [6, 12, 16, 9],
+  expanded: [8, 14, 20, 12, 6, 10, 16],
+  alert: [6, 13, 16, 8],
+} as const;
+
+/** The expanded island's content width: 560 minus the 20 + 20 padding. */
+const EXPANDED_INNER = SIZE.expandedWidth - 40;
+/** The alert's content width: 440 minus the 16 + 16 padding. */
+const ALERT_INNER = SIZE.alertWidth - 32;
+
 export function IslandView(props: IslandViewProps) {
   const { mode, geometry } = props;
   const reduced = useReducedMotion();
   if (mode === "hidden" || !props.session) return null;
-  const { width, height } = contour(mode, geometry);
+  const { width, height } = contour(mode, geometry, props.hovered);
   const pill = !geometry.has_notch;
   const radius =
     mode === "expanded"
@@ -48,7 +77,7 @@ export function IslandView(props: IslandViewProps) {
       : mode === "alert"
         ? SIZE.alertRadius
         : pill
-          ? SIZE.pillHeight / 2
+          ? height / 2
           : SIZE.compactRadius;
   return (
     <div
@@ -64,15 +93,17 @@ export function IslandView(props: IslandViewProps) {
         <motion.div
           key={mode}
           className="island-content"
-          initial={reduced ? false : { opacity: 0, scale: 0.98 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={reduced ? undefined : { opacity: 0 }}
-          transition={{ duration: reduced ? 0 : 0.18 }}
+          initial={reduced ? false : { opacity: 0, filter: "blur(4px)" }}
+          animate={{ opacity: 1, filter: "blur(0px)" }}
+          exit={reduced ? undefined : { opacity: 0, filter: "blur(4px)" }}
+          transition={{ duration: reduced ? 0 : 0.2 }}
         >
           {mode === "expanded" ? (
             <Expanded {...props} />
           ) : mode === "alert" ? (
             <Alert {...props} />
+          ) : pill ? (
+            <Pill {...props} />
           ) : (
             <Compact {...props} />
           )}
@@ -86,8 +117,13 @@ function Avatar({ speaker, size }: { speaker: Speaker | null; size: number }) {
   const letters = initials(speaker?.display_name);
   return (
     <span
-      className={`avatar ${speaker ? "speaking" : ""}`}
-      style={{ width: size, height: size, fontSize: Math.round(size * 0.42) }}
+      className={`avatar ${speaker ? "is-speaking" : ""}`}
+      style={{
+        width: size,
+        height: size,
+        fontSize: Math.round(size * 0.4),
+        background: avatarColor(speaker?.display_name),
+      }}
       aria-hidden="true"
     >
       {letters ?? <PersonIcon size={Math.round(size * 0.6)} />}
@@ -95,13 +131,25 @@ function Avatar({ speaker, size }: { speaker: Speaker | null; size: number }) {
   );
 }
 
-function Wave({ active }: { active: boolean }) {
+function Wave({
+  bars,
+  active,
+  tone,
+}: {
+  bars: readonly number[];
+  active: boolean;
+  tone?: "attention";
+}) {
   return (
-    <span className={`wave ${active ? "active" : ""}`} aria-hidden="true">
-      <i />
-      <i />
-      <i />
-      <i />
+    <span
+      className={`wave ${active ? "active" : ""} ${tone ?? ""}`}
+      style={{ height: Math.max(...bars), gap: bars.length > 5 ? 3 : 2 }}
+      aria-hidden="true"
+    >
+      {bars.map((h, i) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: a fixed list of bars
+        <i key={i} style={{ "--h": `${h}px` } as CSSProperties} />
+      ))}
     </span>
   );
 }
@@ -122,6 +170,16 @@ function MicStatus({ session }: { session: MeetingSession }) {
   ) : (
     <span className="status-icon" role="img" aria-label={t("island.mic")}>
       <MicIcon size={14} />
+    </span>
+  );
+}
+
+function HandStatus({ session }: { session: MeetingSession }) {
+  const t = useT();
+  if (session.hand !== "on") return null;
+  return (
+    <span className="status-icon attention" role="img" aria-label={t("island.hand_lower")}>
+      <HandIcon size={14} />
     </span>
   );
 }
@@ -153,49 +211,122 @@ function Timer({
   );
 }
 
-function Compact(props: IslandViewProps) {
+/** The compact island is a button that expands it, except in the preview and once ended. */
+function Expandable({
+  props,
+  className,
+  children,
+}: {
+  props: IslandViewProps;
+  className: string;
+  children: ReactNode;
+}) {
   const t = useT();
-  const session = props.session as MeetingSession;
-  const ended = props.mode === "ended";
-  const left: ReactNode = ended ? (
-    <span className="ended-label">{t("island.ended")}</span>
-  ) : (
-    <>
-      <Avatar speaker={props.speaker} size={20} />
-      <Wave active={props.speaker !== null} />
-    </>
-  );
-  const right: ReactNode = (
-    <>
-      {!ended && session.hand === "on" && (
-        <span className="status-icon attention" role="img" aria-label={t("island.hand_lower")}>
-          <HandIcon size={14} />
-        </span>
-      )}
-      {!ended && <MicStatus session={session} />}
-      <Timer session={session} now={props.now} endedDuration={props.endedDuration} />
-      {!ended && <DegradedDot session={session} />}
-    </>
-  );
-  const body = (
-    <>
-      <span className="ear left">{left}</span>
-      <span className="notch-gap" />
-      <span className="ear right">{right}</span>
-    </>
-  );
-  if (!props.interactive || ended) {
-    return <div className="compact">{body}</div>;
+  if (!props.interactive || props.mode === "ended") {
+    return <div className={className}>{children}</div>;
   }
   return (
     <button
       type="button"
-      className="compact"
+      className={className}
       aria-label={t("island.expand")}
       onClick={props.onExpand}
     >
-      {body}
+      {children}
     </button>
+  );
+}
+
+function EndedLabel() {
+  const t = useT();
+  return (
+    <span className="ended-label">
+      <CheckIcon size={14} stroke={2.2} />
+      {t("island.ended")}
+    </span>
+  );
+}
+
+function Compact(props: IslandViewProps) {
+  const session = props.session as MeetingSession;
+  const ended = props.mode === "ended";
+  return (
+    <Expandable props={props} className={`compact ${ended ? "ended" : ""}`}>
+      <span className="ear left">
+        {ended ? (
+          <EndedLabel />
+        ) : (
+          <>
+            <Avatar speaker={props.speaker} size={20} />
+            <Wave bars={WAVE.compact} active={props.speaker !== null} />
+          </>
+        )}
+      </span>
+      <span className="notch-gap" style={{ width: props.geometry.notch_width }} />
+      <span className="ear right">
+        {!ended && <HandStatus session={session} />}
+        {!ended && <MicStatus session={session} />}
+        <Timer session={session} now={props.now} endedDuration={props.endedDuration} />
+        {!ended && <DegradedDot session={session} />}
+      </span>
+    </Expandable>
+  );
+}
+
+/** No notch: the same island as a floating pill below the menu bar. */
+function Pill(props: IslandViewProps) {
+  const session = props.session as MeetingSession;
+  const ended = props.mode === "ended";
+  return (
+    <Expandable props={props} className={`pill-body ${ended ? "ended" : ""}`}>
+      <span className="pill-side">
+        {ended ? (
+          <EndedLabel />
+        ) : (
+          <>
+            <Avatar speaker={props.speaker} size={20} />
+            <Wave bars={WAVE.pill} active={props.speaker !== null} />
+          </>
+        )}
+      </span>
+      <span className="pill-title">{ended ? "" : (session.title ?? "")}</span>
+      <span className="pill-side">
+        {!ended && <HandStatus session={session} />}
+        {!ended && <MicStatus session={session} />}
+        <Timer session={session} now={props.now} endedDuration={props.endedDuration} />
+        {!ended && <DegradedDot session={session} />}
+      </span>
+    </Expandable>
+  );
+}
+
+/** The strip level with the notch: content at both sides, nothing behind the camera. */
+function TopStrip({
+  geometry,
+  inner,
+  left,
+  right,
+}: {
+  geometry: Geometry;
+  inner: number;
+  left: ReactNode;
+  right: ReactNode;
+}) {
+  const gap = geometry.has_notch ? geometry.notch_width : 0;
+  const side = Math.max(0, (inner - gap) / 2);
+  return (
+    <div
+      className="top-strip"
+      style={{ height: geometry.has_notch ? geometry.top_inset : SIZE.pillHeight }}
+    >
+      <span className="top-left" style={{ width: side }}>
+        {left}
+      </span>
+      <span className="notch-gap" style={{ width: gap }} />
+      <span className="top-right" style={{ width: side }}>
+        {right}
+      </span>
+    </div>
   );
 }
 
@@ -203,62 +334,68 @@ function Expanded(props: IslandViewProps) {
   const t = useT();
   const session = props.session as MeetingSession;
   const speaker = props.speaker;
+  const name = speaker?.display_name ?? null;
   return (
-    <div className="expanded" style={{ paddingTop: 0 }}>
-      <div
-        className="top-strip"
-        style={{ height: props.geometry.has_notch ? props.geometry.top_inset : SIZE.pillHeight }}
-      >
-        <span className="title">{session.title ?? ""}</span>
-        <span
-          className="notch-gap"
-          style={{ width: props.geometry.has_notch ? props.geometry.notch_width : 0 }}
-        />
-        <span className="top-right">
-          <Timer session={session} now={props.now} />
-          <DegradedDot session={session} />
-          <button
-            type="button"
-            className="collapse"
-            aria-label={t("island.collapse")}
-            onClick={props.onCollapse}
-          >
-            <ChevronUpIcon size={16} />
-          </button>
-        </span>
-      </div>
+    <div className="expanded">
+      <TopStrip
+        geometry={props.geometry}
+        inner={EXPANDED_INNER}
+        left={<span className="title">{session.title ?? ""}</span>}
+        right={
+          <>
+            <Timer session={session} now={props.now} />
+            <DegradedDot session={session} />
+            <button
+              type="button"
+              className="collapse"
+              aria-label={t("island.collapse")}
+              onClick={props.onCollapse}
+            >
+              <ChevronUpIcon size={14} stroke={2.2} />
+            </button>
+          </>
+        }
+      />
       <div className="speaking">
-        <Avatar speaker={speaker} size={32} />
+        <div className={`speaker-tile ${speaker ? "is-speaking" : ""}`} aria-hidden="true">
+          <Avatar speaker={speaker} size={44} />
+          {name && <span className="tile-name">{name}</span>}
+        </div>
         <div className="speaking-text">
           <span className="speaking-label">{t("island.speaking_now")}</span>
           <span className="speaking-name">
-            {speaker?.display_name ? speaker.display_name : null}
-            <Wave active={speaker !== null} />
+            {name && <span className="name">{name}</span>}
+            <Wave bars={WAVE.expanded} active={speaker !== null} />
           </span>
+          {session.participant_count !== null && (
+            <span className="participants">
+              {t("island.participants", { n: session.participant_count })}
+            </span>
+          )}
         </div>
-        {session.participant_count !== null && (
-          <span className="participants">
-            {t("island.participants", { n: session.participant_count })}
-          </span>
-        )}
       </div>
       <div className="controls">
-        {controls(session).map((control) => (
-          <div className="control" key={control.command}>
-            <button
-              type="button"
-              className={`control-button look-${control.look}`}
-              aria-label={t(control.aria)}
-              aria-pressed={control.command === "toggle_hand" ? session.hand === "on" : undefined}
-              onClick={() => props.onCommand?.(control.command)}
-            >
-              <ControlIcon control={control} />
-            </button>
-            <span className="control-label" aria-hidden="true">
-              {t(control.label)}
-            </span>
-          </div>
-        ))}
+        {controls(session).map((control) => {
+          const pending = props.pending === control.command;
+          const failed = props.failed === control.command;
+          return (
+            <div className="control" key={control.command}>
+              <button
+                type="button"
+                className={`control-button look-${control.look} ${pending ? "pending" : ""} ${failed ? "failed" : ""}`}
+                aria-label={t(control.aria)}
+                aria-busy={pending || undefined}
+                aria-pressed={control.command === "toggle_hand" ? session.hand === "on" : undefined}
+                onClick={() => !pending && props.onCommand?.(control.command)}
+              >
+                <ControlIcon control={control} />
+              </button>
+              <span className="control-label" aria-hidden="true">
+                {t(control.label)}
+              </span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -281,22 +418,37 @@ function ControlIcon({ control }: { control: Control }) {
 
 function Alert(props: IslandViewProps) {
   const t = useT();
+  const pending = props.pending === "toggle_mic";
   return (
-    <div className="alert">
-      <div style={{ height: props.geometry.has_notch ? props.geometry.top_inset : 0 }} />
-      <div className="alert-body" role="alert">
-        <span className="status-icon danger">
-          <MicOffIcon size={18} />
-        </span>
-        <span className="alert-text">{t("island.alert")}</span>
+    <div className="alert" role="alert">
+      <TopStrip
+        geometry={props.geometry}
+        inner={ALERT_INNER}
+        left={
+          <span className="alert-tag">
+            <MicOffIcon size={14} />
+            {t("island.mic_muted")}
+          </span>
+        }
+        right={
+          <span className="alert-tag">
+            {t("island.you")}
+            <Wave bars={WAVE.alert} active tone="attention" />
+          </span>
+        }
+      />
+      <p className="alert-text">{t("island.alert")}</p>
+      <div className="alert-actions">
         <button type="button" className="alert-button dismiss" onClick={props.onDismissAlert}>
           {t("island.alert_dismiss")}
         </button>
         <button
           type="button"
-          className="alert-button unmute"
-          onClick={() => props.onCommand?.("toggle_mic")}
+          className={`alert-button unmute ${pending ? "pending" : ""} ${props.failed === "toggle_mic" ? "failed" : ""}`}
+          aria-busy={pending || undefined}
+          onClick={() => !pending && props.onCommand?.("toggle_mic")}
         >
+          <MicIcon size={16} />
           {t("island.alert_unmute")}
         </button>
       </div>

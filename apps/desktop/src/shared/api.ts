@@ -24,6 +24,8 @@ export type Events = {
   "app-info": AppInfo;
   "island-toggle": null;
   "island-blur": null;
+  /** The pointer entered (true) or left (false) the island panel. */
+  "island-hover": boolean;
 };
 
 const fallback = {
