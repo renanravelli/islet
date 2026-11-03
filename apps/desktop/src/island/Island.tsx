@@ -73,7 +73,7 @@ export function Island({
     }
     const id = setTimeout(send, SHRINK_DELAY_MS);
     return () => clearTimeout(id);
-  }, [mode, width, height]);
+  }, [mode, width, height, info.geometry.has_notch]);
 
   // Collapse: Esc, a click elsewhere (the panel loses key status), the chevron, or 6 s idle.
   const armIdle = useCallback(() => {
