@@ -10,6 +10,7 @@
 import type { Toggle } from "@islet/protocol-ts";
 import type { MeetAdapter } from "../content/meet/adapter";
 import {
+  isOnScreen,
   matchAll,
   type Registry,
   resolveWith,
@@ -381,7 +382,11 @@ class Runner {
       SelectorKey,
       Registry["keys"][SelectorKey],
     ][]) {
-      const found = resolveWith(this.doc, entry.strategies);
+      const found = resolveWith(
+        this.doc,
+        entry.strategies,
+        entry.onScreen ? isOnScreen : undefined,
+      );
       if (!found) {
         out[key] = null;
         continue;

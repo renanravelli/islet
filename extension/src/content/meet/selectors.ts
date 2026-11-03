@@ -32,6 +32,8 @@ export interface SelectorEntry {
   name?: Strategy[];
   /** For the participant count: where the number is, inside the resolved element. */
   count?: Strategy[];
+  /** Only elements on screen count: Meet may keep a notice in the page after hiding it. */
+  onScreen?: boolean;
 }
 
 /** Keys whose failure is reported in `degraded_reasons`. */
@@ -147,17 +149,29 @@ export function labelTargets(el: Element): Element[] {
 export function resolveWith(
   root: ParentNode,
   strategies: Strategy[],
+  accept: (el: Element) => boolean = () => true,
 ): { element: Element; strategy: number } | null {
   for (const [index, strategy] of strategies.entries()) {
-    const [element] = matchAll(root, strategy);
+    const element = matchAll(root, strategy).find(accept);
     if (element) return { element, strategy: index };
   }
   return null;
 }
 
 /** The first element any strategy finds, trying them in order. */
-export function resolve(root: ParentNode, strategies: Strategy[]): Element | null {
-  return resolveWith(root, strategies)?.element ?? null;
+export function resolve(
+  root: ParentNode,
+  strategies: Strategy[],
+  accept?: (el: Element) => boolean,
+): Element | null {
+  return resolveWith(root, strategies, accept)?.element ?? null;
+}
+
+/** Whether `el` is rendered and not hidden by visibility or opacity. Where the browser cannot
+ * tell (no `checkVisibility`), it counts as on screen. */
+export function isOnScreen(el: Element): boolean {
+  if (typeof el.checkVisibility !== "function") return true;
+  return el.checkVisibility({ opacityProperty: true, visibilityProperty: true });
 }
 
 /** Reads on/off from `el` with the key's rules; `unknown` when no rule decides. */

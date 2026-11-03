@@ -8,6 +8,7 @@ import type { Action, CommandErrorCode, DegradedReason, Toggle } from "@islet/pr
 import type { TabAction, TabState } from "../../shared/messages";
 import {
   DEGRADED_REASON,
+  isOnScreen,
   matchAll,
   type Registry,
   type ReportedKey,
@@ -52,7 +53,8 @@ export class MeetAdapter {
   ) {}
 
   private find(key: SelectorKey): Element | null {
-    return resolve(this.root, this.registry.keys[key].strategies);
+    const entry = this.registry.keys[key];
+    return resolve(this.root, entry.strategies, entry.onScreen ? isOnScreen : undefined);
   }
 
   private toggle(key: SelectorKey): { value: Toggle; found: boolean } {

@@ -101,6 +101,32 @@ describe("readState", () => {
   });
 });
 
+describe("the speaking-while-muted notice", () => {
+  const notice = () => document.querySelector<HTMLElement>("[role='dialog']");
+  const muted = () => adapter().readState().state.signals.speaking_while_muted;
+
+  it("counts Meet's bubble only while it is on screen", () => {
+    load(FIXTURES.inCallPtBr);
+    const el = notice();
+    if (!el) throw new Error("the fixture has no notice");
+    el.checkVisibility = () => true;
+    expect(muted()).toBe(true);
+    // Meet auto-hides the bubble; one left in the page, hidden, is not a notice.
+    el.checkVisibility = () => false;
+    expect(muted()).toBe(false);
+  });
+
+  it("ignores the screen-reader announcement of muting", () => {
+    load(FIXTURES.inCallPtBr);
+    notice()?.remove();
+    document.body.insertAdjacentHTML(
+      "beforeend",
+      '<div aria-live="polite">Seu microfone está desativado.</div>',
+    );
+    expect(muted()).toBe(false);
+  });
+});
+
 describe("meetingCode", () => {
   it("takes the code from the path", () => {
     expect(meetingCode("/abc-defg-hij")).toBe("abc-defg-hij");

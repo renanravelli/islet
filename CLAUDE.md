@@ -226,8 +226,10 @@ Every open item lives here, not in an assistant's memory. Remove an item when it
     `micButton`, `camButton`, `handButton`, `leaveButton`, `participantCount`. Still open:
     - `activeSpeaker`: an unverified strategy from one sample (obfuscated classes); needs a
       session alternating who speaks.
-    - `mutedSpeakingNotice`: not detected; confirm whether the notice appeared and its exact
-      pt-BR text, then redo `runCalibration("muted-speaking")`.
+    - `mutedSpeakingNotice`: the bubble is a `[role='dialog']` whose `aria-label` is "Você está
+      falando? O microfone está desativado." (found once, 2026-11-03), and it counts only while
+      on screen. Check that the island's alert shows and clears with it (setting on), whether
+      Meet shows it with the tab hidden, and the English text.
     - `meetingTitle`: only the instant-meeting case is known, where Meet shows the meeting code
       in the title slot (the island shows it too, as Meet does); check a calendar meeting.
     - `selfTile`: unverified, from one call with two people (the own tile has a
@@ -241,11 +243,6 @@ Every open item lives here, not in an assistant's memory. Remove an item when it
       the "Mac talks" step (detected after 55 s, with the Mac's mic off at capture): the
       speaker strategy seems to see remote speakers but not the user; it flickers with the
       audio level (2 to 4 of 20 samples), so the island needs to hold the last speaker ~2 s.
-      The real muted notice (owner's screenshot) is a bubble above the mic button: "Você está
-      falando? O microfone está desativado. Clique no microfone para ativá-lo." The pt-BR
-      pattern matches it, but the bubble is not an alert or live region and its element is
-      unknown: inspect it (right-click → Inspect while it shows) to fix the strategy's `css`.
-      "Seu microfone está desativado." is the screen-reader announcement of muting.
     - One `toggle_mic` was not confirmed in 1.5 s in step 6 (it worked every other time, in
       53 to 59 ms). Probable cause, per the owner: the mic was also toggled by hand around then.
       Watch for it in the next session.

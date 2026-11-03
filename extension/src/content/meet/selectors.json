@@ -1,6 +1,6 @@
 {
   "$comment": "Every DOM dependency of the Meet adapter (docs/adr/0004). Strategies are tried in order; regexes are case-insensitive and every locale is tried. A key is verified only when it was confirmed in a real call; verifiedIn lists the Meet languages it was confirmed in. jsname/jscontroller values come from the owner's inspection and the calibration runner in a real pt-BR call on 2026-11-03 (docs/meet-adapter/reports/); Google can rename them, so each key keeps a label-based fallback. Unverified strategies are educated guesses. See docs/meet-adapter/calibration.md.",
-  "version": 7,
+  "version": 8,
   "updated": "2026-11-03",
   "keys": {
     "leaveButton": {
@@ -176,18 +176,26 @@
       "verifiedIn": ["pt-BR"]
     },
     "mutedSpeakingNotice": {
+      "$comment": "UNVERIFIED: found once in a real pt-BR call (2026-11-03), not yet seen driving the island. The notice is a bubble above the mic button, a [role='dialog'] (jsname 'sRORxc', not used: the label is steadier) with aria-label \"Você está falando? O microfone está desativado.\" and the text \"…Clique no microfone para ativá-lo.\". It auto-hides (data-is-auto-hide), so only an on-screen notice counts. The English pattern is a guess. \"Seu microfone está desativado.\" is a different, screen-reader announcement of muting, not this notice.",
       "verified": false,
       "required": false,
+      "onScreen": true,
       "strategies": [
+        {
+          "ariaLabel": {
+            "en": "are you talking\\?.*(mic|microphone)",
+            "pt-BR": "(voc[êe] est[áa] falando|est[áa] falando)\\?.*microfone"
+          },
+          "css": "[role='dialog'][aria-label]"
+        },
         {
           "text": {
             "en": "are you talking\\?.*(mic|microphone)",
             "pt-BR": "(voc[êe] est[áa] falando|est[áa] falando)\\?.*microfone"
           },
-          "css": "[role='alert'], [aria-live]"
+          "css": "[role='dialog'], [role='alert'], [aria-live]"
         }
-      ],
-      "$comment": "UNVERIFIED. The real pt-BR notice is a bubble above the mic button: \"Você está falando? O microfone está desativado. Clique no microfone para ativá-lo.\" The pt-BR pattern matches that text, but the bubble is not a [role='alert'] or [aria-live] element and its element is still unknown. \"Seu microfone está desativado.\" is a different, screen-reader announcement of muting, not this notice."
+      ]
     },
     "meetingTitle": {
       "$comment": "Found in a real call. In an instant meeting it shows the meeting code, which the adapter drops; a calendar event's title is not confirmed yet.",
