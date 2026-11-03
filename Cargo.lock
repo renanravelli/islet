@@ -101,6 +101,11 @@ dependencies = [
 [[package]]
 name = "islet-provider-meet"
 version = "0.1.0"
+dependencies = [
+ "islet-core",
+ "islet-protocol",
+ "tokio",
+]
 
 [[package]]
 name = "itoa"

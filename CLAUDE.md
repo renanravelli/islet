@@ -91,9 +91,23 @@ cargo test --workspace                               # also regenerates the prot
 ```sh
 scripts/gen-extension-key.sh --print                 # the extension's public key and ID
 scripts/install-native-host.sh                       # dev: register target/debug host with Chrome
+pnpm test                                            # Vitest in every package (extension)
+pnpm build                                           # builds the extension into extension/dist
 ```
 
-Commands for the extension and the desktop app are added here as each phase lands.
+The extension loads from `extension/dist` (`docs/install-extension.md`). Commands for the desktop
+app are added in Phase 5.
+
+## Extension
+
+- Permissions are `nativeMessaging` and `https://meet.google.com/*` only; a test fails on
+  anything more. No `web_accessible_resources`: the content script is a standalone IIFE.
+- Every Meet DOM dependency goes through `selectors.json`; nothing in the adapter queries the
+  page directly. Selector keys are opaque `provider_details` in the core and must match
+  `islet-provider-meet` (a test checks).
+- Tests run against synthetic fixtures in `extension/test/fixtures`, marked as such. Real
+  snapshots come only through `docs/meet-adapter/calibration.md`, anonymized and reviewed.
+- Log through `src/shared/log.ts`: fixed text plus non-personal details, never content.
 
 ## Bridge protocol
 
@@ -153,18 +167,13 @@ and every UI string. Where it and the design canvas differ, the spec wins.
 
 Every open item lives here, not in an assistant's memory. Remove an item when it lands.
 
-- **Phase 4 (extension):**
-  - Put the public key from `crates/bridge/extension-ids.txt` in the extension manifest's `key`
-    and add a test that it derives to the development ID listed there.
-  - Service worker: answer `ping` with `pong` and re-send every meeting tab's state at once;
-    treat `error: app_not_running` as "app closed" without tearing down the port.
-  - Run `scripts/install-native-host.sh` against the real Chrome and load the unpacked extension.
-  - `docs/install-extension.md`: the manual "Load unpacked" guide the onboarding opens while
-    `EXTENSION_STORE_URL` is unset, with a "Troubleshooting" section (the onboarding links to it
-    after 60 s without a `hello`).
-  - `islet-provider-meet`: map protocol ⇄ core (`selectors.json` keys → core degraded reasons,
-    session ids per connection + tab), track command ids and their results, send `ping` when a
-    host connects so the extension re-sends its state at once.
+- **Manual, needs a real call (owner):**
+  - Calibrate the Meet selectors (`docs/meet-adapter/calibration.md`); all are
+    `"verified": false` until then.
+  - Run `scripts/install-native-host.sh` against the real Chrome, load `extension/dist` and
+    check the extension connects (`docs/install-extension.md`).
+  - Check that `focus_tab` brings Chrome to the front from another app on macOS.
+  - Check that a connection from another macOS user is refused by the bridge.
 - **Phase 5 (desktop app):**
   - Apply the unsafe rules for `src-tauri` (see "Unsafe code").
   - `packages/ui-types`: TS types for `UiSnapshot` and the other UI-facing core types, generated
@@ -192,9 +201,13 @@ Every open item lives here, not in an assistant's memory. Remove an item when it
   - Biome formats Markdown. If it rewrites the README's centered HTML header, the badges or the
     Mermaid blocks, turn Markdown formatting off.
   - Threat model: the development extension ID can be reproduced by anyone from the public key.
+  - `docs/testing/manual-checklist.md`, including the Meet section `calibration.md` points to.
 - **Phase 7 (CI):**
   - After `cargo test`, fail if `packages/protocol-ts` (and later `packages/ui-types`) changed
     (`git diff --exit-code`).
+  - The release attaches `islet-extension-<version>.zip` (built `extension/dist`), as
+    `docs/install-extension.md` describes.
+  - Issue template "Meet UI changed", which `docs/install-extension.md` mentions.
 
 ## Git
 

@@ -7,7 +7,7 @@
   },
   "files": {
     "ignoreUnknown": true,
-    "includes": ["**", "!packages/protocol-ts/src/generated"]
+    "includes": ["**", "!packages/protocol-ts/src/generated", "!extension/test/fixtures/**/*.html"]
   },
   "formatter": {
     "enabled": true,

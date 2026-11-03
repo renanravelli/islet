@@ -1,0 +1,161 @@
+// The Meet adapter: reads the call state from the page and performs commands (docs/adr/0004).
+//
+// It reads only the call controls, the active speaker tile, the participant count, the
+// meeting title and Meet's "are you talking?" notice, each through selectors.json. It never
+// reads the chat, never captures audio or video and makes no network requests.
+
+import type { Action, CommandErrorCode, DegradedReason, Toggle } from "@islet/protocol-ts";
+import type { TabAction, TabState } from "../../shared/messages";
+import {
+  DEGRADED_REASON,
+  type Registry,
+  readToggle,
+  resolve,
+  SELECTORS,
+  type SelectorKey,
+} from "./selectors";
+
+/** How long a command waits to see its effect before reporting `not_confirmed`. */
+export const CONFIRM_TIMEOUT_MS = 1500;
+const CONFIRM_POLL_MS = 50;
+
+/** Longest name or title kept; anything longer is cut. */
+const MAX_TEXT = 200;
+
+const MEETING_CODE = /^\/([a-z]{3}-[a-z]{4}-[a-z]{3})(?:[/?#]|$)/;
+
+const TOGGLES = [
+  { action: "toggle_mic", key: "micButton", field: "mic" },
+  { action: "toggle_cam", key: "camButton", field: "cam" },
+  { action: "toggle_hand", key: "handButton", field: "hand" },
+] as const satisfies { action: TabAction; key: SelectorKey; field: keyof TabState["self"] }[];
+
+export interface Reading {
+  /** Everything but `started_at`, which the session tracks. */
+  state: Omit<TabState, "started_at">;
+  /** Required keys that could not be resolved or read. */
+  failed: SelectorKey[];
+}
+
+export class MeetAdapter {
+  constructor(
+    private readonly root: Document,
+    private readonly registry: Registry = SELECTORS,
+  ) {}
+
+  private find(key: SelectorKey): Element | null {
+    return resolve(this.root, this.registry.keys[key].strategies);
+  }
+
+  private toggle(key: SelectorKey): { value: Toggle; found: boolean } {
+    const el = this.find(key);
+    if (!el) return { value: "unknown", found: false };
+    return { value: readToggle(el, this.registry.keys[key].state ?? []), found: true };
+  }
+
+  /** In a call (not the lobby, not the home page): the Leave button exists. */
+  detectInCall(): boolean {
+    return this.find("leaveButton") !== null;
+  }
+
+  readState(): Reading {
+    const failed = new Set<SelectorKey>();
+    const fail = (key: SelectorKey) => {
+      if (this.registry.keys[key].required) failed.add(key);
+    };
+
+    const leave = this.find("leaveButton");
+    if (!leave) fail("leaveButton");
+
+    const self: TabState["self"] = { mic: "unknown", cam: "unknown", hand: "unknown" };
+    const capabilities: Action[] = [];
+    for (const { action, key, field } of TOGGLES) {
+      const { value, found } = this.toggle(key);
+      self[field] = value;
+      if (found) capabilities.push(action);
+      if (value === "unknown") fail(key);
+    }
+    if (leave) capabilities.push("leave");
+    capabilities.push("focus_tab");
+
+    const title = text(this.find("meetingTitle"));
+    if (title === undefined) fail("meetingTitle");
+
+    let activeSpeaker: string | undefined;
+    const tile = this.find("activeSpeaker");
+    if (tile) {
+      activeSpeaker = text(resolve(tile, this.registry.keys.activeSpeaker.name ?? []));
+      if (activeSpeaker === undefined) fail("activeSpeaker");
+    }
+
+    const count = this.find("participantCount");
+    const participants = count ? firstNumber(count) : undefined;
+    if (participants === undefined) fail("participantCount");
+
+    const degraded: DegradedReason[] = [...failed].map((key) => DEGRADED_REASON[key]);
+    const state: Reading["state"] = {
+      meeting_code: meetingCode(this.root.location?.pathname ?? ""),
+      self,
+      signals: { speaking_while_muted: this.find("mutedSpeakingNotice") !== null },
+      capabilities,
+      health: degraded.length > 0 ? "degraded" : "ok",
+    };
+    if (title !== undefined) state.title = title;
+    if (activeSpeaker !== undefined) state.active_speaker = { display_name: activeSpeaker };
+    if (participants !== undefined) state.participant_count = participants;
+    if (degraded.length > 0) state.degraded_reasons = degraded;
+    return { state, failed: [...failed] };
+  }
+
+  /** Clicks the control and waits until the change shows on the page. */
+  async execute(action: TabAction): Promise<CommandErrorCode | null> {
+    if (action === "leave") {
+      const leave = this.find("leaveButton");
+      if (!leave) return "control_not_found";
+      click(leave);
+      return (await this.waitFor(() => !this.detectInCall())) ? null : "not_confirmed";
+    }
+
+    const key = TOGGLES.find((toggle) => toggle.action === action)?.key;
+    if (!key) return "unsupported";
+    const el = this.find(key);
+    if (!el) return "control_not_found";
+    const before = this.toggle(key).value;
+    click(el);
+    const confirmed = await this.waitFor(() => {
+      const now = this.toggle(key).value;
+      return now !== "unknown" && now !== before;
+    });
+    return confirmed ? null : "not_confirmed";
+  }
+
+  private async waitFor(done: () => boolean): Promise<boolean> {
+    const deadline = Date.now() + CONFIRM_TIMEOUT_MS;
+    while (Date.now() < deadline) {
+      await new Promise((resolve) => setTimeout(resolve, CONFIRM_POLL_MS));
+      if (done()) return true;
+    }
+    return done();
+  }
+}
+
+function click(el: Element): void {
+  if (el instanceof HTMLElement) el.click();
+  else el.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+}
+
+function text(el: Element | null): string | undefined {
+  const value = el?.textContent?.replace(/\s+/g, " ").trim();
+  return value ? value.slice(0, MAX_TEXT) : undefined;
+}
+
+function firstNumber(el: Element): number | undefined {
+  const source = `${el.textContent ?? ""} ${el.getAttribute("aria-label") ?? ""}`;
+  const match = source.match(/\d+/);
+  return match ? Number.parseInt(match[0], 10) : undefined;
+}
+
+/** The `abc-defg-hij` code from the URL path, or the first path segment. */
+export function meetingCode(pathname: string): string {
+  return MEETING_CODE.exec(pathname)?.[1] ?? pathname.split("/").filter(Boolean)[0] ?? "";
+}

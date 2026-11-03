@@ -1,0 +1,113 @@
+{
+  "$comment": "Every DOM dependency of the Meet adapter (docs/adr/0004). NOT CALIBRATED: the strategies are educated guesses from Meet's known conventions and have not been checked against a real Google Meet call, so all are verified=false. Follow docs/meet-adapter/calibration.md to verify or fix them. Strategies are tried in order; regexes are case-insensitive and every locale is tried.",
+  "version": 1,
+  "updated": "2026-11-03",
+  "keys": {
+    "leaveButton": {
+      "verified": false,
+      "required": true,
+      "strategies": [
+        { "ariaLabel": { "en": "^leave call", "pt-BR": "^sair da chamada" }, "css": "button" }
+      ]
+    },
+    "micButton": {
+      "verified": false,
+      "required": true,
+      "strategies": [
+        { "css": "button[data-is-muted][aria-label*='icrophone' i]" },
+        {
+          "ariaLabel": {
+            "en": "^turn (on|off) microphone",
+            "pt-BR": "^(ativar|desativar) (o )?microfone"
+          },
+          "css": "button"
+        }
+      ],
+      "state": [
+        { "attribute": "data-is-muted", "on": "false", "off": "true" },
+        {
+          "ariaLabel": {
+            "on": { "en": "^turn off microphone", "pt-BR": "^desativar (o )?microfone" },
+            "off": { "en": "^turn on microphone", "pt-BR": "^ativar (o )?microfone" }
+          }
+        }
+      ]
+    },
+    "camButton": {
+      "verified": false,
+      "required": true,
+      "strategies": [
+        { "css": "button[data-is-muted][aria-label*='camera' i]" },
+        {
+          "ariaLabel": {
+            "en": "^turn (on|off) camera",
+            "pt-BR": "^(ativar|desativar) (a )?c[âa]mera"
+          },
+          "css": "button"
+        }
+      ],
+      "state": [
+        { "attribute": "data-is-muted", "on": "false", "off": "true" },
+        {
+          "ariaLabel": {
+            "on": { "en": "^turn off camera", "pt-BR": "^desativar (a )?c[âa]mera" },
+            "off": { "en": "^turn on camera", "pt-BR": "^ativar (a )?c[âa]mera" }
+          }
+        }
+      ]
+    },
+    "handButton": {
+      "verified": false,
+      "required": true,
+      "strategies": [
+        {
+          "ariaLabel": {
+            "en": "^(raise|lower) hand",
+            "pt-BR": "^(levantar|abaixar) (a )?m[ãa]o"
+          },
+          "css": "button"
+        }
+      ],
+      "state": [
+        { "attribute": "aria-pressed", "on": "true", "off": "false" },
+        {
+          "ariaLabel": {
+            "on": { "en": "^lower hand", "pt-BR": "^abaixar (a )?m[ãa]o" },
+            "off": { "en": "^raise hand", "pt-BR": "^levantar (a )?m[ãa]o" }
+          }
+        }
+      ]
+    },
+    "activeSpeaker": {
+      "verified": false,
+      "required": false,
+      "strategies": [{ "css": "[data-participant-id][data-speaking='true']" }],
+      "name": [{ "css": "[data-self-name]" }, { "css": "[data-participant-name]" }]
+    },
+    "participantCount": {
+      "verified": false,
+      "required": true,
+      "strategies": [
+        { "ariaLabel": { "en": "^show everyone", "pt-BR": "^mostrar todos" }, "css": "button" }
+      ]
+    },
+    "mutedSpeakingNotice": {
+      "verified": false,
+      "required": false,
+      "strategies": [
+        {
+          "text": {
+            "en": "are you talking\\?.*(mic|microphone)",
+            "pt-BR": "(voc[êe] est[áa] falando|est[áa] falando)\\?.*microfone"
+          },
+          "css": "[role='alert'], [aria-live]"
+        }
+      ]
+    },
+    "meetingTitle": {
+      "verified": false,
+      "required": false,
+      "strategies": [{ "attribute": { "name": "data-meeting-title" } }]
+    }
+  }
+}
