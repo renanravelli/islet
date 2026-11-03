@@ -97,7 +97,7 @@ describe("island", () => {
   it("shows the camera icon only while the camera is on", () => {
     const camera = () => container.querySelector(".ear.right [aria-label='Câmera']");
     render("compact", { cam: "on" });
-    expect(camera()).not.toBeNull();
+    expect(camera()?.className).toContain("live");
     render("compact", { cam: "off" });
     expect(camera()).toBeNull();
     render("compact", { cam: "unknown" });

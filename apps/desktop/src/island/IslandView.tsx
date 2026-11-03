@@ -197,7 +197,7 @@ function CamStatus({ session }: { session: MeetingSession }) {
   const t = useT();
   if (session.cam !== "on") return null;
   return (
-    <span className="status-icon" role="img" aria-label={t("island.cam")}>
+    <span className="status-icon live" role="img" aria-label={t("island.cam")}>
       <CamIcon size={14} />
     </span>
   );
