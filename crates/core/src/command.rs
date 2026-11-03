@@ -2,10 +2,12 @@ use std::fmt;
 
 use serde::ser::SerializeSeq;
 use serde::{Deserialize, Serialize, Serializer};
+use ts_rs::TS;
 
 /// A meeting control the UI can trigger.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize, TS)]
 #[serde(rename_all = "snake_case")]
+#[ts(export, export_to = "ui-types/src/generated/ui.ts")]
 pub enum Command {
     ToggleMic,
     ToggleCam,
@@ -30,7 +32,12 @@ impl Command {
 }
 
 /// A set of [`Command`]s: what a provider or a session supports.
-#[derive(Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Default, PartialEq, Eq, Hash, TS)]
+#[ts(
+    export,
+    export_to = "ui-types/src/generated/ui.ts",
+    as = "Vec<Command>"
+)]
 pub struct CapabilitySet(u8);
 
 impl CapabilitySet {
@@ -100,8 +107,9 @@ impl Serialize for CapabilitySet {
 
 /// Why a command failed. Commands never change the displayed state; only a confirmed update
 /// from the provider does (`docs/adr/0003`).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, thiserror::Error)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, thiserror::Error, TS)]
 #[serde(rename_all = "snake_case")]
+#[ts(export, export_to = "ui-types/src/generated/ui.ts")]
 pub enum CommandError {
     #[error("no such session")]
     NoSession,

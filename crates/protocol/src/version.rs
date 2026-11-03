@@ -10,7 +10,11 @@ pub const PROTOCOL_VERSION: u64 = 1;
 /// The `v` field of every message. It serializes as `1`, and deserializing any other value fails,
 /// so a message from an incompatible peer cannot be mistaken for a valid one.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, TS)]
-#[ts(export, export_to = "protocol.ts", type = "1")]
+#[ts(
+    export,
+    export_to = "protocol-ts/src/generated/protocol.ts",
+    type = "1"
+)]
 pub struct ProtocolVersion;
 
 impl Serialize for ProtocolVersion {

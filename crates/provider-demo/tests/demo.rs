@@ -171,7 +171,7 @@ async fn leaving_ends_the_session() {
         handle.execute(key, Command::ToggleMic).await,
         Err(CommandError::SessionEnded)
     );
-    assert_eq!(next(&mut snapshot).await, UiSnapshot::default());
+    assert_eq!(next(&mut snapshot).await.primary, None);
 }
 
 #[tokio::test(start_paused = true)]

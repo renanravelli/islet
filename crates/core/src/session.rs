@@ -2,13 +2,15 @@ use std::borrow::Cow;
 use std::fmt;
 
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 
 use crate::CapabilitySet;
 
 /// A media or hand state. `Unknown` means the provider could not tell, and it is never shown as
 /// "on" (`docs/adr/0003`).
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, Serialize, Deserialize, TS)]
 #[serde(rename_all = "snake_case")]
+#[ts(export, export_to = "ui-types/src/generated/ui.ts")]
 pub enum Toggle {
     On,
     Off,
@@ -23,8 +25,9 @@ impl Toggle {
 }
 
 /// Identifies a provider, such as `meet` or `demo`.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize, TS)]
 #[serde(transparent)]
+#[ts(export, export_to = "ui-types/src/generated/ui.ts", type = "string")]
 pub struct ProviderId(Cow<'static, str>);
 
 impl ProviderId {
@@ -44,7 +47,8 @@ impl fmt::Display for ProviderId {
 }
 
 /// Identifies a session across providers. `id` is the provider's own id, such as a tab id.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize, TS)]
+#[ts(export, export_to = "ui-types/src/generated/ui.ts")]
 pub struct SessionKey {
     pub provider: ProviderId,
     pub id: String,
@@ -62,11 +66,13 @@ impl SessionKey {
 /// Everything a provider reports about one session. Providers always send it whole.
 ///
 /// `Debug` redacts the title and participant names so they cannot reach logs.
-#[derive(Clone, Default, PartialEq, Eq, Serialize)]
+#[derive(Clone, Default, PartialEq, Eq, Serialize, TS)]
+#[ts(export, export_to = "ui-types/src/generated/ui.ts")]
 pub struct SessionState {
     pub title: Option<String>,
     /// When the user joined, in milliseconds since the Unix epoch. The UI derives the call
     /// duration from it.
+    #[ts(type = "number")]
     pub started_at: u64,
     pub mic: Toggle,
     pub cam: Toggle,
@@ -97,36 +103,48 @@ impl fmt::Debug for SessionState {
     }
 }
 
-/// A participant. `Debug` redacts the name.
-#[derive(Clone, PartialEq, Eq, Serialize)]
+/// A participant. `display_name` is `None` when names are hidden
+/// ([`Settings::show_participant_names`](crate::Settings)); `Debug` redacts it.
+#[derive(Clone, PartialEq, Eq, Serialize, TS)]
+#[ts(export, export_to = "ui-types/src/generated/ui.ts")]
 pub struct Speaker {
-    pub display_name: String,
+    pub display_name: Option<String>,
 }
 
 impl Speaker {
     pub fn new(display_name: impl Into<String>) -> Self {
         Self {
-            display_name: display_name.into(),
+            display_name: Some(display_name.into()),
         }
+    }
+
+    /// Someone is speaking; who is not shown.
+    pub fn anonymous() -> Self {
+        Self { display_name: None }
     }
 }
 
 impl fmt::Debug for Speaker {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Speaker")
-            .field("display_name", &Redacted)
+            .field(
+                "display_name",
+                &self.display_name.as_ref().map(|_| Redacted),
+            )
             .finish()
     }
 }
 
 /// Experimental signals. A signal is `true` only when the provider observed it.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, TS)]
+#[ts(export, export_to = "ui-types/src/generated/ui.ts")]
 pub struct Signals {
     pub speaking_while_muted: bool,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, TS)]
 #[serde(tag = "status", rename_all = "snake_case")]
+#[ts(export, export_to = "ui-types/src/generated/ui.ts")]
 pub enum Health {
     #[default]
     Ok,
@@ -195,8 +213,9 @@ impl Health {
 /// set they define; as a second line of defense, [`ProviderDetail::new`] accepts only short
 /// identifier-shaped strings (ASCII letters, digits, `.`, `_`, `-`; 1 to 64 bytes), so free text
 /// with spaces or punctuation is refused.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, TS)]
 #[serde(transparent)]
+#[ts(export, export_to = "ui-types/src/generated/ui.ts", type = "string")]
 pub struct ProviderDetail(String);
 
 impl ProviderDetail {
@@ -217,8 +236,9 @@ impl ProviderDetail {
 }
 
 /// Why a session is degraded, in provider-agnostic terms.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, TS)]
 #[serde(rename_all = "snake_case")]
+#[ts(export, export_to = "ui-types/src/generated/ui.ts")]
 pub enum DegradedReason {
     /// No update from the provider within the stale timeout.
     Stale,
@@ -228,8 +248,9 @@ pub enum DegradedReason {
     ControlMissing(crate::Command),
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, TS)]
 #[serde(rename_all = "snake_case")]
+#[ts(export, export_to = "ui-types/src/generated/ui.ts")]
 pub enum Field {
     Title,
     Mic,
@@ -240,8 +261,9 @@ pub enum Field {
     SpeakingWhileMuted,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, TS)]
 #[serde(rename_all = "snake_case")]
+#[ts(export, export_to = "ui-types/src/generated/ui.ts")]
 pub enum EndReason {
     /// The user left or the meeting ended.
     CallEnded,
@@ -251,15 +273,17 @@ pub enum EndReason {
     Disconnected,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, TS)]
 #[serde(tag = "phase", rename_all = "snake_case")]
+#[ts(export, export_to = "ui-types/src/generated/ui.ts")]
 pub enum SessionStatus {
     Active,
     Ended { reason: EndReason },
 }
 
 /// A session as the UI sees it.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, TS)]
+#[ts(export, export_to = "ui-types/src/generated/ui.ts")]
 pub struct MeetingSession {
     pub key: SessionKey,
     pub status: SessionStatus,

@@ -5,8 +5,9 @@ use std::time::Duration;
 
 use islet_core::{
     CapabilitySet, Command, CommandError, CommandFuture, DegradedReason, EndReason, EventSink,
-    Health, Provider, ProviderId, SessionEvent, SessionHandle, SessionKey, SessionManager,
-    SessionState, SessionStatus, Timings, Toggle, UiSnapshot,
+    Field, Health, Provider, ProviderDetail, ProviderId, ProviderStatus, SessionEvent,
+    SessionHandle, SessionKey, SessionManager, SessionState, SessionStatus, Settings, Speaker,
+    Timings, Toggle, UiSnapshot,
 };
 use tokio::sync::watch;
 use tokio::time::sleep;
@@ -41,6 +42,14 @@ impl FakeProvider {
     fn emit(&self, event: SessionEvent) {
         let sink = self.sink.lock().unwrap();
         sink.as_ref().expect("subscribed").send(event).unwrap();
+    }
+
+    fn status(&self, status: ProviderStatus) {
+        let sink = self.sink.lock().unwrap();
+        sink.as_ref()
+            .expect("subscribed")
+            .set_status(status)
+            .unwrap();
     }
 
     fn update(&self, id: &str, state: SessionState) {
@@ -116,7 +125,7 @@ async fn next(snapshot: &mut watch::Receiver<UiSnapshot>) -> UiSnapshot {
 async fn publishes_the_primary_session() {
     let provider = FakeProvider::new(CapabilitySet::all(), Answer::Confirm);
     let (_handle, mut snapshot) = start(&provider);
-    assert_eq!(*snapshot.borrow(), UiSnapshot::default());
+    assert_eq!(snapshot.borrow().primary, None);
 
     provider.update("1", state(Toggle::On));
     let primary = next(&mut snapshot).await.primary.unwrap();
@@ -159,7 +168,7 @@ async fn ended_sessions_go_idle_after_five_seconds() {
         }
     );
 
-    assert_eq!(next(&mut snapshot).await, UiSnapshot::default());
+    assert_eq!(next(&mut snapshot).await.primary, None);
     assert_eq!(ended_at.elapsed(), Duration::from_secs(5));
 }
 
@@ -291,4 +300,100 @@ async fn commands_need_an_active_session() {
         Err(CommandError::SessionEnded)
     );
     assert!(provider.executed().is_empty());
+}
+
+fn named_state() -> SessionState {
+    SessionState {
+        title: Some("Synthetic title".into()),
+        active_speaker: Some(Speaker::new("Alex Example")),
+        health: Health::degraded([DegradedReason::Unreadable(Field::Mic)])
+            .with_details(ProviderDetail::new("micButton")),
+        ..state(Toggle::Unknown)
+    }
+}
+
+#[tokio::test(start_paused = true)]
+async fn hidden_names_never_reach_the_snapshot() {
+    let provider = FakeProvider::new(CapabilitySet::all(), Answer::Confirm);
+    let handle = SessionManager::new(Timings::default())
+        .with_settings(Settings {
+            show_participant_names: false,
+        })
+        .with_provider(provider.clone())
+        .spawn();
+    let mut snapshot = handle.snapshot();
+    provider.update("1", named_state());
+
+    let hidden = next(&mut snapshot).await;
+    let json = serde_json::to_string(&hidden).unwrap();
+    assert!(!json.contains("Alex"), "{json}");
+    assert!(!json.contains("Synthetic title"), "{json}");
+    let session = hidden.primary.unwrap();
+    // Someone is still speaking; who is not shown.
+    assert_eq!(session.state.active_speaker, Some(Speaker::anonymous()));
+    assert_eq!(session.state.title, None);
+
+    handle.set_settings(Settings::default());
+    let shown = next(&mut snapshot).await.primary.unwrap();
+    assert_eq!(
+        shown.state.active_speaker,
+        Some(Speaker::new("Alex Example"))
+    );
+}
+
+#[tokio::test(start_paused = true)]
+async fn diagnostics_have_no_personal_data() {
+    let provider = FakeProvider::new(CapabilitySet::all(), Answer::Confirm);
+    let (handle, mut snapshot) = start(&provider);
+    provider.status(ProviderStatus {
+        connected: true,
+        client_version: Some("0.1.0".into()),
+    });
+    provider.update("1", named_state());
+    next(&mut snapshot).await;
+    sleep(Duration::from_secs(3)).await;
+    provider.update("1", state(Toggle::On));
+    sleep(Duration::from_secs(1)).await;
+
+    let diagnostics = handle.diagnostics().await.unwrap();
+    let text = diagnostics.to_string();
+    let json = serde_json::to_string(&diagnostics).unwrap();
+    for out in [&text, &json] {
+        for secret in ["Alex", "Synthetic title", "fake:1", "\"1\""] {
+            assert!(!out.contains(secret), "{secret} in {out}");
+        }
+    }
+    let [fake] = diagnostics.providers.as_slice() else {
+        panic!("one provider expected");
+    };
+    assert!(fake.connected);
+    assert_eq!(fake.client_version.as_deref(), Some("0.1.0"));
+    assert_eq!(fake.sessions, 1);
+    assert_eq!(fake.health, Some(Health::Ok));
+    assert_eq!(fake.last_update_secs_ago, Some(1));
+    assert_eq!(fake.last_degraded_secs_ago, Some(4));
+    assert!(text.contains("unreadable mic"), "{text}");
+    assert!(text.contains("micButton"), "{text}");
+    assert!(text.contains("client 0.1.0"), "{text}");
+}
+
+#[tokio::test(start_paused = true)]
+async fn the_snapshot_lists_providers_with_their_last_health() {
+    let provider = FakeProvider::new(CapabilitySet::all(), Answer::Confirm);
+    let (_handle, mut snapshot) = start(&provider);
+    provider.update("1", named_state());
+    next(&mut snapshot).await;
+    provider.emit(SessionEvent::Ended {
+        id: "1".into(),
+        reason: EndReason::CallEnded,
+    });
+    // After the session is gone, its last health stays for the settings pane.
+    sleep(Duration::from_secs(6)).await;
+    let current = snapshot.borrow().clone();
+    assert_eq!(current.primary, None);
+    let [view] = current.providers.as_slice() else {
+        panic!("one provider expected");
+    };
+    assert_eq!(view.id, FAKE);
+    assert!(!view.last_health.as_ref().unwrap().is_ok());
 }

@@ -1,0 +1,17 @@
+{
+  "name": "@islet/ui-types",
+  "version": "0.1.0",
+  "private": true,
+  "description": "TypeScript types for the desktop UI, generated from islet-core. Never import them from the extension.",
+  "license": "MIT OR Apache-2.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "~7.0.2"
+  }
+}

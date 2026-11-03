@@ -10,8 +10,8 @@ use std::sync::{Arc, Mutex, MutexGuard};
 
 use islet_core::{
     CapabilitySet, Command, CommandError, CommandFuture, DegradedReason, EndReason, EventSink,
-    Field, Health, Provider, ProviderDetail, ProviderId, SessionEvent, SessionState, Signals,
-    Speaker, Toggle,
+    Field, Health, Provider, ProviderDetail, ProviderId, ProviderStatus, SessionEvent,
+    SessionState, Signals, Speaker, Toggle,
 };
 use islet_protocol as wire;
 use islet_protocol::{AppMessage, ExtensionMessage};
@@ -102,7 +102,20 @@ impl Provider for MeetProvider {
             let shared = self.shared.clone();
             tokio::spawn(async move {
                 while let Some(event) = inbox.recv().await {
+                    let changes_status = !matches!(
+                        event,
+                        BridgeEvent::Message {
+                            message: ExtensionMessage::SessionUpdate(_)
+                                | ExtensionMessage::SessionEnded(_)
+                                | ExtensionMessage::CommandResult(_)
+                                | ExtensionMessage::Pong,
+                            ..
+                        }
+                    );
                     if handle(&shared, &sink, event).is_err() {
+                        return;
+                    }
+                    if changes_status && sink.set_status(status(&shared)).is_err() {
                         return;
                     }
                 }
@@ -271,6 +284,19 @@ fn handle_message(
         ExtensionMessage::Pong => {}
     }
     Ok(())
+}
+
+/// Connected while any native host is connected (the host runs only while the extension's port
+/// is open); the version comes from the extension's hello.
+fn status(shared: &Mutex<Shared>) -> ProviderStatus {
+    let shared = lock(shared);
+    ProviderStatus {
+        connected: !shared.connections.is_empty(),
+        client_version: shared
+            .connections
+            .values()
+            .find_map(|c| c.extension_version.clone()),
+    }
 }
 
 fn session_id(connection: ConnectionId, tab_id: u32) -> String {

@@ -9,6 +9,7 @@ mod manager;
 mod provider;
 mod reducer;
 mod session;
+mod status;
 
 pub use command::{CapabilitySet, Command, CommandError};
 pub use manager::{SessionHandle, SessionManager};
@@ -18,3 +19,4 @@ pub use session::{
     DegradedReason, EndReason, Field, Health, MeetingSession, ProviderDetail, ProviderId,
     SessionKey, SessionState, SessionStatus, Signals, Speaker, Toggle,
 };
+pub use status::{Diagnostics, ProviderDiagnostics, ProviderStatus, ProviderView, Settings};

@@ -5,7 +5,18 @@ use tokio::sync::{mpsc, oneshot, watch};
 use tokio::time::{Instant, sleep_until, timeout};
 
 use crate::reducer::{Event, Sessions, Timings, UiSnapshot, reduce};
-use crate::{Command, CommandError, EventSink, Provider, ProviderId, SessionKey, SessionStatus};
+use crate::status::{Diagnostics, ProviderDiagnostics, ProviderStatus, ProviderView, Settings};
+use crate::{
+    Command, CommandError, EventSink, Health, Provider, ProviderId, SessionKey, SessionStatus,
+    Speaker,
+};
+
+/// What providers send the manager through their [`EventSink`].
+#[derive(Debug)]
+pub(crate) enum Input {
+    Event(Event),
+    Status(ProviderId, ProviderStatus),
+}
 
 /// Collects sessions from every provider, elects the primary one and publishes a
 /// [`UiSnapshot`] on a `watch` channel.
@@ -13,6 +24,7 @@ use crate::{Command, CommandError, EventSink, Provider, ProviderId, SessionKey, 
 /// It uses tokio's clock, so tests can pause and advance time.
 pub struct SessionManager {
     timings: Timings,
+    settings: Settings,
     providers: BTreeMap<ProviderId, Arc<dyn Provider>>,
 }
 
@@ -20,8 +32,16 @@ impl SessionManager {
     pub fn new(timings: Timings) -> Self {
         Self {
             timings,
+            settings: Settings::default(),
             providers: BTreeMap::new(),
         }
+    }
+
+    /// The settings to start with; [`SessionHandle::set_settings`] changes them later.
+    #[must_use]
+    pub fn with_settings(mut self, settings: Settings) -> Self {
+        self.settings = settings;
+        self
     }
 
     /// Adds a provider. A provider with the same id replaces the previous one.
@@ -45,6 +65,12 @@ impl SessionManager {
 
         let actor = Actor {
             sessions: Sessions::new(self.timings),
+            settings: self.settings,
+            statuses: self
+                .providers
+                .keys()
+                .map(|id| (id.clone(), Tracked::default()))
+                .collect(),
             providers: self.providers,
             snapshot: snapshot_tx,
         };
@@ -82,6 +108,18 @@ impl SessionHandle {
             .map_err(|_| CommandError::Disconnected)?;
         result.await.unwrap_or(Err(CommandError::Disconnected))
     }
+
+    /// Applies new settings and republishes the snapshot with them.
+    pub fn set_settings(&self, settings: Settings) {
+        let _ = self.requests.send(Request::SetSettings(settings));
+    }
+
+    /// The current diagnostics, or `None` once the manager has stopped.
+    pub async fn diagnostics(&self) -> Option<Diagnostics> {
+        let (reply, result) = oneshot::channel();
+        self.requests.send(Request::Diagnostics(reply)).ok()?;
+        result.await.ok()
+    }
 }
 
 #[derive(Debug)]
@@ -91,10 +129,23 @@ enum Request {
         command: Command,
         reply: oneshot::Sender<Result<(), CommandError>>,
     },
+    SetSettings(Settings),
+    Diagnostics(oneshot::Sender<Diagnostics>),
+}
+
+/// What the manager remembers about a provider beyond its sessions.
+#[derive(Debug, Default)]
+struct Tracked {
+    status: ProviderStatus,
+    last_health: Option<Health>,
+    last_update: Option<Instant>,
+    last_degraded: Option<(Health, Instant)>,
 }
 
 struct Actor {
     sessions: Sessions,
+    settings: Settings,
+    statuses: BTreeMap<ProviderId, Tracked>,
     providers: BTreeMap<ProviderId, Arc<dyn Provider>>,
     snapshot: watch::Sender<UiSnapshot>,
 }
@@ -102,9 +153,10 @@ struct Actor {
 impl Actor {
     async fn run(
         mut self,
-        mut events: mpsc::UnboundedReceiver<Event>,
+        mut events: mpsc::UnboundedReceiver<Input>,
         mut requests: mpsc::UnboundedReceiver<Request>,
     ) {
+        self.publish();
         loop {
             let deadline = self.sessions.next_deadline();
             let tick = async {
@@ -114,7 +166,14 @@ impl Actor {
                 }
             };
             let event = tokio::select! {
-                Some(event) = events.recv() => event,
+                Some(input) = events.recv() => match input {
+                    Input::Event(event) => event,
+                    Input::Status(provider, status) => {
+                        self.statuses.entry(provider).or_default().status = status;
+                        self.publish();
+                        continue;
+                    }
+                },
                 request = requests.recv() => match request {
                     Some(request) => {
                         self.handle(request);
@@ -129,6 +188,7 @@ impl Actor {
     }
 
     fn apply(&mut self, event: Event) {
+        let now = Instant::now();
         let event = match event {
             Event::Updated(key, mut state) => {
                 let declared = self
@@ -136,13 +196,43 @@ impl Actor {
                     .get(&key.provider)
                     .map_or(crate::CapabilitySet::EMPTY, |p| p.capabilities());
                 state.capabilities = state.capabilities.intersection(declared);
+                let tracked = self.statuses.entry(key.provider.clone()).or_default();
+                tracked.last_health = Some(state.health.clone());
+                tracked.last_update = Some(now);
+                if !state.health.is_ok() {
+                    tracked.last_degraded = Some((state.health.clone(), now));
+                }
                 Event::Updated(key, state)
             }
             other => other,
         };
         let sessions = std::mem::take(&mut self.sessions);
-        self.sessions = reduce(sessions, event, Instant::now());
-        let next = self.sessions.snapshot();
+        self.sessions = reduce(sessions, event, now);
+        self.publish();
+    }
+
+    /// Publishes the snapshot if it changed, with the settings applied.
+    fn publish(&self) {
+        let mut primary = self.sessions.primary();
+        if !self.settings.show_participant_names
+            && let Some(session) = &mut primary
+        {
+            session.state.title = None;
+            if session.state.active_speaker.is_some() {
+                session.state.active_speaker = Some(Speaker::anonymous());
+            }
+        }
+        let providers = self
+            .statuses
+            .iter()
+            .map(|(id, tracked)| ProviderView {
+                id: id.clone(),
+                connected: tracked.status.connected,
+                client_version: tracked.status.client_version.clone(),
+                last_health: tracked.last_health.clone(),
+            })
+            .collect();
+        let next = UiSnapshot { primary, providers };
         self.snapshot.send_if_modified(|current| {
             let changed = *current != next;
             if changed {
@@ -152,12 +242,44 @@ impl Actor {
         });
     }
 
-    fn handle(&self, request: Request) {
-        let Request::Execute {
-            key,
-            command,
-            reply,
-        } = request;
+    fn diagnostics(&self) -> Diagnostics {
+        let now = Instant::now();
+        let secs = |at: Instant| now.saturating_duration_since(at).as_secs();
+        Diagnostics {
+            providers: self
+                .statuses
+                .iter()
+                .map(|(id, tracked)| ProviderDiagnostics {
+                    provider: id.clone(),
+                    connected: tracked.status.connected,
+                    client_version: tracked.status.client_version.clone(),
+                    sessions: self.sessions.count_for(id),
+                    health: tracked.last_health.clone(),
+                    last_degraded: tracked.last_degraded.as_ref().map(|(h, _)| h.clone()),
+                    last_degraded_secs_ago: tracked.last_degraded.as_ref().map(|(_, at)| secs(*at)),
+                    last_update_secs_ago: tracked.last_update.map(secs),
+                })
+                .collect(),
+        }
+    }
+
+    fn handle(&mut self, request: Request) {
+        let (key, command, reply) = match request {
+            Request::Execute {
+                key,
+                command,
+                reply,
+            } => (key, command, reply),
+            Request::SetSettings(settings) => {
+                self.settings = settings;
+                self.publish();
+                return;
+            }
+            Request::Diagnostics(reply) => {
+                let _ = reply.send(self.diagnostics());
+                return;
+            }
+        };
         let provider = match self.check(&key, command) {
             Ok(provider) => provider,
             Err(error) => {

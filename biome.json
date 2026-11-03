@@ -7,7 +7,12 @@
   },
   "files": {
     "ignoreUnknown": true,
-    "includes": ["**", "!packages/protocol-ts/src/generated", "!extension/test/fixtures/**/*.html"]
+    "includes": [
+      "**",
+      "!packages/protocol-ts/src/generated",
+      "!packages/ui-types/src/generated",
+      "!extension/test/fixtures/**/*.html"
+    ]
   },
   "formatter": {
     "enabled": true,

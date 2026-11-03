@@ -5,6 +5,7 @@ use std::time::Duration;
 
 use serde::Serialize;
 use tokio::time::Instant;
+use ts_rs::TS;
 
 use crate::{
     CapabilitySet, DegradedReason, EndReason, Health, MeetingSession, SessionKey, SessionState,
@@ -41,10 +42,13 @@ pub enum Event {
     Tick,
 }
 
-/// What the island renders. `primary: None` means idle: the island is hidden.
-#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
+/// What the UI renders. `primary: None` means idle: the island is hidden. `providers` feeds the
+/// tray, the onboarding and the settings.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, TS)]
+#[ts(export, export_to = "ui-types/src/generated/ui.ts")]
 pub struct UiSnapshot {
     pub primary: Option<MeetingSession>,
+    pub providers: Vec<crate::ProviderView>,
 }
 
 /// Every session the manager knows about.
@@ -146,6 +150,14 @@ impl Sessions {
         self.entries.is_empty()
     }
 
+    /// Sessions of `provider`, active or ended.
+    pub fn count_for(&self, provider: &crate::ProviderId) -> usize {
+        self.entries
+            .keys()
+            .filter(|key| key.provider == *provider)
+            .count()
+    }
+
     /// The session as the UI should see it.
     pub fn get(&self, key: &SessionKey) -> Option<MeetingSession> {
         self.entries.get(key).map(|entry| entry.view(key))
@@ -170,6 +182,7 @@ impl Sessions {
     pub fn snapshot(&self) -> UiSnapshot {
         UiSnapshot {
             primary: self.primary(),
+            providers: Vec::new(),
         }
     }
 
@@ -290,7 +303,7 @@ mod tests {
     #[test]
     fn starts_idle() {
         let sessions = Sessions::new(Timings::default());
-        assert_eq!(sessions.snapshot(), UiSnapshot { primary: None });
+        assert_eq!(sessions.snapshot(), UiSnapshot::default());
         assert_eq!(sessions.next_deadline(), None);
     }
 

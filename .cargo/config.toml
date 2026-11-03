@@ -1,3 +1,4 @@
 [env]
-# `cargo test` regenerates the TypeScript protocol types here (ts-rs).
-TS_RS_EXPORT_DIR = { value = "packages/protocol-ts/src/generated", relative = true }
+# `cargo test` regenerates the TypeScript types here (ts-rs): crates/protocol into
+# packages/protocol-ts, crates/core into packages/ui-types.
+TS_RS_EXPORT_DIR = { value = "packages", relative = true }

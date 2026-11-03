@@ -3,7 +3,9 @@ use std::pin::Pin;
 
 use tokio::sync::mpsc;
 
+use crate::manager::Input;
 use crate::reducer::Event;
+use crate::status::ProviderStatus;
 use crate::{
     CapabilitySet, Command, CommandError, EndReason, ProviderId, SessionKey, SessionState,
 };
@@ -54,7 +56,7 @@ pub enum SessionEvent {
 #[derive(Debug, Clone)]
 pub struct EventSink {
     provider: ProviderId,
-    tx: mpsc::UnboundedSender<Event>,
+    tx: mpsc::UnboundedSender<Input>,
 }
 
 /// The session manager has stopped.
@@ -63,7 +65,7 @@ pub struct EventSink {
 pub struct ManagerStopped;
 
 impl EventSink {
-    pub(crate) fn new(provider: ProviderId, tx: mpsc::UnboundedSender<Event>) -> Self {
+    pub(crate) fn new(provider: ProviderId, tx: mpsc::UnboundedSender<Input>) -> Self {
         Self { provider, tx }
     }
 
@@ -76,6 +78,16 @@ impl EventSink {
                 Event::Ended(SessionKey::new(self.provider.clone(), id), reason)
             }
         };
-        self.tx.send(event).map_err(|_| ManagerStopped)
+        self.tx
+            .send(Input::Event(event))
+            .map_err(|_| ManagerStopped)
+    }
+
+    /// Reports the provider's own state: whether its client (for Meet, the extension) is
+    /// connected, and its version. Shown in the tray, the settings and the diagnostics.
+    pub fn set_status(&self, status: ProviderStatus) -> Result<(), ManagerStopped> {
+        self.tx
+            .send(Input::Status(self.provider.clone(), status))
+            .map_err(|_| ManagerStopped)
     }
 }

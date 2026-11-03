@@ -17,6 +17,7 @@ use tokio::sync::{mpsc, watch};
 use tokio::time::timeout;
 
 struct Harness {
+    seen: Option<MeetingSession>,
     handle: SessionHandle,
     snapshot: watch::Receiver<UiSnapshot>,
     bridge: mpsc::UnboundedSender<BridgeEvent>,
@@ -32,6 +33,7 @@ impl Harness {
             .spawn();
         let snapshot = handle.snapshot();
         Self {
+            seen: None,
             handle,
             snapshot,
             bridge,
@@ -62,12 +64,20 @@ impl Harness {
             .unwrap();
     }
 
+    /// The next snapshot whose primary session differs from the last one this test saw;
+    /// status-only changes are skipped.
     async fn next(&mut self) -> UiSnapshot {
-        timeout(Duration::from_secs(5), self.snapshot.changed())
-            .await
-            .expect("a snapshot")
-            .unwrap();
-        self.snapshot.borrow_and_update().clone()
+        loop {
+            let snapshot = self.snapshot.borrow_and_update().clone();
+            if snapshot.primary != self.seen {
+                self.seen = snapshot.primary.clone();
+                return snapshot;
+            }
+            timeout(Duration::from_secs(5), self.snapshot.changed())
+                .await
+                .expect("a snapshot")
+                .unwrap();
+        }
     }
 
     async fn next_primary(&mut self) -> MeetingSession {
@@ -119,7 +129,7 @@ async fn maps_session_updates() {
     assert_eq!(session.state.cam, Toggle::Off);
     assert_eq!(session.state.hand, Toggle::Unknown);
     assert_eq!(
-        session.state.active_speaker.map(|s| s.display_name),
+        session.state.active_speaker.and_then(|s| s.display_name),
         Some("Alex Example".to_owned())
     );
     assert_eq!(session.state.participant_count, Some(4));
@@ -182,7 +192,10 @@ async fn commands_round_trip_through_the_extension() {
     assert_eq!(command.await.unwrap(), Ok(()));
 
     // No optimistic update: the mic is still on until the extension reports otherwise.
-    assert!(!h.snapshot.has_changed().unwrap());
+    assert_eq!(
+        h.snapshot.borrow().primary.as_ref().unwrap().state.mic,
+        Toggle::On
+    );
 }
 
 #[tokio::test]
@@ -265,6 +278,58 @@ async fn sessions_end_with_their_tab_or_their_connection() {
             reason: EndReason::Disconnected
         }
     );
+}
+
+#[tokio::test]
+async fn reports_whether_the_extension_is_connected_and_its_version() {
+    let mut h = Harness::start();
+    let meet = |h: &Harness| {
+        h.snapshot
+            .borrow()
+            .providers
+            .iter()
+            .find(|p| p.id == MEET)
+            .cloned()
+            .unwrap_or_else(|| panic!("no Meet provider in the snapshot"))
+    };
+    // The manager publishes its providers as soon as it starts.
+    timeout(Duration::from_secs(5), async {
+        while h.snapshot.borrow().providers.is_empty() {
+            h.snapshot.changed().await.unwrap();
+        }
+    })
+    .await
+    .unwrap();
+    assert!(!meet(&h).connected);
+    let _sent = h.connect(1).await;
+    h.message(
+        1,
+        ExtensionMessage::Hello(Hello {
+            extension_version: "0.1.0".into(),
+            browser: "Chrome test".into(),
+        }),
+    );
+    timeout(Duration::from_secs(5), async {
+        while meet(&h).client_version.is_none() {
+            h.snapshot.changed().await.unwrap();
+        }
+    })
+    .await
+    .unwrap();
+    assert!(meet(&h).connected);
+    assert_eq!(meet(&h).client_version.as_deref(), Some("0.1.0"));
+
+    h.bridge
+        .send(BridgeEvent::Disconnected { connection: 1 })
+        .unwrap();
+    timeout(Duration::from_secs(5), async {
+        while meet(&h).connected {
+            h.snapshot.changed().await.unwrap();
+        }
+    })
+    .await
+    .unwrap();
+    assert_eq!(meet(&h).client_version, None);
 }
 
 #[tokio::test]

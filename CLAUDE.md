@@ -47,6 +47,7 @@ Decisions and their rationale live in `docs/adr/` (0001 monorepo/Tauri, 0002 bri
 | `apps/desktop`                                 | Tauri 2 + React app; OS code in `src-tauri/src/platform/`              |
 | `extension/`                                   | Chrome MV3 extension; Meet adapter in `src/content/meet/`              |
 | `packages/protocol-ts`                         | TS types generated from `crates/protocol` — never edit by hand         |
+| `packages/ui-types`                            | TS types generated from `crates/core`, desktop UI only — never by hand |
 | `docs/`                                        | Architecture, ADRs, provider guide, calibration, manual test checklist |
 | `scripts/`                                     | Dev scripts (extension key, native host install, version bump)         |
 
@@ -121,8 +122,10 @@ app are added in Phase 5.
 ## Bridge protocol
 
 - `crates/protocol` is the source of truth. `cargo test` regenerates
-  `packages/protocol-ts/src/generated/protocol.ts` (ts-rs, via `TS_RS_EXPORT_DIR` in
-  `.cargo/config.toml`). Commit the regenerated file with the Rust change; a stale file is a bug.
+  `packages/protocol-ts/src/generated/protocol.ts` (ts-rs; `TS_RS_EXPORT_DIR` in
+  `.cargo/config.toml` points at `packages/`). Commit the regenerated file with the Rust change;
+  a stale file is a bug. The same goes for `packages/ui-types` (from `islet-core`), which only
+  the desktop UI may import.
 - `packages/protocol-ts/src/index.ts` mirrors `PROTOCOL_VERSION` and `MAX_MESSAGE_BYTES`; a Rust
   test fails if they drift.
 - `crates/protocol/fixtures/` holds one synthetic JSON per message. They are the compatibility
@@ -207,15 +210,6 @@ Every open item lives here, not in an assistant's memory. Remove an item when it
     macOS, and that a connection from another macOS user is refused by the bridge.
 - **Phase 5 (desktop app):**
   - Apply the unsafe rules for `src-tauri` (see "Unsafe code").
-  - `packages/ui-types`: TS types for `UiSnapshot` and the other UI-facing core types, generated
-    with ts-rs. Never put them in `packages/protocol-ts`: the extension must not import app types.
-  - Both of these live in `islet-core`, not in the shell:
-    - Settings: a struct with `show_participant_names` (default on). When off, the
-      `SessionManager` strips names and titles before publishing the `UiSnapshot`; the UI never
-      receives them (the spec then shows a generic avatar, no initials).
-    - Diagnostics without personal data, for "Copiar diagnóstico": provider, extension version,
-      health, latest degraded reasons, time of the last update, connection state. A test checks
-      that the output has no names, titles or meeting codes.
   - The manifest repair routine from Phase 3 (`islet_bridge::manifest::ensure_chrome_manifest`) is
     the one routine behind all three entry points: every app start, step 2 of the onboarding
     (when the step mounts) and the "Reinstalar ponte do Chrome" button. The binary path changes
