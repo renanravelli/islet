@@ -1,0 +1,12 @@
+[package]
+name = "islet-native-host"
+description = "Chrome Native Messaging host bridging stdio to the Islet app's local socket."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[lints]
+workspace = true

@@ -1,0 +1,12 @@
+[package]
+name = "islet-provider-meet"
+description = "Google Meet provider: speaks the bridge protocol with the browser extension."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[lints]
+workspace = true

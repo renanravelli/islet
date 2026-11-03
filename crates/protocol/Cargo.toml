@@ -1,0 +1,12 @@
+[package]
+name = "islet-protocol"
+description = "Versioned messages exchanged over the Islet bridge."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[lints]
+workspace = true

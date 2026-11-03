@@ -1,0 +1,25 @@
+# ADR 0003 — `Unknown` state policy
+
+- Status: Accepted
+- Date: 2026-11-03
+
+## Context
+
+Islet reads meeting state from a third-party UI that changes without notice. Showing a muted
+microphone as live, or a live one as muted, is worse than showing nothing.
+
+## Decision
+
+1. Every media state is a tri-state `Toggle { On, Off, Unknown }`. There is no boolean shortcut.
+2. `Unknown` has its own neutral visual and is **never** rendered as "on".
+3. **No optimistic UI.** A command (e.g. toggle mic) does not change the displayed state; only a
+   state update confirmed by the provider does. A command that is not confirmed in time returns a
+   typed error (provider confirmation 1.5 s, core command timeout 2 s).
+4. When a provider cannot read part of the state, the session is marked `health: degraded` with
+   explicit reasons. A session without a heartbeat for 10 s becomes `degraded` with reason
+   `stale`. The island shows a discreet indicator with a tooltip instead of wrong data.
+
+## Consequences
+
+- Providers must report what they could not read instead of guessing.
+- The UI needs icons and labels for `Unknown` and `degraded` in every state.

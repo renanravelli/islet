@@ -1,0 +1,12 @@
+[package]
+name = "islet-provider-demo"
+description = "Scripted provider for demo mode and tests."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[lints]
+workspace = true

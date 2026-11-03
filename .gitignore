@@ -1,0 +1,38 @@
+# Rust
+/target/
+**/bindings/
+
+# JavaScript
+node_modules/
+dist/
+coverage/
+.vite/
+*.tsbuildinfo
+
+# Tauri
+apps/desktop/src-tauri/gen/schemas/
+apps/desktop/src-tauri/binaries/*
+!apps/desktop/src-tauri/binaries/.gitkeep
+
+# Extension packaging
+extension/*.zip
+
+# Secrets: never commit keys, certificates or tokens
+*.pem
+*.p12
+*.p8
+*.cer
+*.mobileprovision
+.env
+.env.*
+
+# OS / editors
+.DS_Store
+*.log
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Claude Code local state
+.claude/*.lock
+.claude/settings.local.json
