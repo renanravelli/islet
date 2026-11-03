@@ -10,6 +10,7 @@ import { MeetAdapter } from "../src/content/meet/adapter";
 import {
   DEGRADED_REASON,
   matchesAny,
+  SELECTOR_KEYS,
   SELECTORS,
   type SelectorKey,
 } from "../src/content/meet/selectors";
@@ -121,8 +122,8 @@ describe("selectors.json", () => {
   const keys = Object.keys(DEGRADED_REASON) as SelectorKey[];
 
   it("defines every key, verified only with the languages it was confirmed in", () => {
-    expect(Object.keys(SELECTORS.keys).sort()).toEqual([...keys].sort());
-    for (const key of keys) {
+    expect(Object.keys(SELECTORS.keys).sort()).toEqual([...SELECTOR_KEYS].sort());
+    for (const key of SELECTOR_KEYS) {
       const entry = SELECTORS.keys[key];
       expect(entry.strategies.length, key).toBeGreaterThan(0);
       const locales = entry.verifiedIn ?? [];

@@ -527,35 +527,40 @@ class Runner {
   private async leave(record: StepRecord): Promise<void> {
     const dialogs = "[role='dialog'], [role='alertdialog']";
     const before = new Set(this.doc.querySelectorAll(dialogs));
+    let dialog: Element | undefined;
+    let executing = true;
+    // Watch while leaving: the adapter answers the host's dialog itself, so it can be gone by
+    // the time execute returns. Its buttons are recorded; the runner never clicks them.
+    const watch = (async () => {
+      const watchStart = Date.now();
+      while (
+        Date.now() - watchStart < DIALOG_WATCH_MS &&
+        (executing || this.deps.adapter.detectInCall())
+      ) {
+        dialog = [...this.doc.querySelectorAll(dialogs)].find((el) => !before.has(el));
+        if (dialog) {
+          record.dialog = {
+            buttons: [...dialog.querySelectorAll("button, [role='button']")].map((button) =>
+              redact(
+                (button.getAttribute("aria-label") || button.textContent || "").trim(),
+                this.names,
+              ).slice(0, MAX_LABEL),
+            ),
+          };
+          return;
+        }
+        await sleep(50);
+      }
+    })();
     const start = Date.now();
     const result = await this.deps.adapter.execute("leave");
+    executing = false;
     record.commands.push({
       action: "leave",
       result: result ?? "confirmed",
       ms: Date.now() - start,
     });
-
-    let dialog: Element | undefined;
-    const watchStart = Date.now();
-    while (
-      !dialog &&
-      this.deps.adapter.detectInCall() &&
-      Date.now() - watchStart < DIALOG_WATCH_MS
-    ) {
-      dialog = [...this.doc.querySelectorAll(dialogs)].find((el) => !before.has(el));
-      if (!dialog) await sleep(POLL_MS);
-    }
-    if (dialog) {
-      // Recorded, never clicked.
-      record.dialog = {
-        buttons: [...dialog.querySelectorAll("button, [role='button']")].map((button) =>
-          redact(
-            (button.getAttribute("aria-label") || button.textContent || "").trim(),
-            this.names,
-          ).slice(0, MAX_LABEL),
-        ),
-      };
-    }
+    await watch;
     if (this.deps.adapter.detectInCall()) {
       record.waits.push(
         await this.waitFor(

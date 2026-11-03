@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CONFIRM_TIMEOUT_MS, MeetAdapter, meetingCode } from "../src/content/meet/adapter";
+import { SELECTORS } from "../src/content/meet/selectors";
 import { button, FIXTURES, load } from "./dom";
 
 const adapter = () => new MeetAdapter(document);
@@ -123,6 +124,68 @@ describe("execute", () => {
     load(FIXTURES.degraded);
     expect(await adapter().execute("toggle_mic")).toBe("control_not_found");
     expect(await adapter().execute("toggle_hand")).toBe("control_not_found");
+  });
+
+  it("answers the host's leave dialog by only leaving, never ending the call for everyone", async () => {
+    load(FIXTURES.inCallPtBr);
+    let endedForEveryone = false;
+    button(/sair da chamada/i).addEventListener("click", () =>
+      setTimeout(() => {
+        document.body.insertAdjacentHTML(
+          "beforeend",
+          `<div role="dialog"><button id="end-all">Encerrar a chamada para todos</button><button id="leave">Sair da chamada</button></div>`,
+        );
+        document
+          .getElementById("leave")
+          ?.addEventListener("click", () =>
+            setTimeout(() => load("<main><p>Você saiu da reunião</p></main>"), 200),
+          );
+        document.getElementById("end-all")?.addEventListener("click", () => {
+          endedForEveryone = true;
+        });
+      }, 300),
+    );
+    const result = adapter().execute("leave");
+    await vi.advanceTimersByTimeAsync(CONFIRM_TIMEOUT_MS);
+    expect(await result).toBeNull();
+    expect(endedForEveryone).toBe(false);
+  });
+
+  it("refuses to click a control that ends the call for everyone, whatever the selectors say", async () => {
+    load(FIXTURES.inCallPtBr);
+    // A broken registry whose "just leave" strategy points at the wrong button.
+    const keys = {
+      ...SELECTORS.keys,
+      justLeaveButton: { ...SELECTORS.keys.justLeaveButton, strategies: [{ css: "#end-all" }] },
+    };
+    const clicked = vi.fn();
+    button(/sair da chamada/i).addEventListener("click", () => {
+      document.body.insertAdjacentHTML(
+        "beforeend",
+        `<div role="dialog"><button id="end-all">Encerrar a chamada para todos</button></div>`,
+      );
+      document.getElementById("end-all")?.addEventListener("click", clicked);
+    });
+    const result = new MeetAdapter(document, { ...SELECTORS, keys }).execute("leave");
+    await vi.advanceTimersByTimeAsync(CONFIRM_TIMEOUT_MS + 100);
+    expect(await result).toBe("not_confirmed");
+    expect(clicked).not.toHaveBeenCalled();
+  });
+
+  it("leaves a dialog it does not recognize for the person to answer", async () => {
+    load(FIXTURES.inCallEn);
+    const clicked = vi.fn();
+    button(/leave call/i).addEventListener("click", () => {
+      document.body.insertAdjacentHTML(
+        "beforeend",
+        `<div role="dialog"><button id="other">Something new</button></div>`,
+      );
+      document.getElementById("other")?.addEventListener("click", clicked);
+    });
+    const result = adapter().execute("leave");
+    await vi.advanceTimersByTimeAsync(CONFIRM_TIMEOUT_MS + 100);
+    expect(await result).toBe("not_confirmed");
+    expect(clicked).not.toHaveBeenCalled();
   });
 
   it("confirms leaving once the call is gone", async () => {

@@ -154,6 +154,10 @@ warnings. UI changes must also be checked in demo mode (`--demo`), with and with
   padding `0 20 18`, five 44 pt round buttons with 11 pt labels (chat is hidden). Alert: 440 pt, 22 pt radius, amber
   outline and glow. No-notch pill: 340×34 pt, fully rounded. Stroke SVG icons, no emoji. System
   font. Respect `prefers-reduced-motion`; text contrast ≥ 4.5:1.
+- **Leave never ends the call for everyone.** When Meet asks the host whether to leave or end
+  the call for everyone, the adapter picks "Sair da chamada" / "leave" (`justLeaveButton`). It
+  refuses to click any control whose label ends the call for everyone, whatever a selector says
+  (tested), and leaves a dialog it does not recognize for the person to answer.
 - **Out of scope for v0.1:** Windows, Linux, Teams, Zoom, Slack, calendar reminders, speaker video
   thumbnails, OS-level call detection, system-level mute, Firefox, Safari, Chrome Web Store
   publication.
@@ -185,8 +189,8 @@ Every open item lives here, not in an assistant's memory. Remove an item when it
       pt-BR text, then redo `runCalibration("muted-speaking")`.
     - `meetingTitle`: only the instant-meeting case (the code, dropped) is known; check a
       calendar meeting.
-    - Leaving as the host opens "Sair da chamada" / "Encerrar a chamada para todos"; decide
-      whether Leave clicks "Sair da chamada" by itself.
+    - `justLeaveButton`: confirm in a session as the host that Leave picks "Sair da chamada"
+      and the call goes on for the others.
     - One `toggle_mic` was not confirmed in 1.5 s in step 6 (it worked every other time, in
       53 to 59 ms). Probable cause, per the owner: the mic was also toggled by hand around then.
       Watch for it in the next session.

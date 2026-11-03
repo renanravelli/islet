@@ -34,7 +34,8 @@ export interface SelectorEntry {
   count?: Strategy[];
 }
 
-export type SelectorKey =
+/** Keys whose failure is reported in `degraded_reasons`. */
+export type ReportedKey =
   | "leaveButton"
   | "micButton"
   | "camButton"
@@ -43,6 +44,11 @@ export type SelectorKey =
   | "participantCount"
   | "mutedSpeakingNotice"
   | "meetingTitle";
+
+export type SelectorKey =
+  | ReportedKey
+  /** The host's "leave, do not end the call for everyone" choice. Never reported. */
+  | "justLeaveButton";
 
 export interface Registry {
   version: number;
@@ -53,7 +59,7 @@ export interface Registry {
 export const SELECTORS = registry as Registry;
 
 /** How each key is reported in `degraded_reasons`. */
-export const DEGRADED_REASON: Record<SelectorKey, DegradedReason> = {
+export const DEGRADED_REASON: Record<ReportedKey, DegradedReason> = {
   leaveButton: "leave_button",
   micButton: "mic_button",
   camButton: "cam_button",
@@ -63,6 +69,12 @@ export const DEGRADED_REASON: Record<SelectorKey, DegradedReason> = {
   mutedSpeakingNotice: "muted_speaking_notice",
   meetingTitle: "meeting_title",
 };
+
+/** Every key in the registry. */
+export const SELECTOR_KEYS: SelectorKey[] = [
+  ...(Object.keys(DEGRADED_REASON) as ReportedKey[]),
+  "justLeaveButton",
+];
 
 const compiled = new Map<string, RegExp>();
 

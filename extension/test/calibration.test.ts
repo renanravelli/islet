@@ -41,15 +41,24 @@ function wireButtons(): void {
   toggle("hw0c9", "Turn on microphone", "Turn off microphone", "data-is-muted");
   toggle("psRWwc", "Turn on camera", "Turn off camera", "data-is-muted");
   toggle("FpSaz", "Raise hand", "Lower hand", "aria-pressed");
+  // Meet asks the host before leaving.
   document.querySelector("[jsname='CQylAd']")?.addEventListener("click", () =>
     setTimeout(() => {
       document.body.insertAdjacentHTML(
         "beforeend",
-        `<div role="dialog"><button>Just leave the call</button><button>End the call for everyone</button></div>`,
+        `<div role="dialog"><button id="just-leave">Just leave the call</button><button id="end-all">End the call for everyone</button></div>`,
       );
+      document
+        .getElementById("just-leave")
+        ?.addEventListener("click", () => setTimeout(() => load(LEFT_PAGE), 200));
+      document.getElementById("end-all")?.addEventListener("click", () => {
+        endedForEveryone = true;
+      });
     }, 300),
   );
 }
+
+let endedForEveryone = false;
 
 function joinCall(): void {
   load(FIXTURES.inCallEn);
@@ -127,6 +136,7 @@ function deps(react = respond) {
 }
 
 beforeEach(() => {
+  endedForEveryone = false;
   vi.useFakeTimers();
   saved = [];
   warnings = [];
@@ -200,10 +210,14 @@ describe("runCalibration", () => {
     expect(step(afterLeave, "leave").dialog).toEqual({
       buttons: ["Just leave the call", "End the call for everyone"],
     });
+    // Islet answered the host's dialog by only leaving: no question for the person, no
+    // call ended for everyone.
     expect(step(afterLeave, "leave").commands[0]).toMatchObject({
       action: "leave",
-      result: "not_confirmed",
+      result: "confirmed",
     });
+    expect(step(afterLeave, "leave").waits).toEqual([]);
+    expect(endedForEveryone).toBe(false);
     expect(step(afterLeave, "left").observed?.inCall).toBe(false);
   });
 

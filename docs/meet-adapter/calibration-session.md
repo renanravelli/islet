@@ -120,8 +120,11 @@ with its summary printed in the console):
 
 ### 8. Leave
 
-- **The runner** clicks Leave through `execute`. If Meet opens a dialog, it records the labels of
-  its buttons **without clicking any** and asks you to answer it by hand.
+- **The runner** clicks Leave through `execute`. When Meet asks the host whether to leave or end
+  the call for everyone, the adapter picks **Sair da chamada**; it never ends the call for
+  everyone. The runner records the dialog's button labels. If a dialog it does not recognize
+  stays open, it asks you to answer it by hand.
+- **Check:** on the iPhone, the call goes on without the Mac.
 - **No snapshot.** The report is saved just before this step, in case leaving reloads the page.
 
 ### 9. After leaving

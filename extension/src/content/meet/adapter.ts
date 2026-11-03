@@ -9,6 +9,7 @@ import type { TabAction, TabState } from "../../shared/messages";
 import {
   DEGRADED_REASON,
   type Registry,
+  type ReportedKey,
   readToggle,
   resolve,
   SELECTORS,
@@ -21,6 +22,9 @@ const CONFIRM_POLL_MS = 50;
 
 /** Longest name or title kept; anything longer is cut. */
 const MAX_TEXT = 200;
+
+/** A control that would end the meeting for everyone. Islet never clicks one. */
+const ENDS_FOR_EVERYONE = /encerrar|para todos|for everyone|for all|end (the )?(call|meeting)/i;
 
 const MEETING_CODE = /^\/([a-z]{3}-[a-z]{4}-[a-z]{3})(?:[/?#]|$)/;
 const MEETING_CODE_TEXT = /^[a-z]{3}-[a-z]{4}-[a-z]{3}$/i;
@@ -35,7 +39,7 @@ export interface Reading {
   /** Everything but `started_at`, which the session tracks. */
   state: Omit<TabState, "started_at">;
   /** Required keys that could not be resolved or read. */
-  failed: SelectorKey[];
+  failed: ReportedKey[];
 }
 
 export class MeetAdapter {
@@ -60,8 +64,8 @@ export class MeetAdapter {
   }
 
   readState(): Reading {
-    const failed = new Set<SelectorKey>();
-    const fail = (key: SelectorKey) => {
+    const failed = new Set<ReportedKey>();
+    const fail = (key: ReportedKey) => {
       if (this.registry.keys[key].required) failed.add(key);
     };
 
@@ -115,12 +119,7 @@ export class MeetAdapter {
 
   /** Clicks the control and waits until the change shows on the page. */
   async execute(action: TabAction): Promise<CommandErrorCode | null> {
-    if (action === "leave") {
-      const leave = this.find("leaveButton");
-      if (!leave) return "control_not_found";
-      click(leave);
-      return (await this.waitFor(() => !this.detectInCall())) ? null : "not_confirmed";
-    }
+    if (action === "leave") return this.leave();
 
     const key = TOGGLES.find((toggle) => toggle.action === action)?.key;
     if (!key) return "unsupported";
@@ -135,14 +134,42 @@ export class MeetAdapter {
     return confirmed ? null : "not_confirmed";
   }
 
-  private async waitFor(done: () => boolean): Promise<boolean> {
+  /**
+   * Leaves the call, and only leaves: when Meet asks the host whether to end the call for
+   * everyone, it picks the plain "leave" choice. Both clicks share the 1.5 s confirmation.
+   */
+  private async leave(): Promise<CommandErrorCode | null> {
+    const leave = this.find("leaveButton");
+    if (!leave) return "control_not_found";
     const deadline = Date.now() + CONFIRM_TIMEOUT_MS;
+    click(leave);
+    await this.waitFor(
+      () => !this.detectInCall() || this.find("justLeaveButton") !== null,
+      deadline,
+    );
+    if (!this.detectInCall()) return null;
+
+    const justLeave = this.find("justLeaveButton");
+    // A dialog this adapter does not recognize stays on screen for the person to answer.
+    if (!justLeave || endsForEveryone(justLeave)) return "not_confirmed";
+    click(justLeave);
+    return (await this.waitFor(() => !this.detectInCall(), deadline)) ? null : "not_confirmed";
+  }
+
+  private async waitFor(
+    done: () => boolean,
+    deadline = Date.now() + CONFIRM_TIMEOUT_MS,
+  ): Promise<boolean> {
     while (Date.now() < deadline) {
       await new Promise((resolve) => setTimeout(resolve, CONFIRM_POLL_MS));
       if (done()) return true;
     }
     return done();
   }
+}
+
+function endsForEveryone(el: Element): boolean {
+  return ENDS_FOR_EVERYONE.test(`${el.getAttribute("aria-label") ?? ""} ${el.textContent ?? ""}`);
 }
 
 function click(el: Element): void {

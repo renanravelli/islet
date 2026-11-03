@@ -1,6 +1,6 @@
 {
   "$comment": "Every DOM dependency of the Meet adapter (docs/adr/0004). Strategies are tried in order; regexes are case-insensitive and every locale is tried. A key is verified only when it was confirmed in a real call; verifiedIn lists the Meet languages it was confirmed in. jsname/jscontroller values come from the owner's inspection and the calibration runner in a real pt-BR call on 2026-11-03 (docs/meet-adapter/reports/); Google can rename them, so each key keeps a label-based fallback. Unverified strategies are educated guesses. See docs/meet-adapter/calibration.md.",
-  "version": 3,
+  "version": 4,
   "updated": "2026-11-03",
   "keys": {
     "leaveButton": {
@@ -193,6 +193,27 @@
       "strategies": [
         {
           "css": "div[jsname='NeC6gb'][jscontroller='yEvoid']"
+        }
+      ]
+    },
+    "justLeaveButton": {
+      "$comment": "The button that only leaves, in the dialog Meet shows the host on Leave (\"Sair da chamada\" next to \"Encerrar a chamada para todos\" in the pt-BR session). Labels seen, clicking not confirmed yet. Islet never ends the call for everyone: the adapter also refuses any control whose label says so.",
+      "verified": false,
+      "required": false,
+      "strategies": [
+        {
+          "text": {
+            "en": "^\\s*(just )?leave( the)? call\\b",
+            "pt-BR": "^\\s*sair da chamada\\b"
+          },
+          "css": "[role='dialog'] button, [role='alertdialog'] button, [role='dialog'] [role='button'], [role='alertdialog'] [role='button']"
+        },
+        {
+          "ariaLabel": {
+            "en": "^\\s*(just )?leave( the)? call\\b",
+            "pt-BR": "^\\s*sair da chamada\\b"
+          },
+          "css": "[role='dialog'] button, [role='alertdialog'] button, [role='dialog'] [role='button'], [role='alertdialog'] [role='button']"
         }
       ]
     }
