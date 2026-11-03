@@ -128,12 +128,26 @@ warnings. UI changes must also be checked in demo mode (`--demo`), with and with
   `#A1A1A6`, button surface `#2C2C2E`, active speech `#32D74B`, mic off / Leave `#FF453A`, alert /
   raised hand `#FF9F0A`, primary action `#0B63CE`. Compact: notch height (~32 pt), 390 pt wide,
   88 pt ears, 14 pt horizontal padding, 14 pt bottom radius. Expanded: 560 pt, 28 pt bottom radius,
-  padding `0 20 18`, six 44 pt round buttons with 11 pt labels. Alert: 440 pt, 22 pt radius, amber
+  padding `0 20 18`, five 44 pt round buttons with 11 pt labels (chat is hidden). Alert: 440 pt, 22 pt radius, amber
   outline and glow. No-notch pill: 340×34 pt, fully rounded. Stroke SVG icons, no emoji. System
   font. Respect `prefers-reduced-motion`; text contrast ≥ 4.5:1.
 - **Out of scope for v0.1:** Windows, Linux, Teams, Zoom, Slack, calendar reminders, speaker video
   thumbnails, OS-level call detection, system-level mute, Firefox, Safari, Chrome Web Store
   publication.
+
+## UI rules
+
+**`docs/design/ui-spec.md` is the required reference for Phase 5**: onboarding, settings, theming
+and every UI string. Where it and the design canvas differ, the spec wins.
+
+1. **Windows follow the macOS appearance (light/dark) live**, using the tokens in section 1 of the
+   spec. There is no theme option in the app in v0.1.
+2. **The island and the no-notch pill are always black**, in both themes, and never draw the
+   camera dot.
+3. **Every UI string comes from the pt-BR/en dictionary in section 6 of the spec.** No hard-coded
+   text in components.
+4. **Chat is hidden in v0.1.** The UI renders only the controls the provider declares, and no
+   provider declares chat.
 
 ## Pending by phase
 
@@ -152,14 +166,17 @@ Every open item lives here, not in an assistant's memory. Remove an item when it
   - Apply the unsafe rules for `src-tauri` (see "Unsafe code").
   - `packages/ui-types`: TS types for `UiSnapshot` and the other UI-facing core types, generated
     with ts-rs. Never put them in `packages/protocol-ts`: the extension must not import app types.
-  - Core settings: a struct with `show_participant_names` (default on). When off, the
-    `SessionManager` strips names and titles before publishing the `UiSnapshot`; the UI never
-    receives them.
-  - Core diagnostics without personal data, for "Copy diagnostics": provider, extension version,
-    health, latest degraded reasons, time of the last update, connection state.
-  - On every start, and from "Reinstall Chrome bridge", call `islet_bridge::manifest` to check and
-    repair the host manifest (the binary path changes when the app is moved, e.g. to
-    `/Applications`).
+  - Both of these live in `islet-core`, not in the shell:
+    - Settings: a struct with `show_participant_names` (default on). When off, the
+      `SessionManager` strips names and titles before publishing the `UiSnapshot`; the UI never
+      receives them (the spec then shows a generic avatar, no initials).
+    - Diagnostics without personal data, for "Copiar diagnóstico": provider, extension version,
+      health, latest degraded reasons, time of the last update, connection state. A test checks
+      that the output has no names, titles or meeting codes.
+  - The manifest repair routine from Phase 3 (`islet_bridge::manifest::ensure_chrome_manifest`) is
+    the one routine behind all three entry points: every app start, step 2 of the onboarding
+    (when the step mounts) and the "Reinstalar ponte do Chrome" button. The binary path changes
+    when the app is moved, e.g. to `/Applications`.
   - Glue the bridge socket server to `islet-provider-meet`.
   - `docs/design/ui-spec.md` lists the failing _selector keys_ under "Saúde do adaptador": keep
     the provider's raw keys next to the provider-agnostic `DegradedReason` (for example a
