@@ -1,6 +1,6 @@
 {
   "$comment": "Every DOM dependency of the Meet adapter (docs/adr/0004). Strategies are tried in order; regexes are case-insensitive and every locale is tried. A key is verified only when it was confirmed in a real call; verifiedIn lists the Meet languages it was confirmed in. jsname/jscontroller values come from the owner's inspection and the calibration runner in a real pt-BR call on 2026-11-03 (docs/meet-adapter/reports/); Google can rename them, so each key keeps a label-based fallback. Unverified strategies are educated guesses. See docs/meet-adapter/calibration.md.",
-  "version": 6,
+  "version": 7,
   "updated": "2026-11-03",
   "keys": {
     "leaveButton": {
@@ -135,15 +135,18 @@
       "required": false,
       "strategies": [
         {
-          "css": "[data-participant-id]:has([jsname='QgSmzd'].wEsLMd)"
+          "css": "[data-participant-id][jsname='E2KThb']:has([jsname='QgSmzd'].wEsLMd)"
+        },
+        {
+          "css": "[data-participant-id][data-tile-media-id]:has([jsname='QgSmzd'].wEsLMd)"
         }
       ],
       "name": [
         {
-          "css": "span.notranslate"
+          "css": "span.notranslate:not(.google-symbols)"
         }
       ],
-      "$comment": "UNVERIFIED, from one sample: when the iPhone spoke, two [jsname='QgSmzd'] elements in its tile gained the class wEsLMd (and lost gjg47c). Obfuscated classes change with Meet releases; needs more samples (alternate speakers). data-speaking, data-self-name and data-participant-name do not exist. The name is probably the tile's span.notranslate."
+      "$comment": "UNVERIFIED, from one sample: when the iPhone spoke, two [jsname='QgSmzd'] elements in its tile gained the class wEsLMd (and lost gjg47c). Obfuscated classes change with Meet releases; needs more samples (alternate speakers). data-speaking, data-self-name and data-participant-name do not exist. The name is probably the tile's span.notranslate. Only video tiles (jsname E2KThb, or data-tile-media-id): with the People panel open its list items are [data-participant-id] too, and their span.notranslate is not always a name (2026-11-03)."
     },
     "participantCount": {
       "$comment": "The top bar's People button, found through its hidden \"Pessoas\" label (aria-labelledby); the number is in .fs3avc inside it. Confirmed with 2 participants. span[data-avatar-count] also read 2; it may count only the avatars shown, so it is not used until compared with 4+ people.",
@@ -219,17 +222,35 @@
       "verifiedIn": ["pt-BR"]
     },
     "participantTile": {
-      "$comment": "UNVERIFIED: every participant tile, for the island's avatar row. The same tiles the activeSpeaker strategy matches, which found both a remote name and the user's own in the 2026-11-03 session; the name is the tile's span.notranslate.",
+      "$comment": "UNVERIFIED: the video tiles, for the island's avatar row; not the People panel's list items, which also carry data-participant-id (2026-11-03: one of them gave a stray initial). The name is the tile's span.notranslate, never an icon.",
       "verified": false,
       "required": false,
       "strategies": [
         {
-          "css": "[data-participant-id]"
+          "css": "[data-participant-id][jsname='E2KThb']"
+        },
+        {
+          "css": "[data-participant-id][data-tile-media-id]"
         }
       ],
       "name": [
         {
-          "css": "span.notranslate"
+          "css": "span.notranslate:not(.google-symbols)"
+        }
+      ]
+    },
+    "selfTile": {
+      "$comment": "UNVERIFIED, from one call (2026-11-03, two people): the user's own video tile is the one with a jsname='Ac69Jc' control; the remote tile has none. The island shows it before anyone speaks.",
+      "verified": false,
+      "required": false,
+      "strategies": [
+        {
+          "css": "[data-participant-id][jsname='E2KThb']:has([jsname='Ac69Jc'])"
+        }
+      ],
+      "name": [
+        {
+          "css": "span.notranslate:not(.google-symbols)"
         }
       ]
     }

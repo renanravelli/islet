@@ -265,6 +265,7 @@ mod tests {
             active_speaker: Some(Speaker::new("Alex Example")),
             participant_count: Some(3),
             participants: Vec::new(),
+            self_participant: None,
             signals: Signals {
                 speaking_while_muted: true,
             },

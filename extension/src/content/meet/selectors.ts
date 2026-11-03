@@ -50,7 +50,9 @@ export type SelectorKey =
   /** The host's "leave, do not end the call for everyone" choice. Never reported. */
   | "justLeaveButton"
   /** Every participant tile, for the avatar row. Optional and never reported. */
-  | "participantTile";
+  | "participantTile"
+  /** The user's own tile. Optional and never reported. */
+  | "selfTile";
 
 export interface Registry {
   version: number;
@@ -77,6 +79,7 @@ export const SELECTOR_KEYS: SelectorKey[] = [
   ...(Object.keys(DEGRADED_REASON) as ReportedKey[]),
   "justLeaveButton",
   "participantTile",
+  "selfTile",
 ];
 
 const compiled = new Map<string, RegExp>();

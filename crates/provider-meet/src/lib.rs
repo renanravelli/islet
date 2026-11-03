@@ -336,6 +336,9 @@ fn session_state(update: wire::SessionUpdate) -> SessionState {
             .take(MAX_PARTICIPANTS)
             .map(|participant| Speaker::new(participant.display_name))
             .collect(),
+        self_participant: update
+            .self_participant
+            .map(|participant| Speaker::new(participant.display_name)),
         signals: Signals {
             speaking_while_muted: update.signals.speaking_while_muted == Some(true),
         },

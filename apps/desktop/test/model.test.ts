@@ -33,6 +33,7 @@ function session(overrides: Partial<MeetingSession> = {}): MeetingSession {
     active_speaker: { display_name: "Alex Example" },
     participant_count: 3,
     participants: [],
+    self_participant: null,
     signals: { speaking_while_muted: false },
     capabilities: ["toggle_mic", "toggle_cam", "toggle_hand", "leave", "focus_tab"],
     health: { status: "ok" },

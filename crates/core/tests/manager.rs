@@ -307,6 +307,7 @@ fn named_state() -> SessionState {
         title: Some("Synthetic title".into()),
         active_speaker: Some(Speaker::new("Alex Example")),
         participants: vec![Speaker::new("Alex Example"), Speaker::new("Sam Example")],
+        self_participant: Some(Speaker::new("Sam Example")),
         health: Health::degraded([DegradedReason::Unreadable(Field::Mic)])
             .with_details(ProviderDetail::new("micButton")),
         ..state(Toggle::Unknown)
@@ -335,6 +336,7 @@ async fn hidden_names_never_reach_the_snapshot() {
     assert_eq!(session.state.active_speaker, Some(Speaker::anonymous()));
     // The avatar row keeps its size, with generic avatars.
     assert_eq!(session.state.participants, vec![Speaker::anonymous(); 2]);
+    assert_eq!(session.state.self_participant, Some(Speaker::anonymous()));
     assert_eq!(session.state.title, None);
 
     handle.set_settings(Settings::default());

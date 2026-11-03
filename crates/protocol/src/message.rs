@@ -131,6 +131,9 @@ pub struct SessionUpdate {
     /// tiles, for the island's avatar row. Fewer than `participant_count` is normal.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub participants: Option<Vec<Participant>>,
+    /// The user, as Meet names them, when the adapter can tell which tile is theirs.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub self_participant: Option<Participant>,
     pub signals: Signals,
     /// Actions this tab can perform right now.
     pub capabilities: Vec<Action>,
@@ -151,6 +154,7 @@ impl fmt::Debug for SessionUpdate {
             .field("active_speaker", &self.active_speaker)
             .field("participant_count", &self.participant_count)
             .field("participants", &self.participants)
+            .field("self_participant", &self.self_participant)
             .field("signals", &self.signals)
             .field("capabilities", &self.capabilities)
             .field("health", &self.health)

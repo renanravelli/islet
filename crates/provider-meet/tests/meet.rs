@@ -115,6 +115,9 @@ fn update(tab_id: u32) -> SessionUpdate {
                 })
                 .collect(),
         ),
+        self_participant: Some(Participant {
+            display_name: "Jo Example".into(),
+        }),
         signals: Signals {
             speaking_while_muted: Some(true),
         },
@@ -145,6 +148,10 @@ async fn maps_session_updates() {
     assert_eq!(
         session.state.participants,
         ["Alex Example", "Sam Example", "Jo Example"].map(Speaker::new)
+    );
+    assert_eq!(
+        session.state.self_participant,
+        Some(Speaker::new("Jo Example"))
     );
     assert!(session.state.signals.speaking_while_muted);
     assert_eq!(

@@ -82,6 +82,8 @@ pub struct SessionState {
     pub participant_count: Option<u32>,
     /// Up to [`MAX_PARTICIPANTS`] people in the call, for the avatar row.
     pub participants: Vec<Speaker>,
+    /// The user, when the provider can tell; the island shows them before anyone speaks.
+    pub self_participant: Option<Speaker>,
     pub signals: Signals,
     /// Commands this session supports right now. The UI renders only these.
     pub capabilities: CapabilitySet,
@@ -99,6 +101,7 @@ impl fmt::Debug for SessionState {
             .field("active_speaker", &self.active_speaker)
             .field("participant_count", &self.participant_count)
             .field("participants", &self.participants)
+            .field("self_participant", &self.self_participant)
             .field("signals", &self.signals)
             .field("capabilities", &self.capabilities)
             .field("health", &self.health)

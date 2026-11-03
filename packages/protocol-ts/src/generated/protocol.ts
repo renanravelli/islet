@@ -86,7 +86,11 @@ self: SelfState, active_speaker?: ActiveSpeaker, participant_count?: number,
  * A few people in the call (the extension sends up to 3), in the order Meet shows their
  * tiles, for the island's avatar row. Fewer than `participant_count` is normal.
  */
-participants?: Array<Participant>, signals: Signals, 
+participants?: Array<Participant>, 
+/**
+ * The user, as Meet names them, when the adapter can tell which tile is theirs.
+ */
+self_participant?: Participant, signals: Signals, 
 /**
  * Actions this tab can perform right now.
  */

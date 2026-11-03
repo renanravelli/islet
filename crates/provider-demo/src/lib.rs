@@ -322,6 +322,7 @@ impl Player {
                     .into_iter()
                     .map(Speaker::new)
                     .collect(),
+                self_participant: Some(Speaker::new("Jordan Kim")),
                 signals: Signals::default(),
                 capabilities: CapabilitySet::all(),
                 health: Health::Ok,

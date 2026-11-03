@@ -52,7 +52,11 @@ active_speaker: Speaker | null, participant_count: number | null,
 /**
  * Up to [`MAX_PARTICIPANTS`] people in the call, for the avatar row.
  */
-participants: Array<Speaker>, signals: Signals, 
+participants: Array<Speaker>, 
+/**
+ * The user, when the provider can tell; the island shows them before anyone speaks.
+ */
+self_participant: Speaker | null, signals: Signals, 
 /**
  * Commands this session supports right now. The UI renders only these.
  */
@@ -107,7 +111,11 @@ active_speaker: Speaker | null, participant_count: number | null,
 /**
  * Up to [`MAX_PARTICIPANTS`] people in the call, for the avatar row.
  */
-participants: Array<Speaker>, signals: Signals, 
+participants: Array<Speaker>, 
+/**
+ * The user, when the provider can tell; the island shows them before anyone speaks.
+ */
+self_participant: Speaker | null, signals: Signals, 
 /**
  * Commands this session supports right now. The UI renders only these.
  */

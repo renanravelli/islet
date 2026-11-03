@@ -82,6 +82,7 @@ describe("readState", () => {
     for (const name of ["Sam Example", "Jo Example", "Kim Example"]) {
       const tile = document.createElement("div");
       tile.setAttribute("data-participant-id", name);
+      tile.setAttribute("jsname", "E2KThb");
       tile.innerHTML = `<span class="notranslate">${name}</span>`;
       toolbar?.before(tile);
     }
@@ -215,5 +216,40 @@ describe("execute", () => {
     const result = adapter().execute("leave");
     await vi.advanceTimersByTimeAsync(300);
     expect(await result).toBeNull();
+  });
+});
+
+describe("participant tiles", () => {
+  it("ignores the People panel's list items, which are not video tiles", () => {
+    load(FIXTURES.inCallEn);
+    const item = document.createElement("div");
+    item.setAttribute("data-participant-id", "p9");
+    item.setAttribute("role", "listitem");
+    item.innerHTML = `<div jsname="QgSmzd" class="wEsLMd"></div><span class="notranslate">devices</span>`;
+    document.body.prepend(item);
+    const { state } = adapter().readState();
+    expect(state.participants?.map((p) => p.display_name)).toEqual(["Alex Example", "Sam Example"]);
+    expect(state.active_speaker).toEqual({ display_name: "Alex Example" });
+  });
+
+  it("never takes an icon for a name", () => {
+    load(FIXTURES.inCallEn);
+    const tile = document.querySelector("[data-participant-id='p1']");
+    tile?.prepend(
+      Object.assign(document.createElement("span"), {
+        className: "google-symbols notranslate",
+        textContent: "more_vert",
+      }),
+    );
+    expect(adapter().readState().state.participants?.[0]).toEqual({ display_name: "Alex Example" });
+  });
+
+  it("finds the user's own tile by its control", () => {
+    load(FIXTURES.inCallEn);
+    expect(adapter().readState().state.self_participant).toBeUndefined();
+    const own = document.querySelector("[data-participant-id='p2']");
+    own?.append(Object.assign(document.createElement("div"), { innerHTML: "" }));
+    own?.lastElementChild?.setAttribute("jsname", "Ac69Jc");
+    expect(adapter().readState().state.self_participant).toEqual({ display_name: "Sam Example" });
   });
 });

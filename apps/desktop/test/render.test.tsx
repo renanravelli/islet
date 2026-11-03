@@ -21,6 +21,7 @@ const session: MeetingSession = {
   active_speaker: { display_name: null },
   participant_count: 4,
   participants: [],
+  self_participant: null,
   signals: { speaking_while_muted: false },
   capabilities: ["toggle_mic", "toggle_cam", "leave"],
   health: { status: "ok" },
@@ -77,6 +78,13 @@ describe("island", () => {
     });
     expect(container.querySelector(".speaking-label")?.textContent).toBe("Falando agora");
     expect(container.querySelector(".speaking-name .name")?.textContent).toBe("Sam Example");
+  });
+
+  it("before anyone speaks, shows the user as such", () => {
+    render("expanded", { active_speaker: null, self_participant: { display_name: "Jo Example" } });
+    expect(container.querySelector(".speaking-label")?.textContent).toBe("Você");
+    expect(container.querySelector(".speaking-name .name")?.textContent).toBe("Jo Example");
+    expect(container.querySelector(".speaker-tile")?.className).not.toContain("is-speaking");
   });
 
   it("compact is one labelled button that expands", () => {

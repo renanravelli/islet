@@ -221,6 +221,9 @@ impl Actor {
             if session.state.active_speaker.is_some() {
                 session.state.active_speaker = Some(Speaker::anonymous());
             }
+            if session.state.self_participant.is_some() {
+                session.state.self_participant = Some(Speaker::anonymous());
+            }
             for participant in &mut session.state.participants {
                 *participant = Speaker::anonymous();
             }

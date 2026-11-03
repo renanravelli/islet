@@ -54,3 +54,15 @@ describe.skipIf(cases.length === 0)("real Meet snapshots", () => {
     });
   }
 });
+
+describe("the user's own tile in real snapshots", () => {
+  it("is found in every in-call snapshot", () => {
+    for (const [path, html] of Object.entries(snapshots)) {
+      if (!/in-call|speaking|silence|remote-hand/.test(path)) continue;
+      load(html);
+      const { state } = new MeetAdapter(document).readState();
+      // Names are anonymized to one placeholder there, so only presence is checked.
+      expect(state.self_participant, path).toBeDefined();
+    }
+  });
+});

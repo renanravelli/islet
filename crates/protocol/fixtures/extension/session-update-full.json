@@ -9,6 +9,7 @@
   "active_speaker": { "display_name": "Alex Example" },
   "participant_count": 5,
   "participants": [{ "display_name": "Alex Example" }, { "display_name": "Sam Example" }],
+  "self_participant": { "display_name": "Sam Example" },
   "signals": { "speaking_while_muted": false },
   "capabilities": ["toggle_mic", "toggle_cam", "toggle_hand", "leave", "focus_tab"],
   "health": "ok"

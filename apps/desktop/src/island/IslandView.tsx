@@ -249,6 +249,11 @@ function Expandable({
   );
 }
 
+/** Whom the island shows: the speaker, else who spoke last, else the user. */
+function shownSpeaker(props: IslandViewProps): Speaker | null {
+  return props.speaker ?? props.lastSpeaker ?? props.session?.self_participant ?? null;
+}
+
 function EndedLabel() {
   const t = useT();
   return (
@@ -269,11 +274,7 @@ function Compact(props: IslandViewProps) {
           <EndedLabel />
         ) : (
           <>
-            <Avatar
-              speaker={props.speaker ?? props.lastSpeaker ?? null}
-              speaking={props.speaker !== null}
-              size={20}
-            />
+            <Avatar speaker={shownSpeaker(props)} speaking={props.speaker !== null} size={20} />
             <Wave bars={WAVE.compact} active={props.speaker !== null} />
           </>
         )}
@@ -300,11 +301,7 @@ function Pill(props: IslandViewProps) {
           <EndedLabel />
         ) : (
           <>
-            <Avatar
-              speaker={props.speaker ?? props.lastSpeaker ?? null}
-              speaking={props.speaker !== null}
-              size={20}
-            />
+            <Avatar speaker={shownSpeaker(props)} speaking={props.speaker !== null} size={20} />
             <Wave bars={WAVE.pill} active={props.speaker !== null} />
           </>
         )}
@@ -354,8 +351,9 @@ function Expanded(props: IslandViewProps) {
   const t = useT();
   const session = props.session as MeetingSession;
   const speaker = props.speaker;
-  // Nobody speaking: the last speaker, labelled as such, without the ring or a moving wave.
-  const shown = speaker ?? props.lastSpeaker ?? null;
+  // Nobody speaking: the last speaker, or before anyone spoke the user, each labelled as such
+  // and without the ring or a moving wave.
+  const shown = shownSpeaker(props);
   const name = shown?.display_name ?? null;
   return (
     <div className="expanded">
@@ -385,7 +383,13 @@ function Expanded(props: IslandViewProps) {
         </div>
         <div className="speaking-text">
           <span className="speaking-label">
-            {t(!speaker && shown ? "island.last_speaker" : "island.speaking_now")}
+            {t(
+              speaker || !shown
+                ? "island.speaking_now"
+                : props.lastSpeaker
+                  ? "island.last_speaker"
+                  : "island.you",
+            )}
           </span>
           <span className="speaking-name">
             {name && <span className="name">{name}</span>}

@@ -25,6 +25,7 @@ const base: MeetingSession = {
   participants: ["Ana Souza", "Bruno Lima", "Carla Mendes"].map((display_name) => ({
     display_name,
   })),
+  self_participant: { display_name: "Carla Mendes" },
   signals: { speaking_while_muted: false },
   capabilities: ["toggle_mic", "toggle_cam", "toggle_hand", "leave", "focus_tab"],
   health: { status: "ok" },
@@ -60,6 +61,7 @@ const CANVAS: Case[] = [
 /** States the canvas does not draw. */
 const EXTRA: Case[] = [
   ["Nobody speaking, last speaker", "compact", { active_speaker: null }, notch, 96, "Bruno Lima"],
+  ["Expanded, nobody has spoken yet: you", "expanded", { active_speaker: null }, notch, 300],
   [
     "Expanded, nobody speaking, last speaker",
     "expanded",

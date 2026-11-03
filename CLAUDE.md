@@ -205,8 +205,8 @@ and every UI string. Where it and the design canvas differ, the spec wins.
    (memory only). The expanded island shows up to three participants (`MAX_PARTICIPANTS` in
    `islet-core`), "+N" for the rest, and the count. With names off, the core makes them
    anonymous and the UI draws generic avatars. With nobody speaking, the island shows who
-   spoke last, labelled `island.last_speaker`, without the green ring or a moving wave: never
-   as speaking.
+   spoke last, labelled `island.last_speaker`, and before anyone spoke the user, labelled
+   `island.you`; both without the green ring or a moving wave: never as speaking.
 6. **Strings are generated, not copied:** `apps/desktop/src/i18n/strings.json` comes from
    section 6 of the spec (`pnpm --filter @islet/desktop strings`); tests fail if it drifts or if
    a component has text outside it. Product and language names, which are not copy, live in
@@ -230,8 +230,10 @@ Every open item lives here, not in an assistant's memory. Remove an item when it
       pt-BR text, then redo `runCalibration("muted-speaking")`.
     - `meetingTitle`: only the instant-meeting case is known, where Meet shows the meeting code
       in the title slot (the island shows it too, as Meet does); check a calendar meeting.
-    - The user's own tile is not identified yet, so before anyone speaks the island has no
-      face to show (the owner asked for their own avatar there).
+    - `selfTile`: unverified, from one call with two people (the own tile has a
+      `jsname='Ac69Jc'` control); check with 3+ people and with the self view hidden.
+    - Only video tiles count (`jsname='E2KThb'`): the People panel's list items also carry
+      `data-participant-id`, and one of them gave a stray "D" avatar (an icon's text).
     - `participantTile`: unverified (the speaker strategy's tiles and name); check the avatar
       row's names with 3+ people, and whether Meet renders a person in two tiles.
     - Short session (2026-11-03): `justLeaveButton` verified in pt-BR (left in 674 ms, the

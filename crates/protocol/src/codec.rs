@@ -138,6 +138,7 @@ mod tests {
             }),
             participant_count: None,
             participants: None,
+            self_participant: None,
             signals: Signals::default(),
             capabilities: vec![Action::ToggleMic, Action::Leave],
             health: Health::Ok,

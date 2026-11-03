@@ -118,6 +118,11 @@ export class MeetAdapter {
     if (participants !== undefined) state.participant_count = participants;
     const people = this.participants();
     if (people.length > 0) state.participants = people;
+    const ownTile = this.find("selfTile");
+    const selfName = ownTile
+      ? text(resolve(ownTile, this.registry.keys.selfTile.name ?? []))
+      : undefined;
+    if (selfName !== undefined) state.self_participant = { display_name: selfName };
     if (degraded.length > 0) state.degraded_reasons = degraded;
     return { state, failed: [...failed] };
   }
