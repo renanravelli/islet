@@ -43,7 +43,7 @@ export interface Snapshot {
 const REGIONS: Record<string, string> = {
   controls: "[role='toolbar']",
   buttons: "button[aria-label], [role='button'][aria-label]",
-  participants: "[data-participant-id], [data-self-name], [data-participant-name]",
+  participants: "[data-participant-id]",
   notices: "[role='alert'], [role='status'], [aria-live]",
   // The top bar, identified by the owner in a real call (selectors.json uses them too).
   topBar:

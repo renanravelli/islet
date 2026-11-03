@@ -1,0 +1,20 @@
+{
+  "inCall": true,
+  "state": {
+    "meeting_code": "[meeting-code]",
+    "self": {
+      "mic": "on",
+      "cam": "off",
+      "hand": "off"
+    },
+    "signals": {
+      "speaking_while_muted": false
+    },
+    "capabilities": ["toggle_mic", "toggle_cam", "toggle_hand", "leave", "focus_tab"],
+    "health": "ok",
+    "participant_count": 2
+  },
+  "failed": [],
+  "remoteHand": false,
+  "avatarCount": 2
+}

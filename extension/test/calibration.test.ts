@@ -54,8 +54,8 @@ function wireButtons(): void {
 function joinCall(): void {
   load(FIXTURES.inCallEn);
   document.documentElement.lang = "en";
-  for (const tile of document.querySelectorAll("[data-speaking]"))
-    tile.setAttribute("data-speaking", "false");
+  // Nobody speaks until the iPhone is asked to.
+  for (const ring of document.querySelectorAll("[jsname='QgSmzd']")) ring.className = "gjg47c";
   const count = document.querySelector(".fs3avc");
   if (count) count.textContent = "1";
   wireButtons();
@@ -90,9 +90,10 @@ function respond(message: string): void {
     });
   }
   if (message.includes("Unmute the iPhone")) {
-    later(1000, () =>
-      document.querySelector("[data-participant-id='p2']")?.setAttribute("data-speaking", "true"),
-    );
+    later(1000, () => {
+      const ring = document.querySelector("[data-participant-id='p2'] [jsname='QgSmzd']");
+      if (ring) ring.className = "wEsLMd";
+    });
   }
   if (message.includes("answer it by hand")) later(1000, () => load(LEFT_PAGE));
 }

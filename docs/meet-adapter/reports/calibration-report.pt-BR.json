@@ -1,0 +1,788 @@
+{
+  "tool": "islet-calibration-runner",
+  "selectorsVersion": 2,
+  "locale": "pt-BR",
+  "browser": "Google Chrome 156",
+  "date": "2026-11-03",
+  "entry": "all",
+  "part": "main",
+  "steps": [
+    {
+      "number": 1,
+      "id": "lobby",
+      "title": "Lobby",
+      "status": "done",
+      "waits": [],
+      "commands": [],
+      "set": [],
+      "files": [
+        "meet-real-lobby.pt-BR.html",
+        "meet-real-lobby.pt-BR.expected.json",
+        "meet-real-lobby.pt-BR.observed.json"
+      ],
+      "measurements": {},
+      "expected": {
+        "inCall": false
+      },
+      "mismatches": [],
+      "observed": {
+        "inCall": false,
+        "state": {
+          "meeting_code": "[meeting-code]",
+          "self": {
+            "mic": "on",
+            "cam": "on",
+            "hand": "unknown"
+          },
+          "signals": {
+            "speaking_while_muted": false
+          },
+          "capabilities": ["toggle_mic", "toggle_cam", "focus_tab"],
+          "health": "degraded",
+          "degraded_reasons": ["leave_button", "hand_button", "participant_count"]
+        },
+        "failed": ["leaveButton", "handButton", "participantCount"],
+        "remoteHand": false
+      },
+      "find": {
+        "leaveButton": null,
+        "micButton": {
+          "strategy": 0,
+          "tag": "button",
+          "data": {
+            "data-is-muted": "false"
+          },
+          "role": "button",
+          "jsname": "hw0c9",
+          "jscontroller": "PIVayb"
+        },
+        "camButton": {
+          "strategy": 0,
+          "tag": "button",
+          "data": {
+            "data-is-muted": "false"
+          },
+          "role": "button",
+          "jsname": "psRWwc",
+          "jscontroller": "PIVayb"
+        },
+        "handButton": null,
+        "activeSpeaker": null,
+        "participantCount": null,
+        "mutedSpeakingNotice": null,
+        "meetingTitle": null
+      }
+    },
+    {
+      "number": 2,
+      "id": "in-call-mic-on",
+      "title": "Both in the call",
+      "status": "done",
+      "waits": [
+        {
+          "ask": "Join the call on the Mac.",
+          "until": "inCall",
+          "status": "met",
+          "waitedMs": 53463
+        },
+        {
+          "ask": "Join from the iPhone with the meeting code, then admit it on the Mac.",
+          "until": "participants",
+          "status": "met",
+          "waitedMs": 18348
+        }
+      ],
+      "commands": [
+        {
+          "action": "toggle_mic",
+          "result": "confirmed",
+          "ms": 57,
+          "before": "off",
+          "after": "on"
+        }
+      ],
+      "set": [
+        {
+          "field": "mic",
+          "target": "on",
+          "outcome": "set through execute"
+        },
+        {
+          "field": "cam",
+          "target": "off",
+          "outcome": "already"
+        },
+        {
+          "field": "hand",
+          "target": "off",
+          "outcome": "already"
+        }
+      ],
+      "files": [
+        "meet-real-in-call-mic-on.pt-BR.html",
+        "meet-real-in-call-mic-on.pt-BR.expected.json",
+        "meet-real-in-call-mic-on.pt-BR.observed.json"
+      ],
+      "measurements": {},
+      "expected": {
+        "inCall": true,
+        "self": {
+          "mic": "on",
+          "cam": "off",
+          "hand": "off"
+        },
+        "participant_count": 2
+      },
+      "mismatches": [],
+      "observed": {
+        "inCall": true,
+        "state": {
+          "meeting_code": "[meeting-code]",
+          "self": {
+            "mic": "on",
+            "cam": "off",
+            "hand": "off"
+          },
+          "signals": {
+            "speaking_while_muted": false
+          },
+          "capabilities": ["toggle_mic", "toggle_cam", "toggle_hand", "leave", "focus_tab"],
+          "health": "ok",
+          "participant_count": 2
+        },
+        "failed": [],
+        "remoteHand": false,
+        "avatarCount": 2
+      },
+      "find": {
+        "leaveButton": {
+          "strategy": 0,
+          "tag": "button",
+          "data": {},
+          "role": "button",
+          "jsname": "CQylAd",
+          "jscontroller": "PIVayb"
+        },
+        "micButton": {
+          "strategy": 0,
+          "tag": "button",
+          "data": {
+            "data-is-muted": "false"
+          },
+          "role": "button",
+          "jsname": "hw0c9",
+          "jscontroller": "PIVayb"
+        },
+        "camButton": {
+          "strategy": 0,
+          "tag": "button",
+          "data": {
+            "data-is-muted": "true"
+          },
+          "role": "button",
+          "jsname": "psRWwc",
+          "jscontroller": "PIVayb"
+        },
+        "handButton": {
+          "strategy": 0,
+          "tag": "button",
+          "data": {},
+          "role": "button",
+          "jsname": "FpSaz",
+          "jscontroller": "PIVayb"
+        },
+        "activeSpeaker": null,
+        "participantCount": {
+          "strategy": 0,
+          "tag": "div",
+          "data": {},
+          "role": "button",
+          "jsname": "ocqpFe"
+        },
+        "mutedSpeakingNotice": null,
+        "meetingTitle": {
+          "strategy": 0,
+          "tag": "div",
+          "data": {},
+          "jsname": "NeC6gb",
+          "jscontroller": "yEvoid"
+        }
+      }
+    },
+    {
+      "number": 3,
+      "id": "in-call-mic-off",
+      "title": "Mic off, camera on, hand raised",
+      "status": "done",
+      "waits": [],
+      "commands": [
+        {
+          "action": "toggle_mic",
+          "result": "confirmed",
+          "ms": 53,
+          "before": "on",
+          "after": "off"
+        },
+        {
+          "action": "toggle_cam",
+          "result": "confirmed",
+          "ms": 1293,
+          "before": "off",
+          "after": "on"
+        },
+        {
+          "action": "toggle_hand",
+          "result": "confirmed",
+          "ms": 166,
+          "before": "off",
+          "after": "on"
+        }
+      ],
+      "set": [
+        {
+          "field": "mic",
+          "target": "off",
+          "outcome": "set through execute"
+        },
+        {
+          "field": "cam",
+          "target": "on",
+          "outcome": "set through execute"
+        },
+        {
+          "field": "hand",
+          "target": "on",
+          "outcome": "set through execute"
+        }
+      ],
+      "files": [
+        "meet-real-in-call-mic-off.pt-BR.html",
+        "meet-real-in-call-mic-off.pt-BR.expected.json",
+        "meet-real-in-call-mic-off.pt-BR.observed.json"
+      ],
+      "measurements": {},
+      "expected": {
+        "inCall": true,
+        "self": {
+          "mic": "off",
+          "cam": "on",
+          "hand": "on"
+        },
+        "participant_count": 2
+      },
+      "mismatches": [],
+      "observed": {
+        "inCall": true,
+        "state": {
+          "meeting_code": "[meeting-code]",
+          "self": {
+            "mic": "off",
+            "cam": "on",
+            "hand": "on"
+          },
+          "signals": {
+            "speaking_while_muted": false
+          },
+          "capabilities": ["toggle_mic", "toggle_cam", "toggle_hand", "leave", "focus_tab"],
+          "health": "ok",
+          "participant_count": 2
+        },
+        "failed": [],
+        "remoteHand": false,
+        "avatarCount": 2
+      },
+      "find": {
+        "leaveButton": {
+          "strategy": 0,
+          "tag": "button",
+          "data": {},
+          "role": "button",
+          "jsname": "CQylAd",
+          "jscontroller": "PIVayb"
+        },
+        "micButton": {
+          "strategy": 0,
+          "tag": "button",
+          "data": {
+            "data-is-muted": "true"
+          },
+          "role": "button",
+          "jsname": "hw0c9",
+          "jscontroller": "PIVayb"
+        },
+        "camButton": {
+          "strategy": 0,
+          "tag": "button",
+          "data": {
+            "data-is-muted": "false"
+          },
+          "role": "button",
+          "jsname": "psRWwc",
+          "jscontroller": "PIVayb"
+        },
+        "handButton": {
+          "strategy": 0,
+          "tag": "button",
+          "data": {},
+          "role": "button",
+          "jsname": "FpSaz",
+          "jscontroller": "PIVayb"
+        },
+        "activeSpeaker": null,
+        "participantCount": {
+          "strategy": 0,
+          "tag": "div",
+          "data": {},
+          "role": "button",
+          "jsname": "ocqpFe"
+        },
+        "mutedSpeakingNotice": null,
+        "meetingTitle": {
+          "strategy": 0,
+          "tag": "div",
+          "data": {},
+          "jsname": "NeC6gb",
+          "jscontroller": "yEvoid"
+        }
+      }
+    },
+    {
+      "number": 4,
+      "id": "commands",
+      "title": "Commands through Islet",
+      "status": "done",
+      "waits": [],
+      "commands": [
+        {
+          "action": "toggle_mic",
+          "result": "confirmed",
+          "ms": 59,
+          "before": "off",
+          "after": "on"
+        },
+        {
+          "action": "toggle_cam",
+          "result": "confirmed",
+          "ms": 61,
+          "before": "on",
+          "after": "off"
+        },
+        {
+          "action": "toggle_hand",
+          "result": "confirmed",
+          "ms": 208,
+          "before": "on",
+          "after": "off"
+        }
+      ],
+      "set": [],
+      "files": [],
+      "measurements": {}
+    },
+    {
+      "number": 5,
+      "id": "remote-hand",
+      "title": "The iPhone raises its hand",
+      "status": "done",
+      "waits": [
+        {
+          "ask": "On the iPhone: mute, turn the camera on and raise the hand.",
+          "until": "remoteHand",
+          "status": "met",
+          "waitedMs": 2630
+        }
+      ],
+      "commands": [],
+      "set": [
+        {
+          "field": "mic",
+          "target": "on",
+          "outcome": "already"
+        },
+        {
+          "field": "cam",
+          "target": "off",
+          "outcome": "already"
+        },
+        {
+          "field": "hand",
+          "target": "off",
+          "outcome": "already"
+        }
+      ],
+      "files": [
+        "meet-real-remote-hand.pt-BR.html",
+        "meet-real-remote-hand.pt-BR.expected.json",
+        "meet-real-remote-hand.pt-BR.observed.json"
+      ],
+      "measurements": {},
+      "expected": {
+        "inCall": true,
+        "self": {
+          "mic": "on",
+          "cam": "off",
+          "hand": "off"
+        },
+        "participant_count": 2
+      },
+      "mismatches": [],
+      "observed": {
+        "inCall": true,
+        "state": {
+          "meeting_code": "[meeting-code]",
+          "self": {
+            "mic": "on",
+            "cam": "off",
+            "hand": "off"
+          },
+          "signals": {
+            "speaking_while_muted": false
+          },
+          "capabilities": ["toggle_mic", "toggle_cam", "toggle_hand", "leave", "focus_tab"],
+          "health": "ok",
+          "participant_count": 2
+        },
+        "failed": [],
+        "remoteHand": true,
+        "avatarCount": 2
+      },
+      "find": {
+        "leaveButton": {
+          "strategy": 0,
+          "tag": "button",
+          "data": {},
+          "role": "button",
+          "jsname": "CQylAd",
+          "jscontroller": "PIVayb"
+        },
+        "micButton": {
+          "strategy": 0,
+          "tag": "button",
+          "data": {
+            "data-is-muted": "false"
+          },
+          "role": "button",
+          "jsname": "hw0c9",
+          "jscontroller": "PIVayb"
+        },
+        "camButton": {
+          "strategy": 0,
+          "tag": "button",
+          "data": {
+            "data-is-muted": "true"
+          },
+          "role": "button",
+          "jsname": "psRWwc",
+          "jscontroller": "PIVayb"
+        },
+        "handButton": {
+          "strategy": 0,
+          "tag": "button",
+          "data": {},
+          "role": "button",
+          "jsname": "FpSaz",
+          "jscontroller": "PIVayb"
+        },
+        "activeSpeaker": null,
+        "participantCount": {
+          "strategy": 0,
+          "tag": "div",
+          "data": {},
+          "role": "button",
+          "jsname": "ocqpFe"
+        },
+        "mutedSpeakingNotice": null,
+        "meetingTitle": {
+          "strategy": 0,
+          "tag": "div",
+          "data": {},
+          "jsname": "NeC6gb",
+          "jscontroller": "yEvoid"
+        }
+      }
+    },
+    {
+      "number": 6,
+      "id": "muted-speaking",
+      "title": "Talking with the mic off",
+      "status": "done",
+      "waits": [
+        {
+          "ask": "Turn the microphone off on the Mac by hand.",
+          "until": "self",
+          "status": "timeout",
+          "waitedMs": 60860
+        },
+        {
+          "ask": "On the Mac, keep talking with the mic off until Meet shows its notice.",
+          "until": "speakingWhileMuted",
+          "status": "timeout",
+          "waitedMs": 90178
+        }
+      ],
+      "commands": [
+        {
+          "action": "toggle_mic",
+          "result": "not_confirmed",
+          "ms": 1547,
+          "before": "on",
+          "after": "on"
+        }
+      ],
+      "set": [
+        {
+          "field": "mic",
+          "target": "off",
+          "outcome": "by hand (timeout)"
+        },
+        {
+          "field": "cam",
+          "target": "off",
+          "outcome": "already"
+        },
+        {
+          "field": "hand",
+          "target": "off",
+          "outcome": "already"
+        }
+      ],
+      "files": [
+        "meet-real-muted-speaking.pt-BR.html",
+        "meet-real-muted-speaking.pt-BR.expected.json",
+        "meet-real-muted-speaking.pt-BR.observed.json"
+      ],
+      "measurements": {
+        "noticeVisibleMs": "not measured: the notice was not detected"
+      },
+      "expected": {
+        "inCall": true,
+        "self": {
+          "mic": "off",
+          "cam": "off",
+          "hand": "off"
+        },
+        "speaking_while_muted": true
+      },
+      "mismatches": [
+        {
+          "field": "speaking_while_muted",
+          "expected": true,
+          "observed": false
+        }
+      ],
+      "observed": {
+        "inCall": true,
+        "state": {
+          "meeting_code": "[meeting-code]",
+          "self": {
+            "mic": "off",
+            "cam": "off",
+            "hand": "off"
+          },
+          "signals": {
+            "speaking_while_muted": false
+          },
+          "capabilities": ["toggle_mic", "toggle_cam", "toggle_hand", "leave", "focus_tab"],
+          "health": "ok",
+          "participant_count": 2
+        },
+        "failed": [],
+        "remoteHand": false,
+        "avatarCount": 2
+      },
+      "find": {
+        "leaveButton": {
+          "strategy": 0,
+          "tag": "button",
+          "data": {},
+          "role": "button",
+          "jsname": "CQylAd",
+          "jscontroller": "PIVayb"
+        },
+        "micButton": {
+          "strategy": 0,
+          "tag": "button",
+          "data": {
+            "data-is-muted": "true"
+          },
+          "role": "button",
+          "jsname": "hw0c9",
+          "jscontroller": "PIVayb"
+        },
+        "camButton": {
+          "strategy": 0,
+          "tag": "button",
+          "data": {
+            "data-is-muted": "true"
+          },
+          "role": "button",
+          "jsname": "psRWwc",
+          "jscontroller": "PIVayb"
+        },
+        "handButton": {
+          "strategy": 0,
+          "tag": "button",
+          "data": {},
+          "role": "button",
+          "jsname": "FpSaz",
+          "jscontroller": "PIVayb"
+        },
+        "activeSpeaker": null,
+        "participantCount": {
+          "strategy": 0,
+          "tag": "div",
+          "data": {},
+          "role": "button",
+          "jsname": "ocqpFe"
+        },
+        "mutedSpeakingNotice": null,
+        "meetingTitle": {
+          "strategy": 0,
+          "tag": "div",
+          "data": {},
+          "jsname": "NeC6gb",
+          "jscontroller": "yEvoid"
+        }
+      }
+    },
+    {
+      "number": 7,
+      "id": "speaking",
+      "title": "The iPhone talks",
+      "status": "done",
+      "waits": [
+        {
+          "ask": "Unmute the iPhone and keep talking until the runner moves on.",
+          "until": "activeSpeaker",
+          "status": "timeout",
+          "waitedMs": 90024
+        }
+      ],
+      "commands": [],
+      "set": [
+        {
+          "field": "mic",
+          "target": "off",
+          "outcome": "already"
+        },
+        {
+          "field": "cam",
+          "target": "off",
+          "outcome": "already"
+        },
+        {
+          "field": "hand",
+          "target": "off",
+          "outcome": "already"
+        }
+      ],
+      "files": [
+        "meet-real-speaking.pt-BR.html",
+        "meet-real-speaking.pt-BR.expected.json",
+        "meet-real-speaking.pt-BR.observed.json"
+      ],
+      "measurements": {
+        "speaker": {
+          "samples": 20,
+          "intervalMs": 500,
+          "present": 0,
+          "changes": 0,
+          "distinctSpeakers": 0
+        }
+      },
+      "expected": {
+        "inCall": true,
+        "self": {
+          "mic": "off",
+          "cam": "off",
+          "hand": "off"
+        },
+        "speaking": true
+      },
+      "mismatches": [
+        {
+          "field": "speaking",
+          "expected": true,
+          "observed": false
+        }
+      ],
+      "observed": {
+        "inCall": true,
+        "state": {
+          "meeting_code": "[meeting-code]",
+          "self": {
+            "mic": "off",
+            "cam": "off",
+            "hand": "off"
+          },
+          "signals": {
+            "speaking_while_muted": false
+          },
+          "capabilities": ["toggle_mic", "toggle_cam", "toggle_hand", "leave", "focus_tab"],
+          "health": "ok",
+          "participant_count": 2
+        },
+        "failed": [],
+        "remoteHand": false,
+        "avatarCount": 2
+      },
+      "find": {
+        "leaveButton": {
+          "strategy": 0,
+          "tag": "button",
+          "data": {},
+          "role": "button",
+          "jsname": "CQylAd",
+          "jscontroller": "PIVayb"
+        },
+        "micButton": {
+          "strategy": 0,
+          "tag": "button",
+          "data": {
+            "data-is-muted": "true"
+          },
+          "role": "button",
+          "jsname": "hw0c9",
+          "jscontroller": "PIVayb"
+        },
+        "camButton": {
+          "strategy": 0,
+          "tag": "button",
+          "data": {
+            "data-is-muted": "true"
+          },
+          "role": "button",
+          "jsname": "psRWwc",
+          "jscontroller": "PIVayb"
+        },
+        "handButton": {
+          "strategy": 0,
+          "tag": "button",
+          "data": {},
+          "role": "button",
+          "jsname": "FpSaz",
+          "jscontroller": "PIVayb"
+        },
+        "activeSpeaker": null,
+        "participantCount": {
+          "strategy": 0,
+          "tag": "div",
+          "data": {},
+          "role": "button",
+          "jsname": "ocqpFe"
+        },
+        "mutedSpeakingNotice": null,
+        "meetingTitle": {
+          "strategy": 0,
+          "tag": "div",
+          "data": {},
+          "jsname": "NeC6gb",
+          "jscontroller": "yEvoid"
+        }
+      }
+    }
+  ],
+  "failedKeys": {
+    "lobby": ["leaveButton", "handButton", "participantCount"]
+  }
+}

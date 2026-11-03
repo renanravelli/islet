@@ -1,6 +1,6 @@
 {
-  "$comment": "Every DOM dependency of the Meet adapter (docs/adr/0004). Strategies are tried in order; regexes are case-insensitive and every locale is tried. A key is verified only when it was confirmed in a real call; verifiedIn lists the Meet languages it was confirmed in. jsname/jscontroller values come from the owner's inspection of a real pt-BR call on 2026-11-03; Google can rename them, so each key keeps a label-based fallback. Unverified strategies are educated guesses. See docs/meet-adapter/calibration.md.",
-  "version": 2,
+  "$comment": "Every DOM dependency of the Meet adapter (docs/adr/0004). Strategies are tried in order; regexes are case-insensitive and every locale is tried. A key is verified only when it was confirmed in a real call; verifiedIn lists the Meet languages it was confirmed in. jsname/jscontroller values come from the owner's inspection and the calibration runner in a real pt-BR call on 2026-11-03 (docs/meet-adapter/reports/); Google can rename them, so each key keeps a label-based fallback. Unverified strategies are educated guesses. See docs/meet-adapter/calibration.md.",
+  "version": 3,
   "updated": "2026-11-03",
   "keys": {
     "leaveButton": {
@@ -8,16 +8,27 @@
       "verifiedIn": ["pt-BR"],
       "required": true,
       "strategies": [
-        { "css": "[jsname='CQylAd']" },
-        { "ariaLabel": { "en": "^leave call", "pt-BR": "^sair da chamada" }, "css": "button" }
-      ]
+        {
+          "css": "[jsname='CQylAd']"
+        },
+        {
+          "ariaLabel": {
+            "en": "^leave call",
+            "pt-BR": "^sair da chamada"
+          },
+          "css": "button"
+        }
+      ],
+      "$comment": "For the meeting's host, Meet asks before leaving: \"Sair da chamada\" or \"Encerrar a chamada para todos\"."
     },
     "micButton": {
       "verified": true,
       "verifiedIn": ["pt-BR"],
       "required": true,
       "strategies": [
-        { "css": "[jsname='hw0c9'][data-is-muted]" },
+        {
+          "css": "[jsname='hw0c9'][data-is-muted]"
+        },
         {
           "ariaLabel": {
             "en": "^turn (on|off) microphone",
@@ -27,11 +38,21 @@
         }
       ],
       "state": [
-        { "attribute": "data-is-muted", "on": "false", "off": "true" },
+        {
+          "attribute": "data-is-muted",
+          "on": "false",
+          "off": "true"
+        },
         {
           "ariaLabel": {
-            "on": { "en": "^turn off microphone", "pt-BR": "^desativar (o )?microfone" },
-            "off": { "en": "^turn on microphone", "pt-BR": "^ativar (o )?microfone" }
+            "on": {
+              "en": "^turn off microphone",
+              "pt-BR": "^desativar (o )?microfone"
+            },
+            "off": {
+              "en": "^turn on microphone",
+              "pt-BR": "^ativar (o )?microfone"
+            }
           }
         }
       ]
@@ -41,7 +62,9 @@
       "verifiedIn": ["pt-BR"],
       "required": true,
       "strategies": [
-        { "css": "[jsname='psRWwc'][data-is-muted]" },
+        {
+          "css": "[jsname='psRWwc'][data-is-muted]"
+        },
         {
           "ariaLabel": {
             "en": "^turn (on|off) camera",
@@ -51,21 +74,33 @@
         }
       ],
       "state": [
-        { "attribute": "data-is-muted", "on": "false", "off": "true" },
+        {
+          "attribute": "data-is-muted",
+          "on": "false",
+          "off": "true"
+        },
         {
           "ariaLabel": {
-            "on": { "en": "^turn off camera", "pt-BR": "^desativar (a )?c[âa]mera" },
-            "off": { "en": "^turn on camera", "pt-BR": "^ativar (a )?c[âa]mera" }
+            "on": {
+              "en": "^turn off camera",
+              "pt-BR": "^desativar (a )?c[âa]mera"
+            },
+            "off": {
+              "en": "^turn on camera",
+              "pt-BR": "^ativar (a )?c[âa]mera"
+            }
           }
         }
       ]
     },
     "handButton": {
-      "$comment": "Found by jsname in a real call; how it exposes its state is not confirmed yet.",
-      "verified": false,
+      "$comment": "Meet exposes the hand's state only in the label: \"Levantar a mão\" while it is down, \"Abaixar a mão\" while it is up (no aria-pressed).",
+      "verified": true,
       "required": true,
       "strategies": [
-        { "css": "[jsname='FpSaz']" },
+        {
+          "css": "[jsname='FpSaz']"
+        },
         {
           "ariaLabel": {
             "en": "^(raise|lower) hand",
@@ -75,33 +110,67 @@
         }
       ],
       "state": [
-        { "attribute": "aria-pressed", "on": "true", "off": "false" },
         {
           "ariaLabel": {
-            "on": { "en": "^lower hand", "pt-BR": "^abaixar (a )?m[ãa]o" },
-            "off": { "en": "^raise hand", "pt-BR": "^levantar (a )?m[ãa]o" }
+            "on": {
+              "en": "^lower hand",
+              "pt-BR": "^abaixar (a )?m[ãa]o"
+            },
+            "off": {
+              "en": "^raise hand",
+              "pt-BR": "^levantar (a )?m[ãa]o"
+            }
           }
+        },
+        {
+          "attribute": "aria-pressed",
+          "on": "true",
+          "off": "false"
         }
-      ]
+      ],
+      "verifiedIn": ["pt-BR"]
     },
     "activeSpeaker": {
       "verified": false,
       "required": false,
-      "strategies": [{ "css": "[data-participant-id][data-speaking='true']" }],
-      "name": [{ "css": "[data-self-name]" }, { "css": "[data-participant-name]" }]
+      "strategies": [
+        {
+          "css": "[data-participant-id]:has([jsname='QgSmzd'].wEsLMd)"
+        }
+      ],
+      "name": [
+        {
+          "css": "span.notranslate"
+        }
+      ],
+      "$comment": "UNVERIFIED, from one sample: when the iPhone spoke, two [jsname='QgSmzd'] elements in its tile gained the class wEsLMd (and lost gjg47c). Obfuscated classes change with Meet releases; needs more samples (alternate speakers). data-speaking, data-self-name and data-participant-name do not exist. The name is probably the tile's span.notranslate."
     },
     "participantCount": {
-      "$comment": "The top bar's People button, found by hand in a real call; not confirmed through the adapter yet. span[data-avatar-count] also exists but may count only the avatars shown, so it is not used; the calibration report compares both.",
-      "verified": false,
+      "$comment": "The top bar's People button, found through its hidden \"Pessoas\" label (aria-labelledby); the number is in .fs3avc inside it. Confirmed with 2 participants. span[data-avatar-count] also read 2; it may count only the avatars shown, so it is not used until compared with 4+ people.",
+      "verified": true,
       "required": true,
       "strategies": [
         {
           "css": "div[role='button'][jsname='ocqpFe']",
-          "labelledBy": { "en": "^people\\b", "pt-BR": "^pessoas\\b" }
+          "labelledBy": {
+            "en": "^people\\b",
+            "pt-BR": "^pessoas\\b"
+          }
         },
-        { "ariaLabel": { "en": "^show everyone", "pt-BR": "^mostrar todos" }, "css": "button" }
+        {
+          "ariaLabel": {
+            "en": "^show everyone",
+            "pt-BR": "^mostrar todos"
+          },
+          "css": "button"
+        }
       ],
-      "count": [{ "css": ".fs3avc" }]
+      "count": [
+        {
+          "css": ".fs3avc"
+        }
+      ],
+      "verifiedIn": ["pt-BR"]
     },
     "mutedSpeakingNotice": {
       "verified": false,
@@ -114,13 +183,18 @@
           },
           "css": "[role='alert'], [aria-live]"
         }
-      ]
+      ],
+      "$comment": "UNVERIFIED: not detected in the pt-BR session. The exact pt-BR notice text, and whether it appeared, are still to be confirmed."
     },
     "meetingTitle": {
-      "$comment": "Found by hand in a real call; not confirmed through the adapter yet.",
+      "$comment": "Found in a real call. In an instant meeting it shows the meeting code, which the adapter drops; a calendar event's title is not confirmed yet.",
       "verified": false,
       "required": false,
-      "strategies": [{ "css": "div[jsname='NeC6gb'][jscontroller='yEvoid']" }]
+      "strategies": [
+        {
+          "css": "div[jsname='NeC6gb'][jscontroller='yEvoid']"
+        }
+      ]
     }
   }
 }

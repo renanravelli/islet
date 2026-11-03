@@ -1,0 +1,25 @@
+{
+  "inCall": false,
+  "state": {
+    "meeting_code": "[meeting-code]",
+    "self": {
+      "mic": "unknown",
+      "cam": "unknown",
+      "hand": "unknown"
+    },
+    "signals": {
+      "speaking_while_muted": false
+    },
+    "capabilities": ["focus_tab"],
+    "health": "degraded",
+    "degraded_reasons": [
+      "leave_button",
+      "mic_button",
+      "cam_button",
+      "hand_button",
+      "participant_count"
+    ]
+  },
+  "failed": ["leaveButton", "micButton", "camButton", "handButton", "participantCount"],
+  "remoteHand": false
+}

@@ -1,0 +1,9 @@
+{
+  "inCall": true,
+  "self": {
+    "mic": "off",
+    "cam": "on",
+    "hand": "on"
+  },
+  "participant_count": 2
+}

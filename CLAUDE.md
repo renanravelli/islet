@@ -177,12 +177,17 @@ and every UI string. Where it and the design canvas differ, the spec wins.
 Every open item lives here, not in an assistant's memory. Remove an item when it lands.
 
 - **Manual, needs a real call (owner):**
-  - **Before Phase 5:** run the pt-BR calibration session with the runner
-    (`docs/meet-adapter/calibration-session.md`) and hand over the snapshots and reports; then
-    the selectors are fixed and marked verified for pt-BR where they work, and what cannot be
-    detected is reported. Already verified in pt-BR from the owner's inspection: `micButton`,
-    `camButton`, `leaveButton`. Found but unconfirmed: `handButton` (state), `participantCount`,
-    `meetingTitle`.
+  - **pt-BR session done (2026-11-03, `docs/meet-adapter/reports/`).** Verified in pt-BR:
+    `micButton`, `camButton`, `handButton`, `leaveButton`, `participantCount`. Still open:
+    - `activeSpeaker`: an unverified strategy from one sample (obfuscated classes); needs a
+      session alternating who speaks.
+    - `mutedSpeakingNotice`: not detected; confirm whether the notice appeared and its exact
+      pt-BR text, then redo `runCalibration("muted-speaking")`.
+    - `meetingTitle`: only the instant-meeting case (the code, dropped) is known; check a
+      calendar meeting.
+    - Leaving as the host opens "Sair da chamada" / "Encerrar a chamada para todos"; decide
+      whether Leave clicks "Sair da chamada" by itself.
+    - One `toggle_mic` was not confirmed in 1.5 s in step 6 (it worked every other time).
   - **Later:** the English round; until then no key lists `en` in `verifiedIn`.
   - **After Phase 5:** check that `focus_tab` brings Chrome to the front from another app on
     macOS, and that a connection from another macOS user is refused by the bridge.
