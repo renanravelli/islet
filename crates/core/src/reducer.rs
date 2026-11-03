@@ -234,7 +234,7 @@ fn forget_live_state(state: &mut SessionState) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Command, Field, ProviderId, Speaker};
+    use crate::{Command, Field, ProviderDetail, ProviderId, Speaker};
 
     const MEET: ProviderId = ProviderId::from_static("meet");
 
@@ -453,7 +453,8 @@ mod tests {
     fn silent_sessions_become_stale_and_unknown() {
         let mut clock = Clock::new();
         let mut reported = state(Toggle::On, Toggle::Off);
-        reported.health = Health::degraded([DegradedReason::Unreadable(Field::ParticipantCount)]);
+        reported.health = Health::degraded([DegradedReason::Unreadable(Field::ParticipantCount)])
+            .with_details(ProviderDetail::new("participantCount"));
         clock.at(0.0, Event::Updated(key("1"), reported.clone()));
         assert_eq!(
             clock.sessions.next_deadline(),
@@ -471,6 +472,8 @@ mod tests {
                 DegradedReason::Unreadable(Field::ParticipantCount),
                 DegradedReason::Stale
             ])
+            .with_details(ProviderDetail::new("participantCount")),
+            "staleness keeps the provider details"
         );
         assert_eq!(stale.state.mic, Toggle::Unknown);
         assert_eq!(stale.state.cam, Toggle::Unknown);
@@ -519,6 +522,42 @@ mod tests {
         let debug = format!("{:?} {:?}", clock.sessions, clock.sessions.snapshot());
         assert!(!debug.contains("Alex"), "{debug}");
         assert!(!debug.contains("Synthetic title"), "{debug}");
+    }
+
+    #[test]
+    fn provider_details_accept_only_identifiers() {
+        for ok in ["micButton", "leave_button", "v2.speaker-tile", "a"] {
+            assert!(ProviderDetail::new(ok).is_some(), "{ok}");
+        }
+        for bad in [
+            "",
+            "Alex Example",
+            "Weekly design review",
+            "mic button",
+            "título",
+            "<b>",
+            &"x".repeat(ProviderDetail::MAX_LEN + 1),
+        ] {
+            assert!(ProviderDetail::new(bad).is_none(), "{bad:?}");
+        }
+    }
+
+    #[test]
+    fn degraded_health_serializes_reasons_and_details() {
+        let health = Health::degraded([DegradedReason::Unreadable(Field::Mic)])
+            .with_details(ProviderDetail::new("micButton"));
+        assert_eq!(
+            serde_json::to_value(health).unwrap(),
+            serde_json::json!({
+                "status": "degraded",
+                "reasons": [{"unreadable": "mic"}],
+                "provider_details": ["micButton"],
+            })
+        );
+        assert_eq!(
+            Health::Ok.with_details(ProviderDetail::new("micButton")),
+            Health::Ok
+        );
     }
 
     #[test]

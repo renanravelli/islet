@@ -79,11 +79,20 @@ pub fn chrome_hosts_dir(home: &Path) -> Result<PathBuf, ManifestError> {
 
 /// Makes sure Chrome's manifest for this user points at `host`.
 ///
-/// Fails with [`ManifestError::ChromeNotFound`] when Chrome's profile directory does not exist,
-/// instead of creating it.
+/// When Chrome is installed (its profile directory exists) but `NativeMessagingHosts` does not,
+/// the subfolder is created. When Chrome is not installed, nothing is created and the result is
+/// [`ManifestError::ChromeNotFound`].
 pub fn ensure_chrome_manifest(host: &Path) -> Result<ManifestOutcome, ManifestError> {
     let home = std::env::var_os("HOME").ok_or(ManifestError::HomeUnknown)?;
-    let dir = chrome_hosts_dir(Path::new(&home))?;
+    ensure_chrome_manifest_in(Path::new(&home), host)
+}
+
+/// [`ensure_chrome_manifest`] for the user whose home is `home`.
+pub fn ensure_chrome_manifest_in(
+    home: &Path,
+    host: &Path,
+) -> Result<ManifestOutcome, ManifestError> {
+    let dir = chrome_hosts_dir(home)?;
     if !dir.parent().is_some_and(Path::is_dir) {
         return Err(ManifestError::ChromeNotFound);
     }
@@ -203,6 +212,38 @@ mod tests {
             ensure_manifest(&hosts, &new).unwrap(),
             ManifestOutcome::Unchanged
         );
+    }
+
+    #[test]
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    fn creates_the_hosts_folder_when_chrome_is_installed() {
+        let tmp = TempDir::new("chrome-installed");
+        let home = tmp.0.join("home");
+        let hosts = chrome_hosts_dir(&home).unwrap();
+        // Chrome's profile folder exists, NativeMessagingHosts does not.
+        fs::create_dir_all(hosts.parent().unwrap()).unwrap();
+        let host = fake_host(&tmp.0, "islet-native-host");
+
+        assert_eq!(
+            ensure_chrome_manifest_in(&home, &host).unwrap(),
+            ManifestOutcome::Installed
+        );
+        assert!(hosts.join("io.github.renanravelli.islet.json").is_file());
+    }
+
+    #[test]
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    fn creates_nothing_when_chrome_is_not_installed() {
+        let tmp = TempDir::new("chrome-missing");
+        let home = tmp.0.join("home");
+        fs::create_dir_all(&home).unwrap();
+        let host = fake_host(&tmp.0, "islet-native-host");
+
+        assert!(matches!(
+            ensure_chrome_manifest_in(&home, &host),
+            Err(ManifestError::ChromeNotFound)
+        ));
+        assert_eq!(fs::read_dir(&home).unwrap().count(), 0, "home is untouched");
     }
 
     #[test]

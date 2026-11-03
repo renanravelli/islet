@@ -159,6 +159,9 @@ Every open item lives here, not in an assistant's memory. Remove an item when it
   - Service worker: answer `ping` with `pong` and re-send every meeting tab's state at once;
     treat `error: app_not_running` as "app closed" without tearing down the port.
   - Run `scripts/install-native-host.sh` against the real Chrome and load the unpacked extension.
+  - `docs/install-extension.md`: the manual "Load unpacked" guide the onboarding opens while
+    `EXTENSION_STORE_URL` is unset, with a "Troubleshooting" section (the onboarding links to it
+    after 60 s without a `hello`).
   - `islet-provider-meet`: map protocol ⇄ core (`selectors.json` keys → core degraded reasons,
     session ids per connection + tab), track command ids and their results, send `ping` when a
     host connects so the extension re-sends its state at once.
@@ -178,13 +181,14 @@ Every open item lives here, not in an assistant's memory. Remove an item when it
     (when the step mounts) and the "Reinstalar ponte do Chrome" button. The binary path changes
     when the app is moved, e.g. to `/Applications`.
   - Glue the bridge socket server to `islet-provider-meet`.
-  - `docs/design/ui-spec.md` lists the failing _selector keys_ under "Saúde do adaptador": keep
-    the provider's raw keys next to the provider-agnostic `DegradedReason` (for example a
-    provider detail field) so the settings pane and the diagnostics can show them.
+  - "Saúde do adaptador" shows `Health::Degraded.provider_details` as they come (the failing
+    selector keys); the diagnostics include them too.
+  - The onboarding's "Não conectou? Ver solução de problemas" opens
+    `docs/install-extension.md#troubleshooting` on GitHub.
+  - The app's own logs go to `islet_bridge::path::log_dir()` (the native host already writes
+    there), so "Abrir pasta" shows both.
 - **Phase 6 (docs):**
   - `CONTRIBUTING.md`: ways to install pnpm (Homebrew, corepack, npm).
-  - `docs/install-extension.md`: the manual "Load unpacked" guide the onboarding opens while
-    `EXTENSION_STORE_URL` is unset (`docs/design/ui-spec.md`, step 2).
   - Biome formats Markdown. If it rewrites the README's centered HTML header, the badges or the
     Mermaid blocks, turn Markdown formatting off.
   - Threat model: the development extension ID can be reproduced by anyone from the public key.

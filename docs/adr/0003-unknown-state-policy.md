@@ -16,7 +16,10 @@ microphone as live, or a live one as muted, is worse than showing nothing.
    state update confirmed by the provider does. A command that is not confirmed in time returns a
    typed error (provider confirmation 1.5 s, core command timeout 2 s).
 4. When a provider cannot read part of the state, the session is marked `health: degraded` with
-   explicit reasons. A session without a heartbeat for 10 s becomes `degraded` with reason
+   explicit reasons. Next to the provider-agnostic reasons, the core keeps `provider_details`:
+   opaque identifiers defined by the provider (for Meet, the failing `selectors.json` keys). The
+   core never interprets them and the UI only displays them. They never contain names, titles
+   or page text; the core also refuses anything that is not a short identifier. A session without a heartbeat for 10 s becomes `degraded` with reason
    `stale`. The island shows a discreet indicator with a tooltip instead of wrong data.
 5. **What we can no longer vouch for is not shown.** A stale session shows mic, camera and hand
    as `Unknown` and drops the active speaker and signals until the next update. An ended session

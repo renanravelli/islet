@@ -48,8 +48,11 @@ struct Host {
 
 impl Host {
     fn spawn(socket: &std::path::Path, args: &[&str]) -> Self {
+        // Logs land in <socket dir>/home/Library/Logs, never in the real home.
+        let home = socket.parent().unwrap().join("home");
         let mut child = Command::new(env!("CARGO_BIN_EXE_islet-native-host"))
             .args(args)
+            .env("HOME", home)
             .env(islet_bridge::path::SOCKET_ENV, socket)
             .env("ISLET_LOG", "trace")
             .stdin(Stdio::piped())
@@ -281,4 +284,28 @@ async fn stdout_carries_only_frames_even_with_verbose_logging() {
     // The logs went to stderr.
     assert!(stderr.contains("connected to the app"), "{stderr}");
     assert!(stderr.lines().count() >= 5, "{stderr}");
+}
+
+#[tokio::test]
+async fn also_logs_to_a_daily_file() {
+    let tmp = TempDir::new("logfile");
+    let mut host = Host::start(&tmp.socket());
+    assert_eq!(host.recv().await, not_running());
+    let (status, _, stderr) = host.close().await;
+    assert!(status.success());
+
+    let dir = tmp.0.join("home/Library/Logs/io.github.renanravelli.islet");
+    let files: Vec<_> = std::fs::read_dir(&dir)
+        .unwrap_or_else(|e| panic!("{}: {e}", dir.display()))
+        .map(|entry| entry.unwrap().file_name().into_string().unwrap())
+        .collect();
+    assert_eq!(files.len(), 1, "{files:?}");
+    assert!(
+        files[0].starts_with("native-host.") && files[0].ends_with(".log"),
+        "{files:?}"
+    );
+    let log = std::fs::read_to_string(dir.join(&files[0])).unwrap();
+    assert!(log.contains("development mode"), "{log}");
+    // Same content as stderr.
+    assert_eq!(log, stderr);
 }

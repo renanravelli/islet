@@ -75,7 +75,7 @@ async fn the_tour_shows_every_island_state_and_repeats() {
 
     // Never stale: the demo sends heartbeats even when nothing changes for a while.
     for session in &sessions {
-        if let Health::Degraded { reasons } = &session.state.health {
+        if let Health::Degraded { reasons, .. } = &session.state.health {
             assert!(!reasons.contains(&DegradedReason::Stale));
         }
     }

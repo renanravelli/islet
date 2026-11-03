@@ -16,6 +16,7 @@ islet-bridge.workspace = true
 islet-protocol.workspace = true
 tokio = { workspace = true, features = ["io-std", "io-util", "macros", "net", "process", "rt", "sync", "time"] }
 tracing.workspace = true
+tracing-appender.workspace = true
 tracing-subscriber.workspace = true
 
 [dev-dependencies]

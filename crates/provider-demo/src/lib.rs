@@ -9,7 +9,8 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use islet_core::{
     CapabilitySet, Command, CommandError, CommandFuture, DegradedReason, EndReason, EventSink,
-    Field, Health, Provider, ProviderId, SessionEvent, SessionState, Signals, Speaker, Toggle,
+    Field, Health, Provider, ProviderDetail, ProviderId, SessionEvent, SessionState, Signals,
+    Speaker, Toggle,
 };
 use tokio::sync::{mpsc, oneshot};
 use tokio::time::{Instant, sleep, sleep_until};
@@ -86,9 +87,10 @@ impl Script {
             Step::new(s(3), Change::Mic(Toggle::Unknown)),
             Step::new(
                 s(3),
-                Change::Health(Health::degraded([DegradedReason::Unreadable(
-                    Field::ActiveSpeaker,
-                )])),
+                Change::Health(
+                    Health::degraded([DegradedReason::Unreadable(Field::ActiveSpeaker)])
+                        .with_details(ProviderDetail::new("demoSpeakerTile")),
+                ),
             ),
             Step::new(s(4), Change::Health(Health::Ok)),
             Step::new(s(0), Change::Mic(Toggle::Off)),

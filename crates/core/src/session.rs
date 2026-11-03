@@ -131,13 +131,38 @@ pub enum Health {
     #[default]
     Ok,
     /// Part of the state could not be read; the island shows a discreet indicator.
-    Degraded { reasons: Vec<DegradedReason> },
+    Degraded {
+        /// Provider-agnostic reasons, which the UI explains.
+        reasons: Vec<DegradedReason>,
+        /// The provider's own identifiers for what failed (for Meet, `selectors.json` keys). The
+        /// core never interprets them; the UI only displays them.
+        provider_details: Vec<ProviderDetail>,
+    },
 }
 
 impl Health {
     pub fn degraded(reasons: impl IntoIterator<Item = DegradedReason>) -> Self {
         Self::Degraded {
             reasons: reasons.into_iter().collect(),
+            provider_details: Vec::new(),
+        }
+    }
+
+    /// Adds provider details. Has no effect on [`Health::Ok`].
+    #[must_use]
+    pub fn with_details(self, details: impl IntoIterator<Item = ProviderDetail>) -> Self {
+        match self {
+            Self::Ok => Self::Ok,
+            Self::Degraded {
+                reasons,
+                mut provider_details,
+            } => {
+                provider_details.extend(details);
+                Self::Degraded {
+                    reasons,
+                    provider_details,
+                }
+            }
         }
     }
 
@@ -146,14 +171,48 @@ impl Health {
     }
 
     pub(crate) fn with_reason(self, reason: DegradedReason) -> Self {
-        let mut reasons = match self {
-            Self::Ok => Vec::new(),
-            Self::Degraded { reasons } => reasons,
+        let (mut reasons, provider_details) = match self {
+            Self::Ok => (Vec::new(), Vec::new()),
+            Self::Degraded {
+                reasons,
+                provider_details,
+            } => (reasons, provider_details),
         };
         if !reasons.contains(&reason) {
             reasons.push(reason);
         }
-        Self::Degraded { reasons }
+        Self::Degraded {
+            reasons,
+            provider_details,
+        }
+    }
+}
+
+/// An opaque identifier a provider attaches to a degraded session, such as a `selectors.json`
+/// key.
+///
+/// It must never hold a name, a title or page text. Providers only pass identifiers from a fixed
+/// set they define; as a second line of defense, [`ProviderDetail::new`] accepts only short
+/// identifier-shaped strings (ASCII letters, digits, `.`, `_`, `-`; 1 to 64 bytes), so free text
+/// with spaces or punctuation is refused.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize)]
+#[serde(transparent)]
+pub struct ProviderDetail(String);
+
+impl ProviderDetail {
+    pub const MAX_LEN: usize = 64;
+
+    pub fn new(id: impl Into<String>) -> Option<Self> {
+        let id = id.into();
+        let shaped = (1..=Self::MAX_LEN).contains(&id.len())
+            && id
+                .bytes()
+                .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'.' | b'_' | b'-'));
+        shaped.then_some(Self(id))
+    }
+
+    pub fn as_str(&self) -> &str {
+        &self.0
     }
 }
 

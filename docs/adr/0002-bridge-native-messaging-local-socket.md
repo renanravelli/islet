@@ -58,8 +58,10 @@ content script (meet.google.com) ⇄ service worker ⇄ native host (stdio) ⇄ 
     bundle ID, so dev and release builds sharing an ID are not confused. Outside a bundle
     (development) the host never opens the app;
   - exits with code 0 when Chrome closes stdin.
-- **stdout carries Chrome's framing and nothing else.** Logs go to stderr (`ISLET_LOG` sets the
-  level). `clippy::print_stdout` is denied in the host crate, children (`open`) get a null
+- **stdout carries Chrome's framing and nothing else.** Logs go to stderr and, because Chrome
+  usually discards a host's stderr, to `~/Library/Logs/<bundle-id>/native-host.<date>.log`
+  (daily rotation, at most 7 files; `ISLET_LOG` sets the level, default `info`). The app logs to
+  the same folder. `clippy::print_stdout` is denied in the host crate, children (`open`) get a null
   stdout, and an integration test checks that stdout parses as frames to the last byte.
 - Every frame's 4-byte length is checked before the body is read or allocated. An oversized body
   is skipped through a small buffer, so the stream stays in sync; Chrome gets

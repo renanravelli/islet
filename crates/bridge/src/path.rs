@@ -26,6 +26,24 @@ pub fn socket_path() -> Option<PathBuf> {
     Some(resolve(Path::new(&home), &env::temp_dir()))
 }
 
+/// Where the app and the native host write their logs: `~/Library/Logs/<bundle id>` on macOS.
+/// Both use the same folder, so "Abrir pasta" in the settings shows both. `None` when `$HOME` is
+/// not set.
+pub fn log_dir() -> Option<PathBuf> {
+    let home = env::var_os("HOME")?;
+    Some(log_dir_in(Path::new(&home)))
+}
+
+#[cfg(target_os = "macos")]
+fn log_dir_in(home: &Path) -> PathBuf {
+    home.join("Library/Logs").join(BUNDLE_ID)
+}
+
+#[cfg(not(target_os = "macos"))]
+fn log_dir_in(home: &Path) -> PathBuf {
+    home.join(".local/state").join(BUNDLE_ID).join("logs")
+}
+
 /// `<app data>/<bundle id>/bridge.sock`, or the same under `temp` when that path is too long for
 /// a Unix socket. On macOS `<app data>` is `~/Library/Application Support` and `temp` is the
 /// per-user `$TMPDIR`.
@@ -60,6 +78,15 @@ mod tests {
             Path::new(
                 "/Users/someone/Library/Application Support/io.github.renanravelli.islet/bridge.sock"
             )
+        );
+    }
+
+    #[test]
+    #[cfg(target_os = "macos")]
+    fn logs_go_to_library_logs() {
+        assert_eq!(
+            log_dir_in(Path::new("/Users/someone")),
+            Path::new("/Users/someone/Library/Logs/io.github.renanravelli.islet")
         );
     }
 

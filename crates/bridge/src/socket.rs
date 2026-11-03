@@ -180,8 +180,28 @@ fn private_dir(dir: &Path, uid: u32) -> Result<(), BridgeError> {
     Ok(())
 }
 
-/// This process's effective UID, read safely: the peer of one end of a socket pair is us.
+/// This process's effective UID.
+///
+/// Rust's standard library has no `getuid`, and calling `libc::getuid` needs `unsafe`, which the
+/// portable crates forbid. The peer of one end of a socket pair is this very process, so asking
+/// tokio for that peer's credentials (the same safe call used to check real peers) returns our
+/// own effective UID, as the kernel reports it.
 fn own_uid() -> io::Result<u32> {
     let (ours, _theirs) = UnixStream::pair()?;
     Ok(ours.peer_cred()?.uid())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn own_uid_matches_the_owner_of_a_file_we_create() {
+        // A new file is owned by the creating process's effective UID.
+        let file = std::env::temp_dir().join(format!("islet-uid-{}", std::process::id()));
+        fs::write(&file, b"").unwrap();
+        let owner = fs::metadata(&file).unwrap().uid();
+        fs::remove_file(&file).unwrap();
+        assert_eq!(own_uid().unwrap(), owner);
+    }
 }

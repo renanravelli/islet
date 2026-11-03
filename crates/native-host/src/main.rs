@@ -2,8 +2,10 @@
 //! opens its port and closes stdin when the port closes. It relays frames between Chrome (stdio)
 //! and the app (local socket); see `docs/adr/0002`.
 //!
-//! **stdout carries Chrome's framing and nothing else.** Logs go to stderr. Any stray byte on
-//! stdout would corrupt the stream, so printing to stdout is a compile error in this crate.
+//! **stdout carries Chrome's framing and nothing else.** Logs go to stderr and to
+//! `~/Library/Logs/<bundle id>/native-host.<date>.log` (Chrome usually discards a host's stderr).
+//! Any stray byte on stdout would corrupt the stream, so printing to stdout is a compile error in
+//! this crate.
 
 #![deny(clippy::print_stdout)]
 
@@ -22,8 +24,11 @@ const EXIT_ERROR: u8 = 1;
 /// The calling origin is not an allowed extension.
 const EXIT_FORBIDDEN: u8 = 2;
 
-/// Sets the log level on stderr: `error`, `warn`, `info` (default), `debug` or `trace`.
+/// Sets the log level: `error`, `warn`, `info` (default), `debug` or `trace`.
 const LOG_ENV: &str = "ISLET_LOG";
+
+/// Log files rotate daily; older ones beyond this count are deleted.
+const MAX_LOG_FILES: usize = 7;
 
 fn main() -> ExitCode {
     init_logging();
@@ -84,15 +89,40 @@ async fn run() -> u8 {
     EXIT_ERROR
 }
 
+/// Logs to stderr and, when the log folder is usable, to a daily file. The privacy rules are the
+/// same for both: no names, titles, meeting codes or message content.
 fn init_logging() {
+    use tracing_appender::rolling::{RollingFileAppender, Rotation};
+    use tracing_subscriber::fmt::writer::MakeWriterExt;
+
     let level = std::env::var(LOG_ENV)
         .ok()
         .and_then(|level| level.parse::<tracing::level_filters::LevelFilter>().ok())
         .unwrap_or(tracing::level_filters::LevelFilter::INFO);
-    tracing_subscriber::fmt()
-        .with_writer(std::io::stderr)
+    let file = islet_bridge::path::log_dir().map(|dir| {
+        // tracing-appender complains on stderr when the folder is missing; create it first.
+        let _ = std::fs::create_dir_all(&dir);
+        RollingFileAppender::builder()
+            .rotation(Rotation::DAILY)
+            .filename_prefix("native-host")
+            .filename_suffix("log")
+            .max_log_files(MAX_LOG_FILES)
+            .build(dir)
+    });
+
+    let builder = tracing_subscriber::fmt()
         .with_ansi(false)
         .with_target(false)
-        .with_max_level(level)
-        .init();
+        .with_max_level(level);
+    match file {
+        Some(Ok(file)) => builder.with_writer(std::io::stderr.and(file)).init(),
+        Some(Err(error)) => {
+            builder.with_writer(std::io::stderr).init();
+            tracing::warn!(%error, "logging to stderr only: cannot open the log file");
+        }
+        None => {
+            builder.with_writer(std::io::stderr).init();
+            tracing::warn!("logging to stderr only: HOME is not set");
+        }
+    }
 }
