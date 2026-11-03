@@ -1,0 +1,9 @@
+{
+  "inCall": true,
+  "self": {
+    "mic": "off",
+    "cam": "off",
+    "hand": "off"
+  },
+  "speaking": false
+}

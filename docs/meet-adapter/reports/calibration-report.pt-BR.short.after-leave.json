@@ -1,0 +1,90 @@
+{
+  "tool": "islet-calibration-runner",
+  "selectorsVersion": 4,
+  "locale": "pt-BR",
+  "browser": "Google Chrome 156",
+  "date": "2026-11-03",
+  "entry": "short",
+  "part": "after-leave",
+  "steps": [
+    {
+      "number": 10,
+      "id": "leave",
+      "title": "Leave",
+      "status": "done",
+      "waits": [],
+      "commands": [
+        {
+          "action": "leave",
+          "result": "confirmed",
+          "ms": 674
+        }
+      ],
+      "set": [],
+      "files": [],
+      "measurements": {},
+      "dialog": {
+        "buttons": ["Sair da chamada", "Encerrar a chamada para todos"]
+      }
+    },
+    {
+      "number": 11,
+      "id": "left",
+      "title": "After leaving",
+      "status": "done",
+      "waits": [],
+      "commands": [],
+      "set": [],
+      "files": [
+        "meet-real-left.pt-BR.html",
+        "meet-real-left.pt-BR.expected.json",
+        "meet-real-left.pt-BR.observed.json"
+      ],
+      "measurements": {},
+      "expected": {
+        "inCall": false
+      },
+      "mismatches": [],
+      "observed": {
+        "inCall": false,
+        "state": {
+          "meeting_code": "[meeting-code]",
+          "self": {
+            "mic": "unknown",
+            "cam": "unknown",
+            "hand": "unknown"
+          },
+          "signals": {
+            "speaking_while_muted": false
+          },
+          "capabilities": ["focus_tab"],
+          "health": "degraded",
+          "degraded_reasons": [
+            "leave_button",
+            "mic_button",
+            "cam_button",
+            "hand_button",
+            "participant_count"
+          ]
+        },
+        "failed": ["leaveButton", "micButton", "camButton", "handButton", "participantCount"],
+        "remoteHand": false,
+        "speakingTiles": []
+      },
+      "find": {
+        "leaveButton": null,
+        "micButton": null,
+        "camButton": null,
+        "handButton": null,
+        "activeSpeaker": null,
+        "participantCount": null,
+        "mutedSpeakingNotice": null,
+        "meetingTitle": null,
+        "justLeaveButton": null
+      }
+    }
+  ],
+  "failedKeys": {
+    "left": ["leaveButton", "micButton", "camButton", "handButton", "participantCount"]
+  }
+}

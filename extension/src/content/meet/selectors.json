@@ -1,6 +1,6 @@
 {
   "$comment": "Every DOM dependency of the Meet adapter (docs/adr/0004). Strategies are tried in order; regexes are case-insensitive and every locale is tried. A key is verified only when it was confirmed in a real call; verifiedIn lists the Meet languages it was confirmed in. jsname/jscontroller values come from the owner's inspection and the calibration runner in a real pt-BR call on 2026-11-03 (docs/meet-adapter/reports/); Google can rename them, so each key keeps a label-based fallback. Unverified strategies are educated guesses. See docs/meet-adapter/calibration.md.",
-  "version": 4,
+  "version": 5,
   "updated": "2026-11-03",
   "keys": {
     "leaveButton": {
@@ -197,8 +197,8 @@
       ]
     },
     "justLeaveButton": {
-      "$comment": "The button that only leaves, in the dialog Meet shows the host on Leave (\"Sair da chamada\" next to \"Encerrar a chamada para todos\" in the pt-BR session). Labels seen, clicking not confirmed yet. Islet never ends the call for everyone: the adapter also refuses any control whose label says so.",
-      "verified": false,
+      "$comment": "The button that only leaves, in the dialog Meet shows the host on Leave (\"Sair da chamada\" next to \"Encerrar a chamada para todos\"). Confirmed in pt-BR: Islet left in 674 ms and the call went on for the others. Islet never ends the call for everyone: the adapter also refuses any control whose label says so.",
+      "verified": true,
       "required": false,
       "strategies": [
         {
@@ -215,7 +215,8 @@
           },
           "css": "[role='dialog'] button, [role='alertdialog'] button, [role='dialog'] [role='button'], [role='alertdialog'] [role='button']"
         }
-      ]
+      ],
+      "verifiedIn": ["pt-BR"]
     }
   }
 }
