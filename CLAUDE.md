@@ -187,7 +187,9 @@ Every open item lives here, not in an assistant's memory. Remove an item when it
       calendar meeting.
     - Leaving as the host opens "Sair da chamada" / "Encerrar a chamada para todos"; decide
       whether Leave clicks "Sair da chamada" by itself.
-    - One `toggle_mic` was not confirmed in 1.5 s in step 6 (it worked every other time).
+    - One `toggle_mic` was not confirmed in 1.5 s in step 6 (it worked every other time, in
+      53 to 59 ms). Probable cause, per the owner: the mic was also toggled by hand around then.
+      Watch for it in the next session.
   - **Later:** the English round; until then no key lists `en` in `verifiedIn`.
   - **After Phase 5:** check that `focus_tab` brings Chrome to the front from another app on
     macOS, and that a connection from another macOS user is refused by the bridge.
