@@ -33,6 +33,8 @@ export type Action =
   | { kind: "set"; self: SelfState }
   /** Show one instruction without waiting. */
   | { kind: "tell"; text: string }
+  /** Show one instruction, then wait a fixed time (isletContinue() skips it). */
+  | { kind: "pause"; text: string; ms: number }
   | { kind: "capture" }
   /** Toggle mic, camera and hand through execute and time each confirmation. */
   | { kind: "commands" }
@@ -121,27 +123,40 @@ export const STEPS: Step[] = [
   },
   {
     number: 6,
-    id: "muted-speaking",
-    title: "Talking with the mic off",
+    id: "silence",
+    title: "Nobody talks",
     actions: [
       { kind: "set", self: ALL_OFF },
-      {
-        kind: "wait",
-        ask: "On the Mac, keep talking with the mic off until Meet shows its notice.",
-        until: { kind: "speakingWhileMuted" },
-        timeoutMs: 90_000,
-      },
+      { kind: "pause", text: "Mute the iPhone. Nobody talks for the next 10 s.", ms: 10_000 },
       { kind: "capture" },
-      { kind: "noticeDuration" },
+      { kind: "speakerStability" },
     ],
-    expected: { inCall: true, self: ALL_OFF, speaking_while_muted: true },
+    expected: { inCall: true, self: ALL_OFF, speaking: false },
   },
   {
     number: 7,
+    id: "speaking-mac",
+    title: "The Mac talks",
+    actions: [
+      { kind: "set", self: ON_OFF_OFF },
+      {
+        kind: "wait",
+        ask: "On the Mac, keep talking with the mic on until the runner moves on. The iPhone stays muted.",
+        until: { kind: "activeSpeaker" },
+        timeoutMs: 90_000,
+      },
+      { kind: "capture" },
+      { kind: "speakerStability" },
+    ],
+    expected: { inCall: true, self: ON_OFF_OFF, speaking: true },
+  },
+  {
+    number: 8,
     id: "speaking",
     title: "The iPhone talks",
     actions: [
       { kind: "set", self: ALL_OFF },
+      { kind: "pause", text: "Stop talking on the Mac.", ms: 5000 },
       {
         kind: "wait",
         ask: "Unmute the iPhone and keep talking until the runner moves on.",
@@ -154,13 +169,34 @@ export const STEPS: Step[] = [
     expected: { inCall: true, self: ALL_OFF, speaking: true },
   },
   {
-    number: 8,
-    id: "leave",
-    title: "Leave",
-    actions: [{ kind: "leave" }],
+    number: 9,
+    id: "muted-speaking",
+    title: "Talking with the mic off",
+    actions: [
+      { kind: "set", self: ALL_OFF },
+      { kind: "tell", text: "Mute the iPhone." },
+      {
+        kind: "wait",
+        ask: "On the Mac, keep talking with the mic off until Meet shows its notice.",
+        until: { kind: "speakingWhileMuted" },
+        timeoutMs: 90_000,
+      },
+      { kind: "capture" },
+      { kind: "noticeDuration" },
+    ],
+    expected: { inCall: true, self: ALL_OFF, speaking_while_muted: true },
   },
   {
-    number: 9,
+    number: 10,
+    id: "leave",
+    title: "Leave",
+    actions: [
+      { kind: "leave" },
+      { kind: "tell", text: "On the iPhone, check that the call goes on without the Mac." },
+    ],
+  },
+  {
+    number: 11,
     id: "left",
     title: "After leaving",
     onlyIf: { kind: "inCall", value: false },
@@ -168,3 +204,17 @@ export const STEPS: Step[] = [
     expected: { inCall: false },
   },
 ];
+
+/** Named subsets of the steps, run with runCalibration("<name>"). */
+export const PRESETS: Record<string, string[]> = {
+  /** Who speaks, the muted notice and leaving as the host, from inside a call or the lobby. */
+  short: [
+    "in-call-mic-on",
+    "silence",
+    "speaking-mac",
+    "speaking",
+    "muted-speaking",
+    "leave",
+    "left",
+  ],
+};

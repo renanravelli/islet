@@ -98,6 +98,13 @@ function respond(message: string): void {
       setTimeout(() => document.getElementById("notice")?.remove(), 2300);
     });
   }
+  const ring = (tile: string, speaking: boolean) => {
+    const el = document.querySelector(`[data-participant-id='${tile}'] [jsname='QgSmzd']`);
+    if (el) el.className = speaking ? "wEsLMd" : "gjg47c";
+  };
+  if (message.includes("keep talking with the mic on")) later(1000, () => ring("p1", true));
+  if (message.includes("Stop talking on the Mac")) ring("p1", false);
+  if (message.includes("Mute the iPhone")) ring("p2", false);
   if (message.includes("Unmute the iPhone")) {
     later(1000, () => {
       const ring = document.querySelector("[data-participant-id='p2'] [jsname='QgSmzd']");
@@ -155,8 +162,10 @@ describe("runCalibration", () => {
         "in-call-mic-on",
         "in-call-mic-off",
         "remote-hand",
-        "muted-speaking",
+        "silence",
+        "speaking-mac",
         "speaking",
+        "muted-speaking",
       ].flatMap((id) => [
         `meet-real-${id}.en.html`,
         `meet-real-${id}.en.expected.json`,
@@ -198,7 +207,16 @@ describe("runCalibration", () => {
       present: 20,
       changes: 0,
       distinctSpeakers: 1,
+      distinctSpeakingTiles: 1,
     });
+    // Who speaks, by tile position: nobody, then the Mac's tile, then the iPhone's.
+    expect(step(main, "silence").observed?.speakingTiles).toEqual([]);
+    expect(step(main, "silence").measurements.speaker).toMatchObject({ present: 0 });
+    expect(step(main, "speaking-mac").observed?.speakingTiles).toEqual([0]);
+    expect(step(main, "speaking").observed?.speakingTiles).toEqual([1]);
+    expect(step(main, "muted-speaking").measurements.noticeTexts).toEqual([
+      "Are you talking? Turn on your mic",
+    ]);
     expect(step(main, "in-call-mic-on").find?.micButton).toMatchObject({
       strategy: 0,
       tag: "button",
@@ -235,6 +253,29 @@ describe("runCalibration", () => {
     expect(JSON.parse(observed?.content ?? "{}").state.active_speaker).toEqual({
       display_name: "[name]",
     });
+  });
+
+  it('runs the short session with runCalibration("short")', async () => {
+    joinCall();
+    const reports = (await drive(runCalibration("short", deps()))) as Report[];
+    expect(saved.map((f) => f.name)).toEqual([
+      ...["in-call-mic-on", "silence", "speaking-mac", "speaking", "muted-speaking"].flatMap(
+        (id) => [
+          `meet-real-${id}.en.html`,
+          `meet-real-${id}.en.expected.json`,
+          `meet-real-${id}.en.observed.json`,
+        ],
+      ),
+      "calibration-report.en.short.json",
+      "meet-real-left.en.html",
+      "meet-real-left.en.expected.json",
+      "meet-real-left.en.observed.json",
+      "calibration-report.en.short.after-leave.json",
+    ]);
+    for (const report of reports) {
+      for (const s of report.steps) expect(s.mismatches ?? [], s.id).toEqual([]);
+    }
+    expect(endedForEveryone).toBe(false);
   });
 
   it("skips the lobby when started in a call, and can capture it on its own", async () => {
@@ -332,7 +373,8 @@ describe("calibration-session.md", () => {
       expect(expected ? JSON.parse(expected) : undefined).toEqual(step.expected);
       for (const action of step.actions) {
         if (action.kind === "wait") expect(section).toContain(action.ask);
-        if (action.kind === "tell") expect(section).toContain(action.text);
+        if (action.kind === "tell" || action.kind === "pause")
+          expect(section).toContain(action.text);
       }
     });
   }

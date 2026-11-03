@@ -33,9 +33,9 @@ diverge.
 1. On the Mac, open `meet.new` and stop at the pre-join screen.
 2. Open DevTools (`⌥⌘I`) → Console, and set the context menu at the top (it says `top`) to
    **Islet**, the extension's isolated world.
-3. Paste the whole `extension/scripts/calibration-runner.js` and press Enter. It asks once for
-   the names to redact (the same as in `.private-names.txt`), and detects the language from the
-   page.
+3. Paste the whole `extension/scripts/calibration-runner.js` and press Enter, then run
+   `runCalibration()`. It asks once for the names to redact (the same as in
+   `.private-names.txt`), and detects the language from the page.
 4. Follow the console. It shows **one instruction at a time**, prefixed `Islet ▸`, and waits
    until it sees the result on the page. Nothing is drawn on the page itself, so nothing extra
    ends up in the snapshots.
@@ -46,7 +46,8 @@ diverge.
 5. Leaving may reload the page, which stops the runner. If it does, paste the runner again and
    run `runCalibration("left")` on the page shown after leaving.
 
-Other entries, after pasting the runner once: `runCalibration("lobby")` on a pre-join screen,
+Other entries, after pasting the runner once: `runCalibration("short")` (see
+[Short session](#short-session)), `runCalibration("lobby")` on a pre-join screen,
 when the session started inside a call; `runCalibration("<step>")` to redo one step
 (`isletDebug.steps` lists them).
 
@@ -101,36 +102,63 @@ with its summary printed in the console):
 - **Expected:** `{"inCall":true,"self":{"mic":"on","cam":"off","hand":"off"},"participant_count":2}`
 - **Then:** "Lower the iPhone's hand."
 
-### 6. Talking with the mic off
+### 6. Nobody talks
 
-- **The runner** mutes the Mac. Then **you:**
-  "On the Mac, keep talking with the mic off until Meet shows its notice."
-- **It waits for:** `speaking_while_muted`, then captures at once, while the notice shows, and
-  measures how long it stays on screen.
-- **Snapshot:** `meet-real-muted-speaking.<locale>.html`
-- **Expected:** `{"inCall":true,"self":{"mic":"off","cam":"off","hand":"off"},"speaking_while_muted":true}`
+- **The runner** mutes the Mac. **You:** "Mute the iPhone. Nobody talks for the next 10 s."
+- **Snapshot:** `meet-real-silence.<locale>.html`, then it samples the active speaker for 10 s:
+  it should find nobody.
+- **Expected:** `{"inCall":true,"self":{"mic":"off","cam":"off","hand":"off"},"speaking":false}`
 
-### 7. The iPhone talks
+### 7. The Mac talks
 
-- **You:** "Unmute the iPhone and keep talking until the runner moves on."
+- **The runner** turns the Mac's mic on. Then **you:**
+  "On the Mac, keep talking with the mic on until the runner moves on. The iPhone stays muted."
+- **It waits for:** an active speaker, captures, then samples it for 10 s. The report gives the
+  position of the speaking tile (no name), to compare with step 8.
+- **Snapshot:** `meet-real-speaking-mac.<locale>.html`
+- **Expected:** `{"inCall":true,"self":{"mic":"on","cam":"off","hand":"off"},"speaking":true}`
+
+### 8. The iPhone talks
+
+- **The runner** mutes the Mac and says "Stop talking on the Mac." for 5 s, so the Mac's speaking
+  indicator settles. Then **you:** "Unmute the iPhone and keep talking until the runner moves on."
 - **It waits for:** an active speaker, captures, then samples it every 0.5 s for 10 s (how often
-  it is present, how often it changes; counts only, no names).
+  it is present, how often it changes, which tile; counts and positions only, no names).
 - **Snapshot:** `meet-real-speaking.<locale>.html`
 - **Expected:** `{"inCall":true,"self":{"mic":"off","cam":"off","hand":"off"},"speaking":true}`
 
-### 8. Leave
+### 9. Talking with the mic off
+
+- **The runner** mutes the Mac and says "Mute the iPhone." Then **you:**
+  "On the Mac, keep talking with the mic off until Meet shows its notice."
+- **It waits for:** `speaking_while_muted`, then captures at once, while the notice shows, and
+  measures how long it stays on screen. While waiting it also records the text of every live
+  notice that mentions the mic or talking (names replaced), so the notice can be calibrated
+  even if its current pattern is wrong.
+- **Snapshot:** `meet-real-muted-speaking.<locale>.html`
+- **Expected:** `{"inCall":true,"self":{"mic":"off","cam":"off","hand":"off"},"speaking_while_muted":true}`
+
+### 10. Leave
 
 - **The runner** clicks Leave through `execute`. When Meet asks the host whether to leave or end
   the call for everyone, the adapter picks **Sair da chamada**; it never ends the call for
   everyone. The runner records the dialog's button labels. If a dialog it does not recognize
   stays open, it asks you to answer it by hand.
-- **Check:** on the iPhone, the call goes on without the Mac.
+- **Then:** "On the iPhone, check that the call goes on without the Mac."
 - **No snapshot.** The report is saved just before this step, in case leaving reloads the page.
 
-### 9. After leaving
+### 11. After leaving
 
 - **Snapshot:** `meet-real-left.<locale>.html`, on the page shown after leaving.
 - **Expected:** `{"inCall":false}`
+
+## Short session
+
+To check only who speaks, the muted notice and leaving as the host, start a call from the Mac
+(`meet.new`), paste the runner and run `runCalibration("short")` instead of `runCalibration()`.
+It runs steps 2 and 6 to 11, asks for the names once and saves its reports as
+`calibration-report.<locale>.short.json` and `calibration-report.<locale>.short.after-leave.json`.
+You must be the meeting's host for step 10 to show the leave dialog.
 
 ## Manual alternative
 

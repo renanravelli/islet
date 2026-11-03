@@ -203,7 +203,7 @@ describe("launchers", () => {
     new Function(captureLauncher)();
     expect(debug.captureSnapshot).toHaveBeenCalledOnce();
     new Function(runnerLauncher)();
-    expect(debug.runCalibration).toHaveBeenCalledOnce();
+    expect(debug.runCalibration).not.toHaveBeenCalled();
     const g = globalThis as unknown as { runCalibration(e?: string): void; isletContinue(): void };
     g.runCalibration("left");
     expect(debug.runCalibration).toHaveBeenLastCalledWith("left");

@@ -9,7 +9,13 @@
 
 import type { Toggle } from "@islet/protocol-ts";
 import type { MeetAdapter } from "../content/meet/adapter";
-import { type Registry, resolveWith, SELECTORS, type SelectorKey } from "../content/meet/selectors";
+import {
+  matchAll,
+  type Registry,
+  resolveWith,
+  SELECTORS,
+  type SelectorKey,
+} from "../content/meet/selectors";
 import type { TabAction } from "../shared/messages";
 import { saveFile } from "./save";
 import { captureSnapshot, isInChat, redact, selectorDataAttributes } from "./snapshot";
@@ -17,6 +23,7 @@ import {
   type Action,
   type Condition,
   type Expected,
+  PRESETS,
   type SelfState,
   STEPS,
   type Step,
@@ -29,6 +36,10 @@ const SPEAKER_SAMPLES = 20;
 const DIALOG_WATCH_MS = 3000;
 const BY_HAND_TIMEOUT_MS = 60_000;
 const MAX_LABEL = 60;
+const MAX_NOTICE = 120;
+/** Live notices worth recording while waiting for the muted notice: they mention the mic or talking. */
+const NOTICE_WORDS =
+  /microfone|microphone|\bmic\b|mudo|muted|mute|silenciad|falando|talking|speaking/i;
 
 /** Labels of "X raised a hand" notifications and badges (heuristic, also reported). */
 const RAISED_HAND =
@@ -77,6 +88,8 @@ export interface Observed {
   /** span[data-avatar-count], to compare with participant_count. */
   avatarCount?: number;
   remoteHand: boolean;
+  /** Positions (0-based) of the participant tiles the activeSpeaker key matches. No names. */
+  speakingTiles: number[];
 }
 
 export interface StepRecord {
@@ -151,9 +164,11 @@ export async function runCalibration(
     log.warn("Islet ▸ the calibration runner is already running.");
     return undefined;
   }
-  const steps = entry === undefined ? STEPS : STEPS.filter((step) => step.id === entry);
+  const ids = entry === undefined ? STEPS.map((s) => s.id) : (PRESETS[entry] ?? [entry]);
+  const steps = ids.flatMap((id) => STEPS.filter((step) => step.id === id));
   if (steps.length === 0) {
-    log.warn(`Islet ▸ unknown entry "${entry}". Use one of: ${STEPS.map((s) => s.id).join(", ")}.`);
+    const entries = [...Object.keys(PRESETS), ...STEPS.map((s) => s.id)];
+    log.warn(`Islet ▸ unknown entry "${entry}". Use one of: ${entries.join(", ")}.`);
     return undefined;
   }
   const ask = deps.prompt ?? ((message: string, value: string) => window.prompt(message, value));
@@ -181,6 +196,7 @@ class Runner {
   private report: Report;
   private readonly reports: Report[] = [];
   private conditionMetAt = 0;
+  private readonly noticeTexts = new Set<string>();
 
   constructor(
     private readonly deps: RunnerDeps,
@@ -215,7 +231,7 @@ class Runner {
     );
     for (const step of steps) {
       // Leaving can reload the page and stop this script: save what we have first.
-      if (step.id === "leave" && this.entry === undefined) {
+      if (step.id === "leave" && steps.indexOf(step) > 0) {
         this.finish();
         this.report = this.newReport("after-leave");
       }
@@ -229,11 +245,8 @@ class Runner {
   private finish(): void {
     if (this.report.steps.length === 0) return;
     const suffix =
-      this.entry !== undefined
-        ? `.${this.entry}`
-        : this.report.part === "after-leave"
-          ? ".after-leave"
-          : "";
+      (this.entry !== undefined ? `.${this.entry}` : "") +
+      (this.report.part === "after-leave" ? ".after-leave" : "");
     this.saveJson(`calibration-report.${this.locale}${suffix}.json`, this.report);
     this.reports.push(this.report);
   }
@@ -276,6 +289,9 @@ class Runner {
       case "tell":
         this.log.info(`Islet ▸ ${action.text}`);
         break;
+      case "pause":
+        record.waits.push(await this.pause(action.text, action.ms));
+        break;
       case "capture":
         this.capture(step, record);
         break;
@@ -285,6 +301,7 @@ class Runner {
         break;
       case "noticeDuration":
         record.measurements.noticeVisibleMs = await this.noticeDuration(record);
+        record.measurements.noticeTexts = [...this.noticeTexts];
         break;
       case "speakerStability":
         record.measurements.speaker = await this.speakerStability();
@@ -341,6 +358,7 @@ class Runner {
       state: safe,
       failed,
       remoteHand: this.remoteHandRaised(),
+      speakingTiles: this.speakingTiles(),
     };
     const avatars = this.doc.querySelector("span[data-avatar-count]");
     const avatarText = avatars?.getAttribute("data-avatar-count") || avatars?.textContent || "";
@@ -402,6 +420,7 @@ class Runner {
     try {
       while (Date.now() - start < timeoutMs) {
         await sleep(POLL_MS);
+        if (check.kind === "speakingWhileMuted") this.collectNotices();
         if (this.met(check)) {
           this.conditionMetAt = Date.now();
           return record("met", Date.now() - start);
@@ -501,6 +520,7 @@ class Runner {
 
   private async speakerStability(): Promise<Record<string, number>> {
     const names = new Set<string>();
+    const tiles = new Set<number>();
     let present = 0;
     let changes = 0;
     let last: string | undefined;
@@ -510,6 +530,7 @@ class Runner {
         present++;
         names.add(speaker);
       }
+      for (const tile of this.speakingTiles()) tiles.add(tile);
       if (i > 0 && speaker !== last) changes++;
       last = speaker;
       await sleep(SPEAKER_SAMPLE_MS);
@@ -521,7 +542,48 @@ class Runner {
       present,
       changes,
       distinctSpeakers: names.size,
+      distinctSpeakingTiles: tiles.size,
     };
+  }
+
+  private speakingTiles(): number[] {
+    const tiles = [...this.doc.querySelectorAll("[data-participant-id]")];
+    const speaking = new Set(
+      this.registry.keys.activeSpeaker.strategies.flatMap((s) => matchAll(this.doc, s)),
+    );
+    return tiles.flatMap((tile, index) => (speaking.has(tile) ? [index] : []));
+  }
+
+  /** Texts of live notices that mention the mic or talking, redacted, for calibrating the muted notice. */
+  private collectNotices(): void {
+    for (const el of this.doc.querySelectorAll("[role='alert'], [role='status'], [aria-live]")) {
+      if (isInChat(el)) continue;
+      const text = el.textContent?.replace(/\s+/g, " ").trim() ?? "";
+      if (text && NOTICE_WORDS.test(text))
+        this.noticeTexts.add(redact(text, this.names).slice(0, MAX_NOTICE));
+    }
+  }
+
+  private async pause(text: string, ms: number): Promise<WaitRecord> {
+    this.log.info(
+      `Islet ▸ ${text}  (The runner goes on in ${Math.round(ms / 1000)} s; isletContinue() skips.)`,
+    );
+    const start = Date.now();
+    let continued = false;
+    continueWait = () => {
+      continued = true;
+    };
+    try {
+      while (Date.now() - start < ms && !continued) await sleep(POLL_MS);
+      return {
+        ask: text,
+        until: "pause",
+        status: continued ? "continued" : "met",
+        waitedMs: Date.now() - start,
+      };
+    } finally {
+      continueWait = undefined;
+    }
   }
 
   private async leave(record: StepRecord): Promise<void> {
