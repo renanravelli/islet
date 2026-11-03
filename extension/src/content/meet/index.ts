@@ -4,7 +4,7 @@
 import type { TabAction, TabToWorker, WorkerToTab } from "../../shared/messages";
 import { TAB_PORT } from "../../shared/messages";
 import { MeetAdapter } from "./adapter";
-import { SELECTORS } from "./selectors";
+import { resolve, SELECTORS, type SelectorKey } from "./selectors";
 import { MeetSession } from "./session";
 
 const RECONNECT_MS = 1000;
@@ -51,12 +51,18 @@ function connect(): void {
 connect();
 session.start();
 
-// For calibration (docs/meet-adapter/calibration.md): reachable only from this extension's
-// isolated world in DevTools (the "Islet" console context), never from the Meet page.
-Object.assign(globalThis, {
-  isletDebug: {
-    selectorsVersion: SELECTORS.version,
-    readState: () => adapter.readState(),
-    execute: (action: TabAction) => adapter.execute(action),
-  },
-});
+// For calibration (docs/meet-adapter/calibration.md), development builds only: reachable from
+// this extension's isolated world in DevTools (the "Islet" console context), never from the
+// Meet page. Release builds drop this block; scripts/check-release-build.mjs verifies it.
+if (__ISLET_DEBUG__) {
+  Object.assign(globalThis, {
+    isletDebug: {
+      selectorsVersion: SELECTORS.version,
+      inCall: () => adapter.detectInCall(),
+      readState: () => adapter.readState(),
+      /** The element a key resolves to, or null; DevTools highlights it on hover. */
+      find: (key: SelectorKey) => resolve(document, SELECTORS.keys[key].strategies),
+      execute: (action: TabAction) => adapter.execute(action),
+    },
+  });
+}

@@ -36,3 +36,6 @@ extension/*.zip
 # Claude Code local state
 .claude/*.lock
 .claude/settings.local.json
+
+# Local list of real names the fixture sanitization test looks for
+extension/test/.private-names.txt

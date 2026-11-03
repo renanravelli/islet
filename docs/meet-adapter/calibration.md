@@ -6,9 +6,12 @@ yet**: they are educated guesses, every one is marked `"verified": false`, and t
 against synthetic fixtures. This guide turns them into verified selectors, and is also the fix
 procedure when Meet changes its interface.
 
-You need the extension loaded ([install guide](../install-extension.md)), a Meet call, and,
-ideally, a second device or account in the call so there is another participant and someone
-speaking.
+You need the **development** build of the extension
+(`pnpm --filter @islet/extension build:dev`, loaded as in the
+[install guide](../install-extension.md)): only it has `isletDebug`, and release builds fail
+their check if it is there. You also need a Meet call with a second device or account, so there
+is another participant and someone speaking. For a ready-made call script, see
+[calibration-session.md](calibration-session.md).
 
 ## 1. Check the live page
 
@@ -23,7 +26,9 @@ speaking.
 
    `state` is what the extension would send; `failed` lists the required keys it could not
    resolve or read. Compare it with what you see: mic, camera, hand, participant count, who is
-   speaking, the title.
+   speaking, the title. `isletDebug.inCall()` tells whether the adapter thinks you are in a
+   call, and `isletDebug.find("micButton")` (or any other key) returns the element a key
+   resolves to; hover it in the Console to see it highlighted on the page.
 4. Try each command and watch the page:
 
    ```js
@@ -38,8 +43,10 @@ speaking.
 ## 2. Capture anonymized snapshots
 
 For each state below, set it up in the call, then paste the contents of
-`extension/scripts/capture-snapshot.js` into the Console (context `top`). When asked, type your
-name and every participant's name, comma separated. The file downloads; nothing is sent.
+`extension/scripts/capture-snapshot.js` into the Console (context `top`). It copies only the
+control bar and call buttons, participant tiles, notices and the title. When asked, type your
+name and every participant's name, comma separated. It then prints a summary of everything it
+removed and asks before saving; nothing is sent.
 
 | Snapshot          | Set up                                                  |
 | ----------------- | ------------------------------------------------------- |
@@ -52,9 +59,14 @@ name and every participant's name, comma separated. The file downloads; nothing 
 Do it twice: with Meet in English and in Português (Brasil). Meet follows your Google
 Account's language; switch it there and reload the Meet tab.
 
-**Review every file before using or sharing it.** The script removes text, the chat panel,
+**Review every file before using or sharing it.** The script removes text (except short numbers
+and a recognized notice), the chat panel, images, URLs, IDs, data attributes no selector uses,
 meeting codes, e-mails and the names you typed, but it cannot know every name. Search each file
 for every participant's name. The Console lists every label it kept on controls.
+
+List the real names in `extension/test/.private-names.txt` (git-ignored, one per line). The
+"fixtures are sanitized" test fails if any fixture contains one of them, an e-mail, a
+`googleusercontent.com` URL or a meeting code; it also runs in CI, without the names.
 
 ## 3. Add them as fixtures
 

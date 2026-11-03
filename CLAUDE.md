@@ -92,7 +92,8 @@ cargo test --workspace                               # also regenerates the prot
 scripts/gen-extension-key.sh --print                 # the extension's public key and ID
 scripts/install-native-host.sh                       # dev: register target/debug host with Chrome
 pnpm test                                            # Vitest in every package (extension)
-pnpm build                                           # builds the extension into extension/dist
+pnpm build                                           # release extension in extension/dist, checked
+pnpm --filter @islet/extension build:dev             # development extension, with isletDebug
 ```
 
 The extension loads from `extension/dist` (`docs/install-extension.md`). Commands for the desktop
@@ -106,7 +107,12 @@ app are added in Phase 5.
   page directly. Selector keys are opaque `provider_details` in the core and must match
   `islet-provider-meet` (a test checks).
 - Tests run against synthetic fixtures in `extension/test/fixtures`, marked as such. Real
-  snapshots come only through `docs/meet-adapter/calibration.md`, anonymized and reviewed.
+  snapshots come only through `docs/meet-adapter/calibration.md`, anonymized and reviewed. The
+  "fixtures are sanitized" test rejects e-mails, `googleusercontent.com` URLs, meeting codes and
+  any name in the git-ignored `extension/test/.private-names.txt`.
+- `isletDebug` exists only in development builds (`__ISLET_DEBUG__`).
+  `scripts/check-release-build.mjs` fails a release build that contains it, a network API or
+  extra permissions.
 - Log through `src/shared/log.ts`: fixed text plus non-personal details, never content.
 
 ## Bridge protocol
@@ -168,12 +174,11 @@ and every UI string. Where it and the design canvas differ, the spec wins.
 Every open item lives here, not in an assistant's memory. Remove an item when it lands.
 
 - **Manual, needs a real call (owner):**
-  - Calibrate the Meet selectors (`docs/meet-adapter/calibration.md`); all are
-    `"verified": false` until then.
-  - Run `scripts/install-native-host.sh` against the real Chrome, load `extension/dist` and
-    check the extension connects (`docs/install-extension.md`).
-  - Check that `focus_tab` brings Chrome to the front from another app on macOS.
-  - Check that a connection from another macOS user is refused by the bridge.
+  - **Before Phase 5:** run a calibration session (`docs/meet-adapter/calibration-session.md`)
+    and hand over the snapshots and notes; then the selectors are fixed and marked
+    `"verified": true` where they work, and what cannot be detected is reported.
+  - **After Phase 5:** check that `focus_tab` brings Chrome to the front from another app on
+    macOS, and that a connection from another macOS user is refused by the bridge.
 - **Phase 5 (desktop app):**
   - Apply the unsafe rules for `src-tauri` (see "Unsafe code").
   - `packages/ui-types`: TS types for `UiSnapshot` and the other UI-facing core types, generated
@@ -205,6 +210,8 @@ Every open item lives here, not in an assistant's memory. Remove an item when it
 - **Phase 7 (CI):**
   - After `cargo test`, fail if `packages/protocol-ts` (and later `packages/ui-types`) changed
     (`git diff --exit-code`).
+  - Run `pnpm test` (which includes the fixture sanitization test) and `pnpm build` (which
+    includes the release build check) on every push.
   - The release attaches `islet-extension-<version>.zip` (built `extension/dist`), as
     `docs/install-extension.md` describes.
   - Issue template "Meet UI changed", which `docs/install-extension.md` mentions.
