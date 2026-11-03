@@ -94,6 +94,9 @@ const MEETING_CODE = /\b[a-z]{3}-[a-z]{4}-[a-z]{3}\b/gi;
 const EMAIL = /[^\s@<>"']+@[^\s@<>"']+\.[a-z]{2,}/gi;
 const URL_LIKE = /https?:|\/\/|googleusercontent\.com/i;
 const SHORT_NUMBER = /^\s*\d{1,3}\s*$/;
+/** Device pickers ("Câmera: Câmera FaceTime HD (D288:CE50)"): the device is not needed. */
+const DEVICE_LABEL =
+  /^((?:micro(?:fone|phone)|c[âa]mera|camera|alto-falantes?|speakers?)\s*:\s*).+$/i;
 const LARGE_SVG_PATH = 300;
 
 const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -263,7 +266,10 @@ export function snapshot(options: Pick<SnapshotOptions, "names" | "root" | "regi
         }
       } else if (FREE_TEXT.has(name)) {
         if (isControl && name !== "value") {
-          const clean = scrub(value);
+          const clean = scrub(value).replace(DEVICE_LABEL, (_, prefix: string) => {
+            count("device names");
+            return `${prefix}[device]`;
+          });
           el.setAttribute(name, clean);
           keptLabels.add(clean);
         } else {

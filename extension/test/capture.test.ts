@@ -110,6 +110,21 @@ describe("snapshot", () => {
     expect(new MeetAdapter(document).readState().state.signals.speaking_while_muted).toBe(true);
   });
 
+  it("redacts device names in the lobby's device pickers", () => {
+    load(FIXTURES.lobby);
+    document.body.insertAdjacentHTML(
+      "beforeend",
+      `<button aria-label="Câmera: Câmera FaceTime HD (D288:CE50)"></button>
+       <button aria-label="Microphone: MacBook Pro Microphone (Built-in)"></button>`,
+    );
+    const { html, removed } = snapshot({ names: [] });
+    expect(html).not.toContain("FaceTime");
+    expect(html).not.toContain("D288");
+    expect(html).not.toContain("MacBook");
+    expect(html).toContain('aria-label="Câmera: [device]"');
+    expect(removed["device names"]).toBe(2);
+  });
+
   it("empties a chat panel caught inside a kept region", () => {
     load(FIXTURES.inCallEn);
     document
