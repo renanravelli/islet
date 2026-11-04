@@ -319,6 +319,13 @@ Every open item lives here, not in an assistant's memory. Remove an item when it
     control only) and is a possible fallback.
   - **Chrome Web Store:** the listing's privacy form and description, with the photos item
     above.
+- **Onboarding checks and first launch (owner, by hand):** step 2 checks Chrome and that Islet runs
+  from Applications (the bridge has no row: its failure shows in Chrome's); the guide is ordered front on the first launch, and the tray
+  icon has a dot until onboarding is completed (canvas: "Primeira abertura", "Onboarding 2 —
+  Verificar o Mac"). Check with a fresh install of a build (no `settings.json`): the guide in
+  front of Finder, and of System Settings after "Open Anyway"; Islet opened straight from the
+  disk image flags "Islet na pasta Aplicativos"; with Chrome moved away, step 2 asks for it and
+  turns green on its own once it is back. The READMEs' onboarding images predate this step.
 - **Signing (owner):** the release is signed ad hoc until the six `APPLE_*` secrets exist (an
   Apple Developer Program membership); then `release.yml` signs and notarizes.
 - **Extension install:**
@@ -330,7 +337,7 @@ Every open item lives here, not in an assistant's memory. Remove an item when it
     zip; the release zip keeps the development ID. The connection test after an install (ADR
     0002) reaches store users only with the next upload (0.1.2).
   - **Owner, by hand:** with the development extension, remove and load it again during
-    onboarding step 2, with no Meet tab open: the step must show "Conectada" within seconds and
+    onboarding step 3, with no Meet tab open: the step must show "Conectada" within seconds and
     keep it after the bridge closes 10 s later. Then "Abrir o Meet para testar" with the
     extension already installed, and with Safari as the default browser (the store page and Meet
     must open in Chrome).

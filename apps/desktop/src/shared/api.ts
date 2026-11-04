@@ -9,6 +9,7 @@ import type {
   CommandError,
   IslandLayout,
   Link,
+  Requirements,
   SessionKey,
   UiSnapshot,
   UpdateState,
@@ -49,6 +50,7 @@ const fallback = {
     demo: false,
   } satisfies AppInfo as AppInfo,
   snapshot: { primary: null, providers: [] } satisfies UiSnapshot as UiSnapshot,
+  requirements: { chrome: true, in_applications: true } satisfies Requirements as Requirements,
   update: { state: "idle" } satisfies UpdateState as UpdateState,
 };
 
@@ -78,6 +80,7 @@ export const api = {
   openWindow: (label: "onboarding" | "settings") =>
     call<void>("open_window", { label }, () => undefined),
   repairBridge: () => call<BridgeState>("repair_bridge", undefined, () => fallback.info.bridge),
+  requirements: () => call<Requirements>("requirements", undefined, () => fallback.requirements),
   autostart: () => call<boolean>("autostart", undefined, () => false),
   setAutostart: (on: boolean) => call<boolean>("set_autostart", { on }, () => on),
   diagnostics: () => call<string>("diagnostics", undefined, () => "Islet (offline preview)\n"),

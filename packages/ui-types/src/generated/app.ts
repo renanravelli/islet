@@ -75,7 +75,22 @@ export type Language = "auto" | "pt-BR" | "en";
 /**
  * Links the UI may open. Arbitrary URLs are never opened.
  */
-export type Link = "install_extension" | "open_meet" | "troubleshooting" | "source" | "license";
+export type Link = "install_extension" | "open_meet" | "download_chrome" | "troubleshooting" | "source" | "license";
+
+/**
+ * What Islet needs on this Mac before the extension can reach it (onboarding step 2).
+ */
+export type Requirements = { 
+/**
+ * Google Chrome is installed: the stable channel, the only one the bridge is registered
+ * for.
+ */
+chrome: boolean, 
+/**
+ * Islet runs from an Applications folder. Opened from the disk image, or from where it was
+ * downloaded, macOS runs a temporary copy, and the bridge would point at it.
+ */
+in_applications: boolean, };
 
 /**
  * Whether each fixed shortcut was registered. One already taken by another app is not.

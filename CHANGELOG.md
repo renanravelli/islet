@@ -3,6 +3,21 @@
 All notable changes to Islet. Versions follow [Semantic Versioning](https://semver.org); while
 the version is below 1.0, every release is a beta.
 
+## Unreleased
+
+### Added
+
+- **The setup guide checks your Mac first.** A new step confirms that Google Chrome is installed
+  and that Islet was opened from the Applications folder, and updates on its own once you fix
+  either. The guide now has five steps.
+
+### Fixed
+
+- On the first launch, the setup guide could open behind other windows.
+- With Chrome installed but never opened, Islet could not connect itself to Chrome.
+- Until setup is finished, the menu bar icon shows a dot, and the menu shows only **Concluir
+  configuração…** instead of two items that opened the same guide.
+
 ## 0.1.2 — 2026-11-04
 
 ### Added

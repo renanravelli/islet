@@ -1,4 +1,5 @@
-//! The menu bar icon and its menu. The icon is a template image, so macOS tints it.
+//! The menu bar icon and its menu. The icon is a template image, so macOS tints it; until the
+//! onboarding is completed it carries a dot, and the menu offers "Concluir configuração…".
 
 use tauri::image::Image;
 use tauri::menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem};
@@ -12,10 +13,20 @@ use crate::windows;
 
 const TRAY: &str = "main";
 
+fn icon(app: &AppHandle) -> tauri::Result<Image<'static>> {
+    let onboarded = lock(&app.state::<AppState>().settings)
+        .onboarding_completed_at
+        .is_some();
+    if onboarded {
+        Image::from_bytes(include_bytes!("../icons/tray@2x.png"))
+    } else {
+        Image::from_bytes(include_bytes!("../icons/tray-setup@2x.png"))
+    }
+}
+
 pub fn create(app: &AppHandle) -> tauri::Result<()> {
-    let icon = Image::from_bytes(include_bytes!("../icons/tray@2x.png"))?;
     TrayIconBuilder::with_id(TRAY)
-        .icon(icon)
+        .icon(icon(app)?)
         .icon_as_template(true)
         .show_menu_on_left_click(true)
         .menu(&menu(app)?)
@@ -39,12 +50,19 @@ pub fn create(app: &AppHandle) -> tauri::Result<()> {
     Ok(())
 }
 
-/// Rebuilds the menu: language, connection status, demo, updates and shortcut warnings change
-/// it.
+/// Rebuilds the menu and the icon: language, connection status, demo, updates, shortcut
+/// warnings and finishing the onboarding change them.
 pub fn refresh(app: &AppHandle) {
     let Some(tray) = app.tray_by_id(TRAY) else {
         return;
     };
+    match icon(app) {
+        Ok(icon) => {
+            let _ = tray.set_icon(Some(icon));
+            let _ = tray.set_icon_as_template(true);
+        }
+        Err(error) => tracing::warn!(%error, "cannot load the tray icon"),
+    }
     match menu(app) {
         Ok(menu) => {
             let _ = tray.set_menu(Some(menu));
@@ -133,13 +151,16 @@ fn menu(app: &AppHandle) -> tauri::Result<Menu<Wry>> {
         true,
         Some("CmdOrCtrl+,"),
     )?)?;
-    menu.append(&MenuItem::with_id(
-        app,
-        "onboarding",
-        t(locale, "tray.onboarding"),
-        true,
-        None::<&str>,
-    )?)?;
+    // Before the onboarding is completed, "Concluir configuração…" opens the same guide.
+    if onboarded {
+        menu.append(&MenuItem::with_id(
+            app,
+            "onboarding",
+            t(locale, "tray.onboarding"),
+            true,
+            None::<&str>,
+        )?)?;
+    }
     menu.append(&PredefinedMenuItem::separator(app)?)?;
     menu.append(&MenuItem::with_id(
         app,

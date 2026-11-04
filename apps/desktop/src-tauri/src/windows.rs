@@ -8,7 +8,8 @@ use std::time::Duration;
 
 use tauri::window::Color;
 use tauri::{
-    AppHandle, Manager, Theme, TitleBarStyle, WebviewUrl, WebviewWindowBuilder, WindowEvent,
+    AppHandle, Manager, Theme, TitleBarStyle, WebviewUrl, WebviewWindow, WebviewWindowBuilder,
+    WindowEvent,
 };
 
 use crate::geometry;
@@ -113,8 +114,15 @@ pub fn open(app: &AppHandle, label: &str) {
                 label,
                 "the window did not say it was ready; showing it anyway"
             );
-            let _ = window.show();
-            let _ = window.set_focus();
+            reveal(&window);
         }
     });
+}
+
+/// Shows an onboarding or settings window in front of every other app's. On the first launch
+/// Islet was opened from Finder or from System Settings ("Open Anyway"), and the guide must not
+/// appear behind them.
+pub fn reveal(window: &WebviewWindow) {
+    let target = window.clone();
+    let _ = window.run_on_main_thread(move || platform::bring_to_front(&target));
 }

@@ -127,17 +127,18 @@ flowchart LR
    listing is unlisted: it opens from this link and from Islet's setup guide, not from the
    store's search. To load it by hand instead, follow the
    [extension guide](docs/install-extension.md).
-3. **Follow the setup guide.** On first launch, Islet walks you through four steps. It connects
-   itself to Chrome and confirms when the extension answers.
+3. **Follow the setup guide.** On first launch, Islet walks you through five steps. It checks
+   that Chrome is installed and that Islet runs from Applications, connects itself to Chrome and
+   confirms when the extension answers.
 
 <table>
   <tr>
     <td><img src="docs/assets/onboarding/1-welcome.png" alt="Setup step 1: welcome, with a live preview of the island"></td>
-    <td><img src="docs/assets/onboarding/2-connect.png" alt="Setup step 2: the Chrome bridge is ready and the extension is connected"></td>
+    <td><img src="docs/assets/onboarding/2-connect.png" alt="Setup: the extension is connected"></td>
   </tr>
   <tr>
-    <td><img src="docs/assets/onboarding/3-pip.png" alt="Setup step 3: how to turn off Meet's automatic Picture-in-Picture"></td>
-    <td><img src="docs/assets/onboarding/4-done.png" alt="Setup step 4: the shortcuts and the launch-at-login switch"></td>
+    <td><img src="docs/assets/onboarding/3-pip.png" alt="Setup: how to turn off Meet's automatic Picture-in-Picture"></td>
+    <td><img src="docs/assets/onboarding/4-done.png" alt="Setup, last step: the shortcuts and the launch-at-login switch"></td>
   </tr>
 </table>
 
