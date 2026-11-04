@@ -43,7 +43,9 @@ export type Action =
   /** Sample the active speaker for a while: how stable is it? */
   | { kind: "speakerStability" }
   /** Leave through execute; record any dialog's button labels without clicking them. */
-  | { kind: "leave" };
+  | { kind: "leave" }
+  /** Where Meet draws participant photos and whether their pixels are readable (avatars.ts). */
+  | { kind: "avatarProbe"; label: string };
 
 export interface Step {
   number: number;
@@ -52,6 +54,8 @@ export interface Step {
   title: string;
   /** Run the step only when the page shows this at the start. */
   onlyIf?: Condition;
+  /** Left out of the whole session; run by name or through a preset. */
+  onDemand?: boolean;
   actions: Action[];
   expected?: Expected;
 }
@@ -203,6 +207,34 @@ export const STEPS: Step[] = [
     actions: [{ kind: "capture" }],
     expected: { inCall: false },
   },
+  {
+    number: 12,
+    id: "avatars",
+    title: "Participant photos",
+    onlyIf: { kind: "inCall", value: true },
+    onDemand: true,
+    actions: [
+      { kind: "set", self: ALL_OFF },
+      {
+        kind: "pause",
+        text: "On the iPhone, turn the camera off and stay in the call.",
+        ms: 10_000,
+      },
+      { kind: "avatarProbe", label: "tiles" },
+      {
+        kind: "pause",
+        text: "On the Mac, open the People panel (top bar) and leave it open.",
+        ms: 10_000,
+      },
+      { kind: "avatarProbe", label: "people-panel" },
+      {
+        kind: "pause",
+        text: "Close the People panel. On the iPhone, turn the camera on.",
+        ms: 10_000,
+      },
+      { kind: "avatarProbe", label: "camera-on" },
+    ],
+  },
 ];
 
 /** Named subsets of the steps, run with runCalibration("<name>"). */
@@ -217,4 +249,6 @@ export const PRESETS: Record<string, string[]> = {
     "leave",
     "left",
   ],
+  /** Where Meet draws participant photos, for real avatars on the island. */
+  avatars: ["in-call-mic-on", "avatars"],
 };
