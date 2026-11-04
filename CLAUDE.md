@@ -262,8 +262,13 @@ Every open item lives here, not in an assistant's memory. Remove an item when it
   manifest is repaired on the next start).
 - **Phase 6 (docs):**
   - `CONTRIBUTING.md`: ways to install pnpm (Homebrew, corepack, npm).
-  - Biome formats Markdown. If it rewrites the README's centered HTML header, the badges or the
-    Mermaid blocks, turn Markdown formatting off.
+  - The READMEs' images in `docs/assets/` are renders of the design canvas, with chat and the
+    pre-call reminder removed. Replace them with real screenshots and a demo-mode GIF once the app
+    ships, and fill the READMEs' `TODO`s (CI and release badges, DMG link, security contact).
+  - The READMEs must not link to ADRs, the UI spec or other internal design documents (the
+    owner's rule).
+  - `SECURITY.md`: GitHub's private vulnerability reporting is off on the repository; turn it on
+    (owner) and point to it.
   - Threat model: the development extension ID can be reproduced by anyone from the public key.
   - `docs/testing/manual-checklist.md`, including the Meet section `calibration.md` points to.
 - **Phase 7 (CI):**
