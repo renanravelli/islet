@@ -126,17 +126,18 @@ flowchart LR
 2. **Instale a extensão do Chrome.** Adicione pela [Chrome Web Store](https://chromewebstore.google.com/detail/lbhmocnfnfmbiplpkllkacnbcjfcmlop). A página não é
    listada: ela abre por este link e pelo guia de configuração do Islet, não pela busca da loja.
    Para carregar à mão, siga o [guia da extensão](docs/install-extension.md).
-3. **Siga o guia de configuração.** Na primeira execução, o Islet mostra quatro passos. Ele se
-   conecta sozinho ao Chrome e confirma quando a extensão responde.
+3. **Siga o guia de configuração.** Na primeira execução, o Islet mostra cinco passos. Ele
+   confere se o Chrome está instalado e se o Islet roda da pasta Aplicativos, se conecta sozinho
+   ao Chrome e confirma quando a extensão responde.
 
 <table>
   <tr>
     <td><img src="docs/assets/onboarding/1-welcome.png" alt="Passo 1 da configuração: boas-vindas, com uma prévia ao vivo da ilha"></td>
-    <td><img src="docs/assets/onboarding/2-connect.png" alt="Passo 2 da configuração: a ponte com o Chrome está pronta e a extensão está conectada"></td>
+    <td><img src="docs/assets/onboarding/2-connect.png" alt="Configuração: a extensão está conectada"></td>
   </tr>
   <tr>
-    <td><img src="docs/assets/onboarding/3-pip.png" alt="Passo 3 da configuração: como desligar o Picture-in-Picture automático do Meet"></td>
-    <td><img src="docs/assets/onboarding/4-done.png" alt="Passo 4 da configuração: os atalhos e a opção de abrir ao iniciar o Mac"></td>
+    <td><img src="docs/assets/onboarding/3-pip.png" alt="Configuração: como desligar o Picture-in-Picture automático do Meet"></td>
+    <td><img src="docs/assets/onboarding/4-done.png" alt="Último passo da configuração: os atalhos e a opção de abrir ao iniciar o Mac"></td>
   </tr>
 </table>
 

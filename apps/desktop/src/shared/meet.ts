@@ -5,6 +5,7 @@ import type { Health, UiSnapshot } from "@islet/ui-types";
 
 export const PRODUCT = "Islet";
 export const MEET = "Google Meet";
+export const CHROME = "Google Chrome";
 export const REPO_DISPLAY = "github.com/renanravelli/islet";
 /** Language names, each in its own language, in both locales. */
 export const LANGUAGE_NAMES = { "pt-BR": "Português (Brasil)", en: "English" } as const;

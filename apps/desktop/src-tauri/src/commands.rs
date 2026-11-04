@@ -2,6 +2,7 @@
 //! `snapshot` (UiSnapshot), `preview` (the onboarding's demo UiSnapshot), `settings`
 //! (AppSettings), `app-info` (AppInfo) and `update` (UpdateState).
 
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use islet_core::{
@@ -12,7 +13,9 @@ use tauri::{AppHandle, Emitter, Manager, State, WebviewWindow};
 use tauri_plugin_autostart::ManagerExt as _;
 
 use crate::bridge;
-use crate::model::{AppInfo, AppSettings, BridgeState, Geometry, IslandLayout, Link, UpdateState};
+use crate::model::{
+    AppInfo, AppSettings, BridgeState, Geometry, IslandLayout, Link, Requirements, UpdateState,
+};
 use crate::platform;
 use crate::state::{AppState, lock};
 use crate::{tray, updates, windows};
@@ -127,8 +130,7 @@ pub fn island_layout(app: AppHandle, layout: IslandLayout) {
 #[tauri::command]
 pub fn window_ready(window: WebviewWindow) {
     if window.label() != windows::ISLAND {
-        let _ = window.show();
-        let _ = window.set_focus();
+        windows::reveal(&window);
     }
 }
 
@@ -145,6 +147,37 @@ pub fn repair_bridge(app: AppHandle) -> BridgeState {
     *lock(&app.state::<AppState>().bridge) = result.clone();
     emit_info(&app);
     result
+}
+
+/// Onboarding step 2: what is missing for the extension to reach Islet. Cheap enough to poll.
+#[tauri::command]
+pub fn requirements() -> Requirements {
+    let home = std::env::var_os("HOME").map(PathBuf::from);
+    Requirements {
+        chrome: platform::chrome_installed(),
+        // A development build runs from target/, never from a bundle.
+        in_applications: cfg!(debug_assertions)
+            || std::env::current_exe().is_ok_and(|exe| in_applications(&exe, home.as_deref())),
+    }
+}
+
+/// Whether the app bundle holding `exe` sits in /Applications or ~/Applications, at any depth.
+/// A copy macOS runs from elsewhere (App Translocation) or from the disk image is not.
+fn in_applications(exe: &Path, home: Option<&Path>) -> bool {
+    let Some(bundle) = exe
+        .ancestors()
+        .find(|p| p.extension().is_some_and(|ext| ext == "app"))
+    else {
+        return false;
+    };
+    let folders = [
+        Some(PathBuf::from("/Applications")),
+        home.map(|h| h.join("Applications")),
+    ];
+    folders
+        .into_iter()
+        .flatten()
+        .any(|folder| bundle.starts_with(folder))
 }
 
 #[tauri::command]
@@ -274,5 +307,30 @@ mod tests {
         let stamp = super::now_iso8601();
         assert_eq!(stamp.len(), 20, "{stamp}");
         assert!(stamp.starts_with("20") && stamp.ends_with('Z'), "{stamp}");
+    }
+
+    #[test]
+    fn knows_an_app_run_from_applications() {
+        use std::path::Path;
+        let home = Some(Path::new("/Users/someone"));
+        let ok = [
+            "/Applications/Islet.app/Contents/MacOS/islet",
+            "/Applications/Tools/Islet.app/Contents/MacOS/islet",
+            "/Users/someone/Applications/Islet.app/Contents/MacOS/islet",
+        ];
+        for exe in ok {
+            assert!(super::in_applications(Path::new(exe), home), "{exe}");
+        }
+        let elsewhere = [
+            "/private/var/folders/x1/abc/T/AppTranslocation/5F0E/d/Islet.app/Contents/MacOS/islet",
+            "/Volumes/Islet/Islet.app/Contents/MacOS/islet",
+            "/Users/someone/Downloads/Islet.app/Contents/MacOS/islet",
+            "/Applications.backup/Islet.app/Contents/MacOS/islet",
+            "/Users/other/Applications/Islet.app/Contents/MacOS/islet",
+            "/Applications/islet",
+        ];
+        for exe in elsewhere {
+            assert!(!super::in_applications(Path::new(exe), home), "{exe}");
+        }
     }
 }

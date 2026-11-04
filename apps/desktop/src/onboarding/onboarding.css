@@ -111,15 +111,15 @@
   color: var(--text-secondary);
   padding-right: 8px;
 }
-.number-badge {
+.neutral-circle {
   width: 28px;
   height: 28px;
   border-radius: 50%;
   background: var(--bg-subtle);
+  color: var(--text-secondary);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font: 600 13px var(--font);
 }
 .troubleshoot {
   display: block;
