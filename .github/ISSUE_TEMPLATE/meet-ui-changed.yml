@@ -1,0 +1,42 @@
+name: Meet UI changed
+description: The island shows a state as unknown, shows wrong data or shows the amber dot.
+title: "Meet UI changed: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. Please don't paste participant names, meeting titles, meeting
+        codes or screenshots of a real call.
+  - type: textarea
+    id: what
+    attributes:
+      label: What is wrong
+      description: Which state is missing or wrong (mic, camera, hand, speaker, participants, title, leave), and what Meet shows instead.
+    validations:
+      required: true
+  - type: dropdown
+    id: language
+    attributes:
+      label: Meet's language
+      options:
+        - English
+        - Português (Brasil)
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: Islet, Chrome and macOS.
+      placeholder: Islet 0.1.0, Chrome 156, macOS 15.5
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics
+      description: In Islet, Settings → Integrations → Copy diagnostics, then paste here. It contains no names, titles or meeting codes.
+      render: text
+    validations:
+      required: true

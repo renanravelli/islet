@@ -271,17 +271,10 @@ Every open item lives here, not in an assistant's memory. Remove an item when it
     (owner) and point to it.
   - Threat model: the development extension ID can be reproduced by anyone from the public key.
   - `docs/testing/manual-checklist.md`, including the Meet section `calibration.md` points to.
-- **Phase 7 (CI):**
-  - After `cargo test`, fail if `packages/protocol-ts` or `packages/ui-types` changed
-    (`git diff --exit-code`).
-  - Build the desktop app only on macOS (`pnpm --filter @islet/desktop build:app:universal`);
-    the portable crates' matrix must use `-p`, since `islet-desktop` needs Tauri's system
-    libraries on Linux.
-  - Run `pnpm test` (which includes the fixture sanitization test) and `pnpm build` (which
-    includes the release build check) on every push.
-  - The release attaches `islet-extension-<version>.zip` (built `extension/dist`), as
-    `docs/install-extension.md` describes.
-  - Issue template "Meet UI changed", which `docs/install-extension.md` mentions.
+- **Phase 7 (CI), still open:** Dependabot (cargo, npm, actions), the bug and feature issue
+  templates, the pull request template and `CODEOWNERS`.
+- **Signing (owner):** the release is signed ad hoc until the six `APPLE_*` secrets exist (an
+  Apple Developer Program membership); then `release.yml` signs and notarizes.
 - **Next version, extension install (the owner's decision, 2026-11-03):** v0.1 keeps the
   manual "Load unpacked" guide; non-technical users get stuck on onboarding step 2.
   - Publish the extension on the Chrome Web Store as unlisted (the owner's account). On macOS
@@ -297,6 +290,16 @@ Every open item lives here, not in an assistant's memory. Remove an item when it
 
 - Conventional Commits. Default branch `main`, remote `origin`.
 - Push to `main` only after checks are green. **Never force push.**
+- **CI** (`.github/workflows/ci.yml`): the portable crates on Linux, macOS and Windows (`-p`,
+  since `islet-desktop` needs Tauri's system libraries on Linux); the workspace, a stale
+  generated-types check and the universal app on macOS; lint, typecheck, test and build of the
+  JS packages.
+- **Releasing:** the version lives in `Cargo.toml` (`workspace.package`), `tauri.conf.json`,
+  `extension/manifest.json` and the `package.json` files. Push a tag `v<version>` (or
+  `v<version>-beta.N`, a pre-release) on a green `main`; `release.yml` builds the universal DMG
+  and `islet-extension-<version>.zip` and attaches them, with `SHA256SUMS.txt`, to a **draft**
+  release. Review the notes, then publish. Without the `APPLE_*` secrets the app is signed ad
+  hoc, which macOS opens through Privacy & Security → Open Anyway.
 - `KICKOFF.md` is a local planning file excluded via `.git/info/exclude`; it is not part of the
   repository. Durable decisions belong in this file and in `docs/adr/`.
 

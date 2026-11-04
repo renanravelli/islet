@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # The crates that must build everywhere. islet-desktop needs Tauri's system libraries on
+  # Linux, so it is left to the macOS job.
+  portable:
+    name: Portable crates (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    env:
+      CRATES: -p islet-protocol -p islet-core -p islet-provider-meet -p islet-provider-demo -p islet-bridge -p islet-native-host
+    steps:
+      - uses: actions/checkout@v7
+      # rustup installs the toolchain pinned in rust-toolchain.toml on first use.
+      - run: rustc --version
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --all --check
+        if: runner.os == 'Linux'
+      - run: cargo clippy ${{ env.CRATES }} --all-targets -- -D warnings
+        shell: bash
+      - run: cargo test ${{ env.CRATES }}
+        shell: bash
+
+  workspace:
+    name: Workspace and app (macOS)
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .tool-versions
+          cache: pnpm
+      - run: rustc --version && rustup target add aarch64-apple-darwin x86_64-apple-darwin
+      - uses: Swatinem/rust-cache@v2
+      - run: pnpm install --frozen-lockfile
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+      - run: cargo test --workspace
+      - name: Generated TypeScript types are up to date
+        run: git diff --exit-code -- packages/protocol-ts packages/ui-types
+      - run: pnpm --filter @islet/desktop build:app:universal
+
+  web:
+    name: Extension and UI
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .tool-versions
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      # Includes the fixture sanitization test.
+      - run: pnpm test
+      # Includes the extension's release build check.
+      - run: pnpm build

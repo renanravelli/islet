@@ -1,0 +1,81 @@
+name: Release
+
+# Pushing a tag such as v0.1.0 or v0.1.0-beta.1 builds the universal DMG and the extension zip
+# and attaches them to a draft release, to be reviewed and published by hand. Tags with a
+# suffix (-beta.1) become pre-releases.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+  # Signing and notarization need all six secrets; without them the app is signed ad hoc.
+  SIGNED: ${{ secrets.APPLE_CERTIFICATE != '' }}
+
+jobs:
+  release:
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: The tag matches the app version
+        run: |
+          version="$(node -p "require('./apps/desktop/src-tauri/tauri.conf.json').version")"
+          tag="${GITHUB_REF_NAME#v}"
+          case "$tag" in
+            "$version" | "$version"-*) ;;
+            *) echo "::error::Tag $GITHUB_REF_NAME does not match the app version $version"; exit 1 ;;
+          esac
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .tool-versions
+          cache: pnpm
+      - run: rustc --version && rustup target add aarch64-apple-darwin x86_64-apple-darwin
+      - uses: Swatinem/rust-cache@v2
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build the app (signed and notarized)
+        if: env.SIGNED == 'true'
+        run: pnpm --filter @islet/desktop build:app:universal
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+
+      # Ad hoc signing seals the whole bundle, so macOS offers "Open Anyway" instead of calling
+      # the downloaded app damaged.
+      - name: Build the app (ad hoc signature)
+        if: env.SIGNED != 'true'
+        run: pnpm --filter @islet/desktop build:app:universal
+        env:
+          APPLE_SIGNING_IDENTITY: "-"
+
+      - name: Build the extension
+        run: |
+          pnpm --filter @islet/extension build
+          (cd extension/dist && zip -qr "$GITHUB_WORKSPACE/islet-extension-$VERSION.zip" .)
+
+      - name: Collect the assets
+        run: |
+          mkdir dist
+          mv "target/universal-apple-darwin/release/bundle/dmg/Islet_${VERSION}_universal.dmg" dist/
+          mv "islet-extension-$VERSION.zip" dist/
+          (cd dist && shasum -a 256 * > SHA256SUMS.txt && cat SHA256SUMS.txt)
+
+      - name: Create the draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          flags=(--draft --verify-tag --generate-notes --title "Islet $GITHUB_REF_NAME")
+          if [[ "$GITHUB_REF_NAME" == *-* ]]; then flags+=(--prerelease); fi
+          gh release create "$GITHUB_REF_NAME" "${flags[@]}" dist/*
