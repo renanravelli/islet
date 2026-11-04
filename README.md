@@ -213,6 +213,8 @@ The extension asks for two permissions, and nothing else:
 - **`nativeMessaging`**, to talk to the Islet app on your Mac. The app accepts only the official
   extension's ID.
 
+The full [privacy policy](PRIVACY.md) lists what is stored on your Mac and for how long.
+
 Please do not report security issues in public issues.
 <!-- TODO: enable GitHub private vulnerability reporting and add SECURITY.md. -->
 
