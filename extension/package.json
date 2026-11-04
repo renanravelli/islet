@@ -1,6 +1,6 @@
 {
   "name": "@islet/extension",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "description": "Chrome MV3 extension that reads Google Meet state for Islet.",
   "license": "MIT OR Apache-2.0",
