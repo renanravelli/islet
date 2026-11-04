@@ -3,6 +3,34 @@
 All notable changes to Islet. Versions follow [Semantic Versioning](https://semver.org); while
 the version is below 1.0, every release is a beta.
 
+## 0.1.2 — 2026-11-04
+
+### Added
+
+- **Participants' photos.** The island shows the photos Meet shows, instead of initials. The
+  extension redraws the image Meet already loaded, small (72 pixels): nothing is downloaded, and
+  it needs no new permission. A participant who turns the camera on keeps their photo for the
+  rest of the call; without a photo, the island shows initials as before.
+- **The setup guide detects the extension at once.** Right after it is installed or updated,
+  the extension tests its connection with the app, so step 2 shows **Conectada** without a Meet
+  tab. If the extension was already installed, **Abrir o Meet para testar** opens Meet to
+  connect it.
+
+### Changed
+
+- The setting **Mostrar nomes dos participantes** is now **Mostrar nomes e fotos**: off, the
+  island shows neither.
+- The extension is on the Chrome Web Store, and the guides recommend it; loading it by hand
+  still works.
+- The setup guide's steps 2 to 4 follow the approved design more closely.
+
+### Fixed
+
+- **Configurações…** in the menu bar, and the setup guide, opened only on the second click.
+- The setup guide said the extension was not connected when no Meet tab was open, although it
+  was installed and working.
+- The Chrome Web Store page and Meet opened in the default browser, which may not be Chrome.
+
 ## 0.1.1 — 2026-11-04
 
 ### Added
