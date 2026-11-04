@@ -24,7 +24,7 @@ Only maintainers can push to this repository, so contributions come from your ow
    (`fix(extension): …`, `feat(core): …`, `docs: …`).
 5. Push to your fork and open a pull request to `main`, filling in the template.
 
-On your first pull request, a maintainer approves the CI run before it starts. The five CI jobs
+On your first pull request, a maintainer approves the CI run before it starts. The four CI jobs
 must be green before a pull request is merged; merges are squash or rebase, so `main` keeps a
 linear history. Keep each pull request to one change: they are easier to review and to revert.
 

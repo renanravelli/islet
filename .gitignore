@@ -16,6 +16,7 @@ apps/desktop/src-tauri/binaries/*
 
 # Extension packaging
 extension/*.zip
+/islet-extension-*.zip
 
 # Secrets: never commit keys, certificates or tokens
 *.pem

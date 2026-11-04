@@ -91,7 +91,7 @@ jobs:
             echo "::error::$BASE is older than the last release $last"; exit 1
           fi
 
-      # The branch carries its version from the first push on; CI runs again on that commit.
+      # The branch carries its version from the first push on; the next step starts CI on it.
       - name: Write the version on the branch
         if: steps.plan.outputs.channel == 'beta'
         env:
@@ -105,7 +105,6 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -q -am "chore(release): $BASE"
           git push origin "HEAD:$GITHUB_REF_NAME"
-          gh workflow run ci.yml --ref "$GITHUB_REF_NAME"
 
       - name: The version files match the branch
         env:
@@ -116,11 +115,20 @@ jobs:
             echo "::error::The files say $version, the branch says $BASE"; exit 1
           fi
 
+      # Any CI run on this commit counts: main's push, or a release branch's pull request. A
+      # release branch commit without one after a minute (no pull request yet, or the version
+      # commit, which GITHUB_TOKEN pushes cannot trigger CI for) gets one started here.
       - name: CI passed on this commit
+        env:
+          CHANNEL: ${{ steps.plan.outputs.channel }}
         run: |
           sha="$(git rev-parse HEAD)"
-          for _ in $(seq 1 80); do
+          for i in $(seq 1 80); do
             run="$(gh run list --workflow ci.yml --commit "$sha" --limit 1 --json status,conclusion --jq '.[0] // {}')"
+            if [[ "$run" == "{}" && "$i" == 3 && "$CHANNEL" == beta ]]; then
+              echo "No CI on $sha yet; starting it"
+              gh workflow run ci.yml --ref "$GITHUB_REF_NAME"
+            fi
             if [[ "$(jq -r .status <<<"$run")" == completed ]]; then
               conclusion="$(jq -r .conclusion <<<"$run")"
               if [[ "$conclusion" == success ]]; then exit 0; fi
@@ -176,7 +184,12 @@ jobs:
           node-version-file: .tool-versions
           cache: pnpm
       - run: rustc --version && rustup target add aarch64-apple-darwin x86_64-apple-darwin
+      # main's CI cache: its universal build compiled the same dependencies. Never saved from
+      # here, since no later release branch could read it.
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          shared-key: macos-app
+          save-if: false
       - run: pnpm install --frozen-lockfile
 
       # A beta builds with its full version (0.1.2-beta.1); the files on the branch keep 0.1.2.
