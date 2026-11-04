@@ -12,8 +12,10 @@ cd "$root"
 
 if [[ "${1:-}" == "--universal" ]]; then
   rustup target add aarch64-apple-darwin x86_64-apple-darwin >/dev/null
+  # Tauri compiles each architecture on its own and checks for that one's sidecar too.
   for target in aarch64-apple-darwin x86_64-apple-darwin; do
     cargo build --release -p islet-native-host --target "$target"
+    cp "target/$target/release/islet-native-host" "$out/islet-native-host-$target"
   done
   lipo -create \
     target/aarch64-apple-darwin/release/islet-native-host \
