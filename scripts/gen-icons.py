@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Draws Islet's icons with no dependencies: the app icon source (1024 px, then `tauri icon`
 makes every size) and the tray's template images. The mark: a black pill with a green dot.
+With an assets folder, also the logo (docs/assets/logo.svg at 4x) and the 128 px store icon.
 
-Usage: python3 scripts/gen-icons.py <app-icon-output.png> <tray-dir>
+Usage: python3 scripts/gen-icons.py <app-icon-output.png> <tray-dir> [assets-dir]
 """
 
 import struct
@@ -60,6 +61,18 @@ def app_icon(x, y):
     return (0xF2, 0xF2, 0xF4, 255)
 
 
+def logo(scale):
+    def pixel(x, y):
+        x, y = x / scale, y / scale  # on logo.svg's 160×88 canvas
+        if (x - 44) ** 2 + (y - 44) ** 2 <= 14**2:
+            return (0x32, 0xD7, 0x4B, 255)
+        if in_round_rect(x, y, 0, 0, 160, 88, 44):
+            return (0, 0, 0, 255)
+        return (0, 0, 0, 0)
+
+    return pixel
+
+
 def tray(scale):
     def pixel(x, y):
         x, y = x / scale, y / scale  # in points, on a 22×22 canvas
@@ -78,3 +91,7 @@ if __name__ == "__main__":
     png(app_out, 1024, 1024, app_icon)
     png(f"{tray_dir}/tray.png", 22, 22, tray(1))
     png(f"{tray_dir}/tray@2x.png", 44, 44, tray(2))
+    if len(sys.argv) > 3:
+        assets = sys.argv[3]
+        png(f"{assets}/logo.png", 640, 352, logo(4))
+        png(f"{assets}/icon-128.png", 128, 128, lambda x, y: app_icon(x * 8, y * 8))
