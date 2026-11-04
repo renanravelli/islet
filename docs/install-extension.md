@@ -16,7 +16,6 @@ audio or video and makes no network requests; it only talks to the Islet app on 
 ## 1. Get the extension folder
 
 **From a release.**
-<!-- TODO: the release workflow attaches the zip from v0.1 on (Phase 7). -->
 Download `islet-extension-<version>.zip` from
 [GitHub Releases](https://github.com/renanravelli/islet/releases) and unzip it. Keep the folder
 somewhere permanent, such as `~/Applications/Islet Extension`: Chrome loads the extension from

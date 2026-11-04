@@ -264,7 +264,7 @@ Every open item lives here, not in an assistant's memory. Remove an item when it
   - `CONTRIBUTING.md`: ways to install pnpm (Homebrew, corepack, npm).
   - The READMEs' images in `docs/assets/` are renders of the design canvas, with chat and the
     pre-call reminder removed. Replace them with real screenshots and a demo-mode GIF once the app
-    ships, and fill the READMEs' `TODO`s (CI and release badges, DMG link, security contact).
+    ships, and fill the READMEs' remaining `TODO` (the security contact).
   - The READMEs must not link to ADRs, the UI spec or other internal design documents (the
     owner's rule).
   - `SECURITY.md`: GitHub's private vulnerability reporting is off on the repository; turn it on

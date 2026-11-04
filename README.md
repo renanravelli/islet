@@ -10,7 +10,8 @@
 
 **English** · [Português](README.pt-BR.md)
 
-<!-- TODO: add the CI and latest-release badges once the workflows and the first release exist. -->
+[![CI](https://github.com/renanravelli/islet/actions/workflows/ci.yml/badge.svg)](https://github.com/renanravelli/islet/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/renanravelli/islet?include_prereleases&sort=semver)](https://github.com/renanravelli/islet/releases)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue)](#license)
 [![macOS 13+](https://img.shields.io/badge/macOS-13%2B-black?logo=apple)](#requirements)
 [![Built with Tauri 2](https://img.shields.io/badge/built%20with-Tauri%202-24C8DB?logo=tauri&logoColor=white)](https://tauri.app)
@@ -109,17 +110,16 @@ flowchart LR
 ## Installation
 
 > [!NOTE]
-> Islet is in development and has no release yet. Until then, [build it from
-> source](#building-from-source).
+> Islet is in public beta: the builds on GitHub Releases are pre-releases. Please
+> [report](https://github.com/renanravelli/islet/issues) what you find.
 
-<!-- TODO: link the DMG on GitHub Releases once the release workflow exists. -->
-
-1. **Install the app.** Download the DMG from
+1. **Install the app.** Download `Islet_<version>_universal.dmg` (Apple silicon and Intel) from
    [GitHub Releases](https://github.com/renanravelli/islet/releases), open it and drag Islet to
-   Applications. The builds are not signed yet, so macOS may say it cannot verify the app. If it
+   Applications. The builds are not notarized by Apple yet, so macOS may say it cannot verify the app. If it
    does, open **System Settings → Privacy & Security** and click **Open Anyway**.
-2. **Install the Chrome extension.** A Chrome Web Store listing is coming. For now, load it with
-   Chrome's **Load unpacked**; the [extension guide](docs/install-extension.md) takes about two
+2. **Install the Chrome extension.** A Chrome Web Store listing is coming. For now, download
+   `islet-extension-<version>.zip` from the same release and load it with Chrome's
+   **Load unpacked**; the [extension guide](docs/install-extension.md) takes about two
    minutes.
 3. **Follow the setup guide.** On first launch, Islet walks you through four steps. It connects
    itself to Chrome and confirms when the extension answers.

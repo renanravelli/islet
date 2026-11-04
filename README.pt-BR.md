@@ -10,7 +10,8 @@
 
 [English](README.md) · **Português**
 
-<!-- TODO: adicionar os badges de CI e do último release quando os workflows e o primeiro release existirem. -->
+[![CI](https://github.com/renanravelli/islet/actions/workflows/ci.yml/badge.svg)](https://github.com/renanravelli/islet/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/renanravelli/islet?include_prereleases&sort=semver)](https://github.com/renanravelli/islet/releases)
 [![Licença: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue)](#licença)
 [![macOS 13+](https://img.shields.io/badge/macOS-13%2B-black?logo=apple)](#requisitos)
 [![Feito com Tauri 2](https://img.shields.io/badge/built%20with-Tauri%202-24C8DB?logo=tauri&logoColor=white)](https://tauri.app)
@@ -110,19 +111,17 @@ flowchart LR
 ## Instalação
 
 > [!NOTE]
-> O Islet está em desenvolvimento e ainda não tem release. Até lá,
-> [compile a partir do código](#compilar-a-partir-do-código).
+> O Islet está em beta público: as builds no GitHub Releases são pré-releases.
+> [Conte](https://github.com/renanravelli/islet/issues) o que encontrar.
 
-<!-- TODO: apontar para o DMG no GitHub Releases quando o workflow de release existir. -->
-
-1. **Instale o app.** Baixe o DMG no
+1. **Instale o app.** Baixe o `Islet_<versão>_universal.dmg` (Apple silicon e Intel) no
    [GitHub Releases](https://github.com/renanravelli/islet/releases), abra-o e arraste o Islet
-   para Aplicativos. As builds ainda não são assinadas, então o macOS pode dizer que não consegue
+   para Aplicativos. As builds ainda não são notarizadas pela Apple, então o macOS pode dizer que não consegue
    verificar o app. Nesse caso, abra **Ajustes do Sistema → Privacidade e Segurança** e clique em
    **Abrir Mesmo Assim**.
 2. **Instale a extensão do Chrome.** Uma página na Chrome Web Store está a caminho. Por enquanto,
-   carregue-a com **Carregar sem compactação** no Chrome; o
-   [guia da extensão](docs/install-extension.md) leva uns dois minutos.
+   baixe o `islet-extension-<versão>.zip` do mesmo release e carregue-o com **Carregar sem
+   compactação** no Chrome; o [guia da extensão](docs/install-extension.md) leva uns dois minutos.
 3. **Siga o guia de configuração.** Na primeira execução, o Islet mostra quatro passos. Ele se
    conecta sozinho ao Chrome e confirma quando a extensão responde.
 
