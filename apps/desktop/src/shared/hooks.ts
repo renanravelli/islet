@@ -1,13 +1,13 @@
 // Live state from the shell: fetched once, then kept current by its events.
 
-import type { AppInfo, AppSettings, UiSnapshot } from "@islet/ui-types";
+import type { AppInfo, AppSettings, UiSnapshot, UpdateState } from "@islet/ui-types";
 import { useEffect, useState } from "react";
 import { type Locale, resolveLocale } from "../i18n/i18n";
 import { api, on } from "./api";
 
 function useLive<T>(
   initial: () => Promise<T>,
-  event: "snapshot" | "preview" | "settings" | "app-info",
+  event: "snapshot" | "preview" | "settings" | "app-info" | "update",
 ): T | undefined {
   const [value, setValue] = useState<T>();
   useEffect(() => {
@@ -27,6 +27,7 @@ export const useSnapshot = () => useLive<UiSnapshot>(api.snapshot, "snapshot");
 export const usePreview = () => useLive<UiSnapshot>(api.previewSnapshot, "preview");
 export const useSettings = () => useLive<AppSettings>(api.settings, "settings");
 export const useAppInfo = () => useLive<AppInfo>(api.appInfo, "app-info");
+export const useUpdate = () => useLive<UpdateState>(api.updateState, "update");
 
 export function useAppLocale(): Locale | undefined {
   const settings = useSettings();

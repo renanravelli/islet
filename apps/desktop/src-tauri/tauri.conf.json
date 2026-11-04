@@ -15,6 +15,12 @@
       "csp": "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src ipc: http://ipc.localhost"
     }
   },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEIwODU0RjlDNjgxMjg0MTEKUldRUmhCSm9uRStGc0R1L0w3WUYzYlNTMmQvU1RIL3JnL3pkd1pCbStyclJmVmgvYjhkRS91R2QK",
+      "endpoints": ["https://raw.githubusercontent.com/renanravelli/islet/updater/latest.json"]
+    }
+  },
   "bundle": {
     "active": true,
     "targets": ["app", "dmg"],

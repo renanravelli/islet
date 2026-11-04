@@ -1,11 +1,11 @@
 # Privacy policy
 
-_Effective 2026-11-03. Applies to the Islet app for macOS and the Islet extension for Google
+_Effective 2026-11-04. Applies to the Islet app for macOS and the Islet extension for Google
 Chrome._
 
-Islet runs entirely on your Mac. It has no servers, no accounts and no analytics, and neither
-the app nor the extension makes network connections. Nobody, including the Islet developers,
-receives any data about you or your calls.
+Islet runs entirely on your Mac. It has no servers, no accounts and no analytics. The extension
+makes no network connections, and the app makes only one: the update check, when you allow it.
+Nobody, including the Islet developers, receives any data about you or your calls.
 
 ## What the extension reads
 
@@ -40,6 +40,18 @@ disk. With **Show participant names** off in Settings, the app does not display 
 
 Uninstalling the app and removing the extension, then deleting these folders, removes
 everything Islet stored.
+
+## Updates
+
+Checking for updates is off until you turn it on, in the setup guide or in Settings → Privacy &
+About. When it is on, the app asks GitHub once when it starts and then once a day for
+`https://raw.githubusercontent.com/renanravelli/islet/updater/latest.json`, a file that names
+the latest version. **Check now** asks once, whatever the setting. The request carries nothing
+about you, your Mac or your calls; like any connection, it reveals your IP address to GitHub,
+under [GitHub's privacy statement](https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement).
+
+When a newer version exists, the app downloads it from this repository's GitHub releases only
+after you click **Install and restart**, checks its signature, and replaces itself.
 
 ## Sharing
 

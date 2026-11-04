@@ -1,9 +1,9 @@
 // The settings window: sidebar and four panes (docs/design/ui-spec.md, section 4).
 
-import type { AppInfo, AppSettings, Language, UiSnapshot } from "@islet/ui-types";
+import type { AppInfo, AppSettings, Language, UiSnapshot, UpdateState } from "@islet/ui-types";
 import { type ReactNode, useEffect, useId, useState } from "react";
 import { type Key, useT } from "../i18n/i18n";
-import { api } from "../shared/api";
+import { api, on } from "../shared/api";
 import {
   Badge,
   Button,
@@ -77,7 +77,7 @@ export function Settings({
           {pane === "general" && <General info={info} settings={settings} update={update} />}
           {pane === "island" && <IslandPane settings={settings} update={update} />}
           {pane === "integrations" && <Integrations info={info} snapshot={snapshot} />}
-          {pane === "privacy" && <Privacy info={info} />}
+          {pane === "privacy" && <Privacy info={info} settings={settings} update={update} />}
         </div>
       </section>
     </div>
@@ -340,7 +340,15 @@ function Integrations({ info, snapshot }: { info: AppInfo; snapshot: UiSnapshot 
   );
 }
 
-function Privacy({ info }: { info: AppInfo }) {
+function Privacy({
+  info,
+  settings,
+  update,
+}: {
+  info: AppInfo;
+  settings: AppSettings;
+  update: Update;
+}) {
   const t = useT();
   return (
     <div className="groups">
@@ -351,6 +359,7 @@ function Privacy({ info }: { info: AppInfo }) {
           <p>{t("settings.privacy.card_body")}</p>
         </div>
       </div>
+      <Updates info={info} settings={settings} update={update} />
       <Group>
         <Row
           label={t("settings.privacy.logs")}
@@ -400,4 +409,77 @@ function Privacy({ info }: { info: AppInfo }) {
       </Group>
     </div>
   );
+}
+
+/** ADR 0006: checks only when allowed or asked, installs only when asked. */
+function Updates({
+  info,
+  settings,
+  update,
+}: {
+  info: AppInfo;
+  settings: AppSettings;
+  update: Update;
+}) {
+  const t = useT();
+  const [state, setState] = useState<UpdateState>({ state: "idle" });
+  useEffect(() => {
+    void api.updateState().then(setState);
+    return on("update", setState);
+  }, []);
+  const busy = state.state === "checking" || state.state === "installing";
+
+  return (
+    <div>
+      <SectionLabel>{t("updates.section")}</SectionLabel>
+      <Group>
+        <Row
+          label={t("updates.auto")}
+          description={t("updates.auto_desc")}
+          trailing={
+            <Switch
+              checked={settings.check_for_updates}
+              onChange={(on) => update({ check_for_updates: on })}
+              label={t("updates.auto")}
+            />
+          }
+        />
+        <Row
+          label={<span role="status">{updateStatus(state, info.version, t)}</span>}
+          trailing={
+            state.state === "available" ? (
+              <Button onClick={() => void api.installUpdate()}>{t("updates.install")}</Button>
+            ) : (
+              <Button
+                variant="outline"
+                disabled={busy}
+                onClick={() => void api.checkForUpdates().then(setState)}
+              >
+                {t("updates.check_now")}
+              </Button>
+            )
+          }
+        />
+      </Group>
+    </div>
+  );
+}
+
+function updateStatus(state: UpdateState, version: string, t: ReturnType<typeof useT>): string {
+  switch (state.state) {
+    case "idle":
+      return t("updates.status_idle", { version });
+    case "checking":
+      return t("updates.status_checking");
+    case "up_to_date":
+      return t("updates.status_up_to_date");
+    case "available":
+      return t("updates.status_available", { version: state.version });
+    case "installing":
+      return t("updates.status_installing");
+    case "check_failed":
+      return t("updates.status_check_failed");
+    case "install_failed":
+      return t("updates.status_install_failed");
+  }
 }

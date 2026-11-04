@@ -5,6 +5,7 @@ use tauri::menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem};
 use tauri::tray::TrayIconBuilder;
 use tauri::{AppHandle, Manager, Wry};
 
+use crate::model::UpdateState;
 use crate::state::{AppState, lock};
 use crate::strings::t;
 use crate::windows;
@@ -27,6 +28,10 @@ pub fn create(app: &AppHandle) -> tauri::Result<()> {
                 refresh(app);
                 crate::commands::emit_info(app);
             }
+            "update" => {
+                let app = app.clone();
+                tauri::async_runtime::spawn(async move { crate::updates::install(&app).await });
+            }
             "quit" => app.exit(0),
             _ => {}
         })
@@ -34,7 +39,8 @@ pub fn create(app: &AppHandle) -> tauri::Result<()> {
     Ok(())
 }
 
-/// Rebuilds the menu: language, connection status, demo and shortcut warnings change it.
+/// Rebuilds the menu: language, connection status, demo, updates and shortcut warnings change
+/// it.
 pub fn refresh(app: &AppHandle) {
     let Some(tray) = app.tray_by_id(TRAY) else {
         return;
@@ -81,6 +87,23 @@ fn menu(app: &AppHandle) -> tauri::Result<Menu<Wry>> {
                 None::<&str>,
             )?)?;
         }
+    }
+    match &*lock(&state.update) {
+        UpdateState::Available { version } => {
+            let text = t(locale, "tray.update_available").replace("{version}", version);
+            menu.append(&MenuItem::with_id(app, "update", text, true, None::<&str>)?)?;
+        }
+        UpdateState::Installing => {
+            let text = t(locale, "tray.updating");
+            menu.append(&MenuItem::with_id(
+                app,
+                "updating",
+                text,
+                false,
+                None::<&str>,
+            )?)?;
+        }
+        _ => {}
     }
     menu.append(&PredefinedMenuItem::separator(app)?)?;
     if !onboarded {

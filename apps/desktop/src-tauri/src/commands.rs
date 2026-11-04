@@ -1,6 +1,6 @@
 //! Commands the UI invokes, and the events the shell emits to every window:
 //! `snapshot` (UiSnapshot), `preview` (the onboarding's demo UiSnapshot), `settings`
-//! (AppSettings) and `app-info` (AppInfo).
+//! (AppSettings), `app-info` (AppInfo) and `update` (UpdateState).
 
 use std::sync::Arc;
 
@@ -12,10 +12,10 @@ use tauri::{AppHandle, Emitter, Manager, State, WebviewWindow};
 use tauri_plugin_autostart::ManagerExt as _;
 
 use crate::bridge;
-use crate::model::{AppInfo, AppSettings, BridgeState, Geometry, IslandLayout, Link};
+use crate::model::{AppInfo, AppSettings, BridgeState, Geometry, IslandLayout, Link, UpdateState};
 use crate::platform;
 use crate::state::{AppState, lock};
-use crate::{tray, windows};
+use crate::{tray, updates, windows};
 
 pub fn info(app: &AppHandle) -> AppInfo {
     let state = app.state::<AppState>();
@@ -89,7 +89,13 @@ pub fn settings(state: State<'_, AppState>) -> AppSettings {
 #[tauri::command]
 pub fn set_settings(app: AppHandle, settings: AppSettings) -> AppSettings {
     let state = app.state::<AppState>();
-    *lock(&state.settings) = settings.clone();
+    let was_checking =
+        std::mem::replace(&mut *lock(&state.settings), settings.clone()).check_for_updates;
+    // Turning automatic checks on checks right away, instead of up to a day later.
+    if settings.check_for_updates && !was_checking {
+        let app = app.clone();
+        tauri::async_runtime::spawn(async move { updates::check(&app).await });
+    }
     if let Err(error) = state.settings_file.save(&settings) {
         tracing::warn!(%error, "cannot save the settings");
     }
@@ -213,6 +219,23 @@ pub fn open_logs() {
             tracing::warn!(%error, "cannot open the logs folder");
         }
     }
+}
+
+#[tauri::command]
+pub fn update_state(app: AppHandle) -> UpdateState {
+    updates::current(&app)
+}
+
+#[tauri::command]
+pub async fn check_for_updates(app: AppHandle) -> UpdateState {
+    updates::check(&app).await
+}
+
+/// Starts the download and returns at once; `update` events report progress, and the app
+/// restarts when it is installed.
+#[tauri::command]
+pub fn install_update(app: AppHandle) {
+    tauri::async_runtime::spawn(async move { updates::install(&app).await });
 }
 
 /// UTC, to the second, without a date library.

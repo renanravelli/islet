@@ -197,14 +197,17 @@ reinstall the Chrome bridge.
 
 ## Privacy and security
 
-Islet runs entirely on your Mac. It makes no network connections, has no accounts and sends no
-telemetry.
+Islet runs entirely on your Mac. It has no accounts and sends no telemetry. Its only network
+connection is the update check, when you allow it: it asks this repository's GitHub releases
+for a new version, sends nothing about you, and installs only when you click **Install and
+restart**.
 
 |                              |                                                                                                                                                               |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **What the extension reads** | Meet's call controls (mic, camera, hand, leave), the participant tiles' names, the participant count, the meeting title and Meet's "are you talking?" notice. |
 | **What it never reads**      | The chat, audio, video, your other tabs or any site other than `meet.google.com`.                                                                             |
 | **Where data lives**         | In the app's memory, only during the call. Names never reach the logs.                                                                                        |
+| **Updates**                  | Off until you turn them on (in the setup guide or Settings → Privacy & About). Every update is signed and checked before it installs.                         |
 | **Logs**                     | Local files in `~/Library/Logs/io.github.renanravelli.islet/`, without names, titles or meeting codes.                                                        |
 
 The extension asks for two permissions, and nothing else:
@@ -322,7 +325,8 @@ Contributions are welcome: bug reports, fixes, and support for new meeting apps 
 <details>
 <summary><b>Does Islet record or send my audio or video?</b></summary>
 
-No. Islet never captures audio or video and makes no network connections. The extension only
+No. Islet never captures audio or video, and the extension makes no network connections. The
+app's only connection is the update check, when you allow it. The extension only
 reads the state of Meet's controls and the names Meet already shows on screen.
 </details>
 

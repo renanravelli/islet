@@ -199,14 +199,16 @@ aviso de falando no mudo, trocar o idioma e reinstalar a ponte com o Chrome.
 
 ## Privacidade e segurança
 
-O Islet roda inteiro no seu Mac. Ele não faz conexões de rede, não tem contas e não envia
-telemetria.
+O Islet roda inteiro no seu Mac. Ele não tem contas e não envia telemetria. A única conexão de
+rede é a busca por atualizações, quando você permite: ela consulta os releases deste repositório
+no GitHub, não envia nada sobre você e só instala quando você clica em **Instalar e reiniciar**.
 
 |                         |                                                                                                                                                                                            |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **O que a extensão lê** | Os controles da call do Meet (microfone, câmera, mão, sair), os nomes nos blocos dos participantes, o número de participantes, o título da reunião e o aviso "você está falando?" do Meet. |
 | **O que ela nunca lê**  | O chat, o áudio, o vídeo, as suas outras abas ou qualquer site além de `meet.google.com`.                                                                                                  |
 | **Onde os dados ficam** | Na memória do app, só durante a call. Os nomes nunca chegam aos logs.                                                                                                                      |
+| **Atualizações**        | Desligadas até você ligar (no guia inicial ou em Configurações → Privacidade e sobre). Toda atualização é assinada e conferida antes de instalar.                                          |
 | **Logs**                | Arquivos locais em `~/Library/Logs/io.github.renanravelli.islet/`, sem nomes, títulos ou códigos de reunião.                                                                               |
 
 A extensão pede duas permissões, e nada mais:
@@ -328,7 +330,8 @@ plataformas.
 <details>
 <summary><b>O Islet grava ou envia o meu áudio ou vídeo?</b></summary>
 
-Não. O Islet nunca captura áudio ou vídeo e não faz conexões de rede. A extensão só lê o estado
+Não. O Islet nunca captura áudio ou vídeo, e a extensão não faz conexões de rede. A única
+conexão do app é a busca por atualizações, quando você permite. A extensão só lê o estado
 dos controles do Meet e os nomes que o Meet já mostra na tela.
 </details>
 

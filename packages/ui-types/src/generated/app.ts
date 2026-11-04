@@ -28,7 +28,12 @@ onboarding_completed_at: string | null,
 /**
  * Only keeps the onboarding tip from repeating; Meet's setting cannot be read.
  */
-meet_pip_tip_ack: boolean, };
+meet_pip_tip_ack: boolean, 
+/**
+ * Ask GitHub for a new version at start and once a day (ADR 0006). Off until the person
+ * turns it on, in the onboarding or in Settings.
+ */
+check_for_updates: boolean, };
 
 /**
  * The Chrome bridge (native host manifest) as of the last check or repair.
@@ -76,3 +81,8 @@ export type Link = "install_extension" | "troubleshooting" | "providers" | "sour
  * Whether each fixed shortcut was registered. One already taken by another app is not.
  */
 export type ShortcutStatus = { toggle_island: boolean, toggle_mic: boolean, };
+
+/**
+ * The in-app updater (ADR 0006). Failures carry no details: the logs have them.
+ */
+export type UpdateState = { "state": "idle" } | { "state": "checking" } | { "state": "up_to_date" } | { "state": "available", version: string, } | { "state": "installing" } | { "state": "check_failed" } | { "state": "install_failed" };

@@ -105,7 +105,7 @@ export function Onboarding({
         {step === 1 && <Welcome info={info} preview={preview} />}
         {step === 2 && <ConnectChrome meet={meet} />}
         {step === 3 && <PictureInPicture />}
-        {step === 4 && <AllSet info={info} />}
+        {step === 4 && <AllSet info={info} settings={settings} />}
       </main>
       <footer className="onb-footer">
         <StepIndicator
@@ -328,7 +328,7 @@ function PictureInPicture() {
   );
 }
 
-function AllSet({ info }: { info: AppInfo }) {
+function AllSet({ info, settings }: { info: AppInfo; settings: AppSettings }) {
   const t = useT();
   const [launch, setLaunch] = useState(true);
   const [failed, setFailed] = useState(false);
@@ -372,7 +372,7 @@ function AllSet({ info }: { info: AppInfo }) {
       <div className="done-circle">
         <StatusCircle tone="success" size={48} />
       </div>
-      <h1 className="onb-title">{t("onb4.title")}</h1>
+      <h1 className="onb-title done-title">{t("onb4.title")}</h1>
       <p className="onb-body">{t("onb4.body")}</p>
       <div className="onb-group">
         <Group>
@@ -383,6 +383,18 @@ function AllSet({ info }: { info: AppInfo }) {
             description={failed ? t("onb4.launch_error") : undefined}
             descriptionTone="warning"
             trailing={<Switch checked={launch} onChange={apply} label={t("onb4.launch")} />}
+          />
+          {/* Off until the person turns it on (ADR 0006). */}
+          <Row
+            label={t("updates.auto")}
+            description={t("updates.auto_desc")}
+            trailing={
+              <Switch
+                checked={settings.check_for_updates}
+                onChange={(on) => void api.setSettings({ ...settings, check_for_updates: on })}
+                label={t("updates.auto")}
+              />
+            }
           />
         </Group>
       </div>

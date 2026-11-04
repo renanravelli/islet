@@ -217,7 +217,14 @@
 }
 
 .done-circle {
-  margin-top: 8px;
+  margin-top: -8px;
+}
+/* Step 4 holds four rows and the menu-bar hint in the fixed window. */
+.onb-title.done-title {
+  margin-top: 14px;
+}
+.done-title ~ .onb-group {
+  margin-top: 16px;
 }
 .keycap-column {
   width: 96px;

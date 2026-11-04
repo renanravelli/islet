@@ -6,7 +6,7 @@ use islet_core::SessionHandle;
 use islet_provider_demo::DemoSwitch;
 
 use crate::geometry::Anchor;
-use crate::model::{AppSettings, BridgeState, IslandLayout, ShortcutStatus};
+use crate::model::{AppSettings, BridgeState, IslandLayout, ShortcutStatus, UpdateState};
 use crate::settings::SettingsFile;
 
 pub struct AppState {
@@ -21,6 +21,7 @@ pub struct AppState {
     pub system_language: String,
     pub anchor: Mutex<Option<Anchor>>,
     pub layout: Mutex<Option<IslandLayout>>,
+    pub update: Mutex<UpdateState>,
 }
 
 /// Locks, recovering from a poisoned lock: the data is plain values.

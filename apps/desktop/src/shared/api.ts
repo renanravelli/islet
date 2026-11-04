@@ -11,6 +11,7 @@ import type {
   Link,
   SessionKey,
   UiSnapshot,
+  UpdateState,
 } from "@islet/ui-types";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
@@ -22,6 +23,7 @@ export type Events = {
   preview: UiSnapshot;
   settings: AppSettings;
   "app-info": AppInfo;
+  update: UpdateState;
   "island-toggle": null;
   "island-blur": null;
   /** The pointer entered (true) or left (false) the island panel. */
@@ -36,6 +38,7 @@ const fallback = {
     muted_speaking_alert: false,
     onboarding_completed_at: null,
     meet_pip_tip_ack: false,
+    check_for_updates: false,
   } satisfies AppSettings as AppSettings,
   info: {
     version: "0.1.0",
@@ -46,6 +49,7 @@ const fallback = {
     demo: false,
   } satisfies AppInfo as AppInfo,
   snapshot: { primary: null, providers: [] } satisfies UiSnapshot as UiSnapshot,
+  update: { state: "idle" } satisfies UpdateState as UpdateState,
 };
 
 async function call<T>(
@@ -79,6 +83,10 @@ export const api = {
   diagnostics: () => call<string>("diagnostics", undefined, () => "Islet (offline preview)\n"),
   openLink: (link: Link) => call<void>("open_link", { link }, () => undefined),
   openLogs: () => call<void>("open_logs", undefined, () => undefined),
+  updateState: () => call<UpdateState>("update_state", undefined, () => fallback.update),
+  checkForUpdates: () =>
+    call<UpdateState>("check_for_updates", undefined, (): UpdateState => ({ state: "up_to_date" })),
+  installUpdate: () => call<void>("install_update", undefined, () => undefined),
 };
 
 /** Subscribes to a shell event; returns the unsubscribe function. */

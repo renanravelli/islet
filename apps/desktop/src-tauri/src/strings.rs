@@ -51,6 +51,8 @@ mod tests {
             "tray.settings",
             "tray.onboarding",
             "shortcut.unavailable",
+            "tray.update_available",
+            "tray.updating",
         ] {
             assert_ne!(t("pt-BR", key), key);
         }

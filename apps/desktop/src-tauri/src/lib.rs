@@ -13,6 +13,7 @@ mod shortcuts;
 mod state;
 mod strings;
 mod tray;
+mod updates;
 mod windows;
 
 use std::sync::{Arc, Mutex, OnceLock};
@@ -63,7 +64,8 @@ pub fn run() {
         .plugin(tauri_plugin_autostart::init(
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             None,
-        ));
+        ))
+        .plugin(tauri_plugin_updater::Builder::new().build());
     #[cfg(target_os = "macos")]
     let app = app.plugin(tauri_nspanel::init());
 
@@ -85,6 +87,9 @@ pub fn run() {
             commands::diagnostics,
             commands::open_link,
             commands::open_logs,
+            commands::update_state,
+            commands::check_for_updates,
+            commands::install_update,
         ])
         .setup(move |app| {
             setup(app.handle(), demo_at_start)?;
@@ -131,6 +136,7 @@ fn setup(app: &AppHandle, demo_at_start: bool) -> tauri::Result<()> {
         system_language: platform::preferred_language(),
         anchor: Mutex::new(None),
         layout: Mutex::new(None),
+        update: Mutex::new(Default::default()),
     });
 
     if isolated() {
@@ -144,6 +150,9 @@ fn setup(app: &AppHandle, demo_at_start: bool) -> tauri::Result<()> {
         shortcuts::register(app);
     }
     tray::create(app)?;
+    if !isolated() {
+        updates::schedule(app);
+    }
 
     // Every snapshot goes to every window; connection changes also update the tray.
     let mut updates = sessions.snapshot();

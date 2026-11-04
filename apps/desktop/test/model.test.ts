@@ -18,6 +18,7 @@ const settings: AppSettings = {
   muted_speaking_alert: false,
   onboarding_completed_at: null,
   meet_pip_tip_ack: false,
+  check_for_updates: false,
 };
 const notch: Geometry = { has_notch: true, notch_width: 185, top_inset: 32 };
 const noNotch: Geometry = { has_notch: false, notch_width: 0, top_inset: 25 };

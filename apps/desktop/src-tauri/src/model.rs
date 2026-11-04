@@ -33,6 +33,9 @@ pub struct AppSettings {
     pub onboarding_completed_at: Option<String>,
     /// Only keeps the onboarding tip from repeating; Meet's setting cannot be read.
     pub meet_pip_tip_ack: bool,
+    /// Ask GitHub for a new version at start and once a day (ADR 0006). Off until the person
+    /// turns it on, in the onboarding or in Settings.
+    pub check_for_updates: bool,
 }
 
 impl Default for AppSettings {
@@ -44,6 +47,7 @@ impl Default for AppSettings {
             muted_speaking_alert: false,
             onboarding_completed_at: None,
             meet_pip_tip_ack: false,
+            check_for_updates: false,
         }
     }
 }
@@ -105,6 +109,25 @@ pub struct AppInfo {
     pub shortcuts: ShortcutStatus,
     pub bridge: BridgeState,
     pub demo: bool,
+}
+
+/// The in-app updater (ADR 0006). Failures carry no details: the logs have them.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, TS)]
+#[serde(tag = "state", rename_all = "snake_case")]
+#[ts(export, export_to = EXPORT)]
+pub enum UpdateState {
+    /// Not checked since the app started.
+    #[default]
+    Idle,
+    Checking,
+    UpToDate,
+    Available {
+        version: String,
+    },
+    /// Downloading and installing; the app restarts when it is done.
+    Installing,
+    CheckFailed,
+    InstallFailed,
 }
 
 /// The extension's Chrome Web Store page (unlisted), which "Install extension" opens. The

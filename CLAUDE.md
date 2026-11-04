@@ -24,7 +24,8 @@ Windows, Linux and other meeting apps (Teams, Zoom, Slack) without implementing 
 3. **Never show a state we do not know.** Media state is `On | Off | Unknown`; `Unknown` has its
    own neutral visual. No optimistic UI: state changes only when the provider confirms.
 4. **Local-first:** no network calls, no telemetry, no accounts. Participant names stay in memory
-   and never reach logs.
+   and never reach logs. The one exception is the in-app updater (ADR 0006): it asks GitHub for
+   a new version only when the person allows it or asks, and installs only when they click.
 5. **Meet selectors are data** (`selectors.json`), with fallback strategies and health checks.
 6. **Portability:** `protocol`, `core` and `provider-meet` build and test on macOS, Windows and
    Linux. OS code lives in dedicated modules behind `#[cfg(target_os = ...)]`, with stubs.
@@ -32,7 +33,7 @@ Windows, Linux and other meeting apps (Teams, Zoom, Slack) without implementing 
    reasons; the island shows a discreet indicator instead of wrong data.
 
 Decisions and their rationale live in `docs/adr/` (0001 monorepo/Tauri, 0002 bridge, 0003
-`Unknown` policy, 0004 selectors as data, 0005 keeping Meet rendering while hidden). Read the relevant ADR before changing those areas.
+`Unknown` policy, 0004 selectors as data, 0005 keeping Meet rendering while hidden, 0006 in-app updates). Read the relevant ADR before changing those areas.
 
 ## Layout
 
@@ -275,6 +276,11 @@ Every open item lives here, not in an assistant's memory. Remove an item when it
   - `docs/testing/manual-checklist.md`, including the Meet section `calibration.md` points to.
 - **Phase 7 (CI), still open:** Dependabot (cargo, npm, actions), the bug and feature issue
   templates, the pull request template and `CODEOWNERS`.
+- **Updates (owner):** add the `TAURI_SIGNING_PRIVATE_KEY` secret (the private key from
+  `~/.tauri/islet-updater.key`, made 2026-11-04; keep a backup, since losing it strands installed
+  apps) and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` (empty). Then check the whole flow by hand:
+  install 0.1.1 from its DMG, release 0.1.2 and update from Settings and from the menu bar, with
+  the ad hoc signature (does macOS ask "Open Anyway" again? does launch at login survive?).
 - **Signing (owner):** the release is signed ad hoc until the six `APPLE_*` secrets exist (an
   Apple Developer Program membership); then `release.yml` signs and notarizes.
 - **Next version, extension install (the owner's decision, 2026-11-03):** v0.1 keeps the
@@ -301,18 +307,23 @@ Every open item lives here, not in an assistant's memory. Remove an item when it
   generated-types check and the universal app on macOS; lint, typecheck, test and build of the
   JS packages.
 - **Releasing:** the version lives in `Cargo.toml` (`workspace.package`), `tauri.conf.json`,
-  `extension/manifest.json` and the `package.json` files. Push a tag `v<version>` (or
-  `v<version>-beta.N`, a pre-release) on a green `main`; `release.yml` builds the universal DMG
+  `extension/manifest.json` and the `package.json` files; every release needs a new one, since
+  the updater installs only newer versions. Push a tag `v<version>` (no suffixes; versions below
+  1.0 become pre-releases) on a green `main`; `release.yml` builds the universal DMG, the signed
+  update bundle (`.app.tar.gz` and `.sig`, which needs the `TAURI_SIGNING_PRIVATE_KEY` secret)
   and `islet-extension-<version>.zip` and attaches them, with `SHA256SUMS.txt`, to a **draft**
-  release. Review the notes, then publish. Without the `APPLE_*` secrets the app is signed ad
-  hoc, which macOS opens through Privacy & Security → Open Anyway.
+  release. Review the notes, then publish: `update-manifest.yml` then writes `latest.json` to the
+  `updater` branch, which offers the version to installed apps. Upload
+  `scripts/package-store-extension.sh`'s zip to the Chrome Web Store too. Without the `APPLE_*`
+  secrets the app is signed ad hoc, which macOS opens through Privacy & Security → Open Anyway.
 - `KICKOFF.md` is a local planning file excluded via `.git/info/exclude`; it is not part of the
   repository. Durable decisions belong in this file and in `docs/adr/`.
 
 ## Never
 
 - Commit private keys, certificates, tokens or the extension `.pem` (all in `.gitignore`).
-- Add network calls, telemetry or analytics.
+- Add network calls, telemetry or analytics. The updater (ADR 0006) is the only exception; it
+  never sends anything about the person and never installs without a click.
 - Log participant names or other personal data.
 - Show a media state as "on" when it is `Unknown`, or update it optimistically.
 - Read the Meet chat, capture audio/video, or make requests from the extension.
