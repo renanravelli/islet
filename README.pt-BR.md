@@ -314,9 +314,11 @@ Contribuições são bem-vindas: relatos de bugs, correções e suporte a novos 
 plataformas.
 
 1. Para mudanças maiores, abra uma issue antes para conversar.
-2. Use [Conventional Commits](https://www.conventionalcommits.org) nas mensagens de commit.
-3. Rode os [checks](#compilar-a-partir-do-código) antes de abrir um pull request. Eles precisam
-   passar sem avisos.
+2. Faça um fork do repositório, trabalhe num branch e abra um pull request para o `main` a
+   partir do seu fork.
+3. Use [Conventional Commits](https://www.conventionalcommits.org) nas mensagens de commit.
+4. Rode os [checks](#compilar-a-partir-do-código) antes de abrir um pull request. Eles precisam
+   passar sem avisos, e o CI roda tudo de novo em cada pull request.
 
 > [!TIP]
 > **O Meet mudou a interface?** O Islet encontra os controles do Meet por um arquivo de dados,

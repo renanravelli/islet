@@ -263,7 +263,6 @@ Every open item lives here, not in an assistant's memory. Remove an item when it
   click outside / 6 s collapse, launch at login, and the app moved to `/Applications` (its
   manifest is repaired on the next start).
 - **Phase 6 (docs):**
-  - `CONTRIBUTING.md`: ways to install pnpm (Homebrew, corepack, npm).
   - The READMEs' images in `docs/assets/` and the Chrome Web Store screenshots in
     `docs/assets/store/` (1280×800 JPEG, pt-BR) are renders of the design canvas, with chat and
     the pre-call reminder removed. Replace them with real screenshots and a demo-mode GIF once the app
@@ -273,12 +272,16 @@ Every open item lives here, not in an assistant's memory. Remove an item when it
   - `SECURITY.md`: GitHub's private vulnerability reporting is off on the repository; turn it on
     (owner) and point to it.
   - Threat model: the development extension ID can be reproduced by anyone from the public key.
+  - `docs/providers.md` (how to write a provider) does not exist yet, but Settings →
+    Integrations links to it (`Link::Providers`): a broken link until then.
+  - The READMEs do not link `CONTRIBUTING.md`, which names the ADRs and the UI spec (the owner's
+    rule above); GitHub shows it on new issues and pull requests.
   - `docs/testing/manual-checklist.md`, including the Meet section `calibration.md` points to.
 - **Phase 7 (CI), still open:** Dependabot (cargo, npm, actions), the bug and feature issue
-  templates, the pull request template and `CODEOWNERS`.
+  templates and `CODEOWNERS`.
 - **Updates (owner):** add the `TAURI_SIGNING_PRIVATE_KEY` secret (the private key from
   `~/.tauri/islet-updater.key`, made 2026-11-04; keep a backup, since losing it strands installed
-  apps) and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` (empty). Then check the whole flow by hand:
+  apps); the key has no password, so `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` is not needed. Then check the whole flow by hand:
   install 0.1.1 from its DMG, release 0.1.2 and update from Settings and from the menu bar, with
   the ad hoc signature (does macOS ask "Open Anyway" again? does launch at login survive?).
 - **Signing (owner):** the release is signed ad hoc until the six `APPLE_*` secrets exist (an
@@ -302,6 +305,10 @@ Every open item lives here, not in an assistant's memory. Remove an item when it
 
 - Conventional Commits. Default branch `main`, remote `origin`.
 - Push to `main` only after checks are green. **Never force push.**
+- **Rulesets** (Settings → Rules): `main` and `updater` refuse force pushes and deletion, for
+  everyone. `main` also needs a pull request with the five CI checks green and linear history
+  (squash or rebase; no merge commits); repository admins bypass that rule, which is how the
+  owner pushes straight to `main`. Only admins create, move or delete `v*` tags.
 - **CI** (`.github/workflows/ci.yml`): the portable crates on Linux, macOS and Windows (`-p`,
   since `islet-desktop` needs Tauri's system libraries on Linux); the workspace, a stale
   generated-types check and the universal app on macOS; lint, typecheck, test and build of the

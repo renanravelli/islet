@@ -310,9 +310,10 @@ islet/
 Contributions are welcome: bug reports, fixes, and support for new meeting apps and platforms.
 
 1. Open an issue to discuss larger changes first.
-2. Use [Conventional Commits](https://www.conventionalcommits.org) for commit messages.
-3. Run the [checks](#building-from-source) before opening a pull request. They must pass with
-   no warnings.
+2. Fork the repository, work on a branch and open a pull request to `main` from your fork.
+3. Use [Conventional Commits](https://www.conventionalcommits.org) for commit messages.
+4. Run the [checks](#building-from-source) before opening a pull request. They must pass with
+   no warnings, and CI runs them again on every pull request.
 
 > [!TIP]
 > **Did Meet change its interface?** Islet finds Meet's controls through a data file,
