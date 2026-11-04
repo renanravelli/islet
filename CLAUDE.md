@@ -182,8 +182,8 @@ warnings. UI changes must also be checked in demo mode (`--demo`), with and with
   refuses to click any control whose label ends the call for everyone, whatever a selector says
   (tested), and leaves a dialog it does not recognize for the person to answer.
 - **Out of scope for v0.1:** Windows, Linux, Teams, Zoom, Slack, calendar reminders, speaker video
-  thumbnails, OS-level call detection, system-level mute, Firefox, Safari, Chrome Web Store
-  publication.
+  thumbnails, OS-level call detection, system-level mute, Firefox, Safari. (The
+  Chrome Web Store listing came after all, by the owner's decision on 2026-11-03.)
 
 ## UI rules
 
@@ -279,12 +279,14 @@ Every open item lives here, not in an assistant's memory. Remove an item when it
   Apple Developer Program membership); then `release.yml` signs and notarizes.
 - **Next version, extension install (the owner's decision, 2026-11-03):** v0.1 keeps the
   manual "Load unpacked" guide; non-technical users get stuck on onboarding step 2.
-  - Publish the extension on the Chrome Web Store as unlisted (the owner's account). The store
-    refuses a manifest `key`, so upload `scripts/package-store-extension.sh`'s zip; the store
-    gives the extension its own ID, and the release zip keeps the development ID. On macOS
-    nothing else can install it for the user: off-store external installs are refused, and
-    branded Chrome dropped `--load-extension` in 137. Then set `EXTENSION_STORE_URL` and add the
-    store's ID to `crates/bridge/extension-ids.txt`.
+  - **Chrome Web Store (submitted 2026-11-03, review pending):** ID
+    `lbhmocnfnfmbiplpkllkacnbcjfcmlop`, already in `extension-ids.txt` and `EXTENSION_STORE_URL`
+    (the onboarding's "Install extension" opens it). The store refuses a manifest `key`, so
+    upload `scripts/package-store-extension.sh`'s zip; the release zip keeps the development ID.
+    On macOS nothing else can install it for the user: off-store external installs are refused,
+    and branded Chrome dropped `--load-extension` in 137. Once approved: release the app (the
+    store ID needs a new host manifest), and make the READMEs and `docs/install-extension.md`
+    recommend the store, with "Load unpacked" as the alternative.
   - Optionally, also write `~/Library/Application Support/Google/Chrome/External
     Extensions/<id>.json` (`external_update_url`), so Chrome asks to enable it on its next start.
   - Step 2 waits forever without a `meet.google.com` tab, since the extension connects only

@@ -173,7 +173,10 @@ mod tests {
         assert_eq!(json["path"], host.to_str().unwrap());
         assert_eq!(
             json["allowed_origins"],
-            serde_json::json!(["chrome-extension://dhfbcfjjnccdblcpemefndebjeannaam/"])
+            serde_json::json!([
+                "chrome-extension://dhfbcfjjnccdblcpemefndebjeannaam/",
+                "chrome-extension://lbhmocnfnfmbiplpkllkacnbcjfcmlop/"
+            ])
         );
 
         assert_eq!(

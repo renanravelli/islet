@@ -66,8 +66,9 @@ To see the extension's own messages, open `chrome://extensions`, find Islet and 
 
 - Make sure a `meet.google.com` tab is open: the extension connects only while one exists.
 - Reload the Meet tab after loading or updating the extension.
-- Check that the extension is enabled and that its ID is `dhfbcfjjnccdblcpemefndebjeannaam`.
-  A different ID means the folder is not an official build: the host only accepts that ID.
+- Check that the extension is enabled and that its ID is `dhfbcfjjnccdblcpemefndebjeannaam`
+  (loaded from a release or from source) or `lbhmocnfnfmbiplpkllkacnbcjfcmlop` (from the Chrome
+  Web Store). A different ID means it is not an official build: the host accepts only these.
 
 **"Specified native messaging host not found."**
 The Chrome bridge is not installed. In Islet, use **Reinstalar ponte do Chrome**; from source,

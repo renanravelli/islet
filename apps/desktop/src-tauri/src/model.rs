@@ -107,6 +107,11 @@ pub struct AppInfo {
     pub demo: bool,
 }
 
+/// The extension's Chrome Web Store page (unlisted), which "Install extension" opens. The
+/// manual "Load unpacked" guide stays in docs/install-extension.md.
+pub const EXTENSION_STORE_URL: &str =
+    "https://chromewebstore.google.com/detail/lbhmocnfnfmbiplpkllkacnbcjfcmlop";
+
 /// Links the UI may open. Arbitrary URLs are never opened.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, TS)]
 #[serde(rename_all = "snake_case")]
@@ -123,10 +128,7 @@ impl Link {
     pub fn url(self) -> &'static str {
         const REPO: &str = "https://github.com/renanravelli/islet";
         match self {
-            Self::InstallExtension => concat!(
-                "https://github.com/renanravelli/islet",
-                "/blob/main/docs/install-extension.md"
-            ),
+            Self::InstallExtension => EXTENSION_STORE_URL,
             Self::Troubleshooting => concat!(
                 "https://github.com/renanravelli/islet",
                 "/blob/main/docs/install-extension.md#troubleshooting"

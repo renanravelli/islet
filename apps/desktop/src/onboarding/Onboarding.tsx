@@ -222,7 +222,7 @@ function ConnectChrome({ meet }: { meet: ReturnType<typeof meetStatus> }) {
         label={t("onb2.ext.title")}
         description={
           <>
-            {t("onb2.ext.waiting_desc_manual")}
+            {t("onb2.ext.waiting_desc_store")}
             {slow && (
               <span className="troubleshoot">
                 <Button variant="text" onClick={() => void api.openLink("troubleshooting")}>
@@ -249,7 +249,7 @@ function ConnectChrome({ meet }: { meet: ReturnType<typeof meetStatus> }) {
           <Button
             onClick={() => {
               setClicked(true);
-              // No Chrome Web Store listing in v0.1: the manual "Load unpacked" guide.
+              // The extension's Chrome Web Store page (EXTENSION_STORE_URL in the shell).
               void api.openLink("install_extension");
             }}
           >

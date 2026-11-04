@@ -7,5 +7,7 @@
 # MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAv/8zDFudD7RPzIDv6q6tLFgqtUYMw7WEujHaZTm6ZPOVV5lstKcta/n66L8v6hfiCSVmCaC/B1JL7bmvayKM03XCXVPzZpDVepfgun9mDSylrXMqwTZjLSNvy8PhD6zREeImd3GDzo3od7K070HGzpCLqCr3UDmSqOnZVNNB1l0tPNn87NaagvkgCGorsox3xxawPf084vv59kB64RwdKLtq7n8DMgCuICx7EeZEIJK1TnYETasEvmTOoM5FwkJMS4KEhfbOQiiRyIj/j63yH6fkhQuM1WEv9aHtVOt2wvVRV8kEpc+QITfhQmYxmIpRCtWpCDnkxquVLHONEVyOAQIDAQAB
 dhfbcfjjnccdblcpemefndebjeannaam
 
-# TODO: add the Chrome Web Store ID once the extension is published. Never add a placeholder:
-# a made-up ID could belong to someone else's extension.
+# Chrome Web Store ID, assigned by the store (its package has no "key"; see
+# scripts/package-store-extension.sh). Never add a placeholder: a made-up ID could belong to
+# someone else's extension.
+lbhmocnfnfmbiplpkllkacnbcjfcmlop

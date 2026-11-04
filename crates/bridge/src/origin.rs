@@ -29,11 +29,13 @@ mod tests {
     use super::*;
 
     const DEV_ID: &str = "dhfbcfjjnccdblcpemefndebjeannaam";
+    const STORE_ID: &str = "lbhmocnfnfmbiplpkllkacnbcjfcmlop";
 
     #[test]
     fn every_listed_id_is_well_formed() {
         let ids: Vec<_> = allowed_extension_ids().collect();
         assert!(ids.contains(&DEV_ID));
+        assert!(ids.contains(&STORE_ID));
         for id in ids {
             assert_eq!(id.len(), 32, "{id}");
             assert!(id.bytes().all(|b| (b'a'..=b'p').contains(&b)), "{id}");
@@ -43,6 +45,9 @@ mod tests {
     #[test]
     fn accepts_only_exact_allowed_origins() {
         assert!(is_allowed_origin(&format!("chrome-extension://{DEV_ID}/")));
+        assert!(is_allowed_origin(&format!(
+            "chrome-extension://{STORE_ID}/"
+        )));
         for origin in [
             "",
             DEV_ID,
@@ -58,6 +63,12 @@ mod tests {
 
     #[test]
     fn origins_have_chromes_shape() {
-        assert_eq!(allowed_origins(), [format!("chrome-extension://{DEV_ID}/")]);
+        assert_eq!(
+            allowed_origins(),
+            [
+                format!("chrome-extension://{DEV_ID}/"),
+                format!("chrome-extension://{STORE_ID}/")
+            ]
+        );
     }
 }

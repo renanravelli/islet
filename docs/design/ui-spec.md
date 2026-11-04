@@ -164,8 +164,8 @@ A group card with two rows. The row states are driven by real events, never by t
 
 **Behavior:**
 - **"Instalar extensão":**
-  - if `EXTENSION_STORE_URL` is set, it opens that URL;
-  - in v0.1 the constant is unset, so it opens `docs/install-extension.md` on GitHub (manual "Load unpacked" guide) and uses the `_manual` description.
+  - it opens `EXTENSION_STORE_URL`, the extension's Chrome Web Store page, and uses the `_store` description;
+  - the manual "Load unpacked" guide (`docs/install-extension.md`) stays reachable through the troubleshooting link.
 - **`connected`** is set only when the extension's real `hello` arrives. If the extension was already connected when the step opens, show `connected` right away.
 - **After 60 s in `waiting`:** show the text button "Não conectou? Ver solução de problemas", which opens the troubleshooting section of the install doc.
 - **Below the card:**
