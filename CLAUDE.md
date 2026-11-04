@@ -308,21 +308,32 @@ Every open item lives here, not in an assistant's memory. Remove an item when it
 - **Rulesets** (Settings → Rules): `main` and `updater` refuse force pushes and deletion, for
   everyone. `main` also needs a pull request with the five CI checks green and linear history
   (squash or rebase; no merge commits); repository admins bypass that rule, which is how the
-  owner pushes straight to `main`. Only admins create, move or delete `v*` tags.
+  owner pushes straight to `main`. Only admins and the GitHub Actions app (the release workflow)
+  create, move or delete `v*` tags.
 - **CI** (`.github/workflows/ci.yml`): the portable crates on Linux, macOS and Windows (`-p`,
   since `islet-desktop` needs Tauri's system libraries on Linux); the workspace, a stale
   generated-types check and the universal app on macOS; lint, typecheck, test and build of the
   JS packages.
-- **Releasing:** the version lives in `Cargo.toml` (`workspace.package`), `tauri.conf.json`,
-  `extension/manifest.json` and the `package.json` files; every release needs a new one, since
-  the updater installs only newer versions. Push a tag `v<version>` (no suffixes; versions below
-  1.0 become pre-releases) on a green `main`; `release.yml` builds the universal DMG, the signed
-  update bundle (`.app.tar.gz` and `.sig`, which needs the `TAURI_SIGNING_PRIVATE_KEY` secret)
-  and `islet-extension-<version>.zip` and attaches them, with `SHA256SUMS.txt`, to a **draft**
-  release. Review the notes, then publish: `update-manifest.yml` then writes `latest.json` to the
-  `updater` branch, which offers the version to installed apps. Upload
-  `scripts/package-store-extension.sh`'s zip to the Chrome Web Store too. Without the `APPLE_*`
-  secrets the app is signed ad hoc, which macOS opens through Privacy & Security → Open Anyway.
+- **Releasing** (`release.yml`), from a branch named for the version, `release/vX.Y.Z`
+  (patch, minor or major is the maintainer's choice in that name, never read from commit
+  messages):
+  - **Betas:** every push to `release/vX.Y.Z` makes a draft pre-release `vX.Y.Z-beta.N`, N
+    counting up on its own. The first push also writes X.Y.Z into the version files on the branch
+    (`scripts/set-version.mjs`: `Cargo.toml` `workspace.package`, `tauri.conf.json`,
+    `extension/manifest.json`, the `package.json` files) and runs CI on that commit; a beta
+    builds with its full version (the manifest gets `version` X.Y.Z and `version_name`
+    X.Y.Z-beta.N, since Chrome takes only numbers). Betas are downloaded by hand: the updater
+    never offers them.
+  - **Latest:** merging the `release/vX.Y.Z` pull request into `main` makes the draft release
+    `vX.Y.Z`, marked as the latest.
+  - Each waits for CI to pass on its commit, refuses a version already released or older than
+    the last one, and attaches the universal DMG, the signed update bundle (`.app.tar.gz` and
+    `.sig`; needs the `TAURI_SIGNING_PRIVATE_KEY` secret), `islet-extension-<version>.zip` and
+    `SHA256SUMS.txt`. Review the draft, then publish: for a latest release, `update-manifest.yml`
+    writes `latest.json` to the `updater` branch, which offers it to installed apps.
+  - Upload `scripts/package-store-extension.sh`'s zip to the Chrome Web Store for each latest
+    release. Without the `APPLE_*` secrets the app is signed ad hoc, which macOS opens through
+    Privacy & Security → Open Anyway.
 - `KICKOFF.md` is a local planning file excluded via `.git/info/exclude`; it is not part of the
   repository. Durable decisions belong in this file and in `docs/adr/`.
 

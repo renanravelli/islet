@@ -1,15 +1,31 @@
 name: Release
 
-# Pushing a tag v<version> (the app's version, such as v0.1.1) builds the universal DMG, the
-# in-app update bundle and the extension zip and attaches them to a draft release, to be
-# reviewed and published by hand. Publishing it triggers update-manifest.yml, which offers the
-# version to installed apps (ADR 0006). Versions below 1.0 are pre-releases.
+# Releases come from release branches, named for their version (release/v0.1.2):
+#
+# - Every push to release/vX.Y.Z makes a beta: a draft pre-release vX.Y.Z-beta.N, N counting up
+#   on its own. The first push also writes X.Y.Z into the version files, on the branch.
+# - Merging the release/vX.Y.Z pull request into main makes the draft release vX.Y.Z, marked as
+#   the latest.
+#
+# Each waits for CI to pass on its commit, then builds the universal DMG, the signed in-app
+# update bundle and the extension zip. Review the draft and publish it by hand; publishing a
+# latest release (never a beta) makes update-manifest.yml offer it to installed apps (ADR 0006).
 on:
   push:
-    tags: ["v*"]
+    branches: ["release/v*"]
+  pull_request:
+    types: [closed]
+    branches: [main]
 
 permissions:
+  # Version commits, tags and draft releases; `actions` to run CI on the version commit.
   contents: write
+  actions: write
+
+# One release at a time, so two betas never take the same number.
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 env:
   CARGO_TERM_COLOR: always
@@ -20,24 +36,139 @@ env:
   TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
 
 jobs:
-  release:
-    runs-on: macos-latest
-    timeout-minutes: 60
+  version:
+    # A merged pull request counts only when it came from a release branch of this repository.
+    if: >-
+      github.event_name == 'push' ||
+      (github.event.pull_request.merged &&
+       startsWith(github.event.pull_request.head.ref, 'release/v') &&
+       github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    outputs:
+      version: ${{ steps.tag.outputs.version }}
+      tag: ${{ steps.tag.outputs.tag }}
+      channel: ${{ steps.plan.outputs.channel }}
+    env:
+      GH_TOKEN: ${{ github.token }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Plan the release
+        id: plan
+        env:
+          BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}
+          MERGED_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+        run: |
+          base="${BRANCH#release/v}"
+          if [[ ! "$base" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::$BRANCH is not release/v<major.minor.patch>"; exit 1
+          fi
+          if [[ "$GITHUB_EVENT_NAME" == push ]]; then
+            echo "channel=beta" >> "$GITHUB_OUTPUT"
+            echo "ref=$GITHUB_REF_NAME" >> "$GITHUB_OUTPUT"
+          else
+            echo "channel=latest" >> "$GITHUB_OUTPUT"
+            echo "ref=$MERGED_SHA" >> "$GITHUB_OUTPUT"
+          fi
+          echo "base=$base" >> "$GITHUB_OUTPUT"
 
-      - name: The tag matches the app version
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ steps.plan.outputs.ref }}
+          fetch-depth: 0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .tool-versions
+
+      - name: The version is new
+        env:
+          BASE: ${{ steps.plan.outputs.base }}
+        run: |
+          if git ls-remote --exit-code --tags origin "refs/tags/v$BASE" >/dev/null; then
+            echo "::error::v$BASE is already released; start release/v<a newer version>"; exit 1
+          fi
+          last="$(git tag --list 'v*' --sort=-v:refname | grep -v -- -beta | head -n 1)"
+          if [[ -n "$last" && "$(printf '%s\n%s\n' "${last#v}" "$BASE" | sort -V | tail -n 1)" != "$BASE" ]]; then
+            echo "::error::$BASE is older than the last release $last"; exit 1
+          fi
+
+      # The branch carries its version from the first push on; CI runs again on that commit.
+      - name: Write the version on the branch
+        if: steps.plan.outputs.channel == 'beta'
+        env:
+          BASE: ${{ steps.plan.outputs.base }}
+        run: |
+          node scripts/set-version.mjs "$BASE"
+          if git diff --quiet; then exit 0; fi
+          rustc --version
+          cargo update --workspace --quiet
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -q -am "chore(release): $BASE"
+          git push origin "HEAD:$GITHUB_REF_NAME"
+          gh workflow run ci.yml --ref "$GITHUB_REF_NAME"
+
+      - name: The version files match the branch
+        env:
+          BASE: ${{ steps.plan.outputs.base }}
         run: |
           version="$(node -p "require('./apps/desktop/src-tauri/tauri.conf.json').version")"
-          tag="${GITHUB_REF_NAME#v}"
-          # The updater compares versions, so every release needs its own: no suffixes.
-          if [[ "$tag" != "$version" ]]; then
-            echo "::error::Tag $GITHUB_REF_NAME does not match the app version $version"; exit 1
+          if [[ "$version" != "$BASE" ]]; then
+            echo "::error::The files say $version, the branch says $BASE"; exit 1
           fi
+
+      - name: CI passed on this commit
+        run: |
+          sha="$(git rev-parse HEAD)"
+          for _ in $(seq 1 80); do
+            run="$(gh run list --workflow ci.yml --commit "$sha" --limit 1 --json status,conclusion --jq '.[0] // {}')"
+            if [[ "$(jq -r .status <<<"$run")" == completed ]]; then
+              conclusion="$(jq -r .conclusion <<<"$run")"
+              if [[ "$conclusion" == success ]]; then exit 0; fi
+              echo "::error::CI on $sha: $conclusion"; exit 1
+            fi
+            sleep 30
+          done
+          echo "::error::CI on $sha did not finish in 40 minutes"; exit 1
+
+      - name: Tag the release
+        id: tag
+        env:
+          BASE: ${{ steps.plan.outputs.base }}
+          CHANNEL: ${{ steps.plan.outputs.channel }}
+        run: |
+          if [[ "$CHANNEL" == beta ]]; then
+            n="$(git ls-remote --tags origin "refs/tags/v$BASE-beta.*" | grep -v '\^{}$' \
+              | sed -E 's/.*-beta\.([0-9]+)$/\1/' | sort -n | tail -n 1)"
+            version="$BASE-beta.$(( ${n:-0} + 1 ))"
+          else
+            version="$BASE"
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "v$version" -m "Islet $version"
+          git push origin "v$version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=v$version" >> "$GITHUB_OUTPUT"
+          echo "Releasing **v$version** ($CHANNEL)" >> "$GITHUB_STEP_SUMMARY"
+
+  release:
+    needs: version
+    runs-on: macos-latest
+    timeout-minutes: 60
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+      TAG: ${{ needs.version.outputs.tag }}
+      CHANNEL: ${{ needs.version.outputs.channel }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.version.outputs.tag }}
+
+      - name: The updater key is there
+        run: |
           if [[ -z "$TAURI_SIGNING_PRIVATE_KEY" ]]; then
             echo "::error::The TAURI_SIGNING_PRIVATE_KEY secret is missing (ADR 0006)"; exit 1
           fi
-          echo "VERSION=$version" >> "$GITHUB_ENV"
 
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -47,6 +178,10 @@ jobs:
       - run: rustc --version && rustup target add aarch64-apple-darwin x86_64-apple-darwin
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
       - run: pnpm install --frozen-lockfile
+
+      # A beta builds with its full version (0.1.2-beta.1); the files on the branch keep 0.1.2.
+      - name: Set the build's version
+        run: node scripts/set-version.mjs "$VERSION"
 
       - name: Build the app (signed and notarized)
         if: env.SIGNED == 'true'
@@ -76,7 +211,7 @@ jobs:
         run: |
           mkdir dist
           bundle=target/universal-apple-darwin/release/bundle
-          mv "$bundle/dmg/Islet_${VERSION}_universal.dmg" dist/
+          mv "$bundle"/dmg/Islet_*_universal.dmg "dist/Islet_${VERSION}_universal.dmg"
           mv "$bundle/macos/Islet.app.tar.gz" "dist/Islet_${VERSION}_universal.app.tar.gz"
           mv "$bundle/macos/Islet.app.tar.gz.sig" "dist/Islet_${VERSION}_universal.app.tar.gz.sig"
           mv "islet-extension-$VERSION.zip" dist/
@@ -86,6 +221,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          flags=(--draft --verify-tag --generate-notes --title "Islet $GITHUB_REF_NAME")
-          if [[ "$VERSION" == 0.* ]]; then flags+=(--prerelease); fi
-          gh release create "$GITHUB_REF_NAME" "${flags[@]}" dist/*
+          flags=(--draft --verify-tag --generate-notes --title "Islet $TAG")
+          if [[ "$CHANNEL" == beta ]]; then flags+=(--prerelease); else flags+=(--latest); fi
+          gh release create "$TAG" "${flags[@]}" dist/*

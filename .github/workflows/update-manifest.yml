@@ -1,8 +1,8 @@
 name: Update manifest
 
-# Publishing a release offers it to installed apps: this writes latest.json, which the in-app
-# updater reads (ADR 0006), to the `updater` branch. Drafts are never offered. Run it by hand
-# to offer a published release again.
+# Publishing a latest release offers it to installed apps: this writes latest.json, which the
+# in-app updater reads (ADR 0006), to the `updater` branch. Drafts and betas (pre-releases) are
+# never offered. Run it by hand to offer a published release again.
 on:
   release:
     types: [published]
@@ -31,9 +31,13 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.event.release.tag_name || inputs.tag }}
         run: |
-          release="$(gh release view "$TAG" --json isDraft,publishedAt,url)"
+          release="$(gh release view "$TAG" --json isDraft,isPrerelease,publishedAt,url)"
           if [[ "$(jq -r .isDraft <<<"$release")" == true ]]; then
             echo "::error::$TAG is still a draft"; exit 1
+          fi
+          if [[ "$(jq -r .isPrerelease <<<"$release")" == true ]]; then
+            echo "$TAG is a beta: betas are downloaded by hand, never offered" >> "$GITHUB_STEP_SUMMARY"
+            echo "skip=true" >> "$GITHUB_ENV"; exit 0
           fi
           version="${TAG#v}"
           bundle="Islet_${version}_universal.app.tar.gz"
@@ -52,6 +56,7 @@ jobs:
           cat "$RUNNER_TEMP/latest.json"
 
       - name: Publish it on the updater branch
+        if: env.skip != 'true'
         env:
           TAG: ${{ github.event.release.tag_name || inputs.tag }}
         run: |

@@ -115,7 +115,7 @@ Pull requests are reviewed against these. The reasons behind most of them are in
 
 ## Releases
 
-Maintainers cut releases from `main` by pushing a `v<version>` tag; contributors never need to.
+Maintainers cut releases from `release/vX.Y.Z` branches (betas on every push, the release when the branch is merged into `main`); contributors never need to.
 
 ## License
 

@@ -35,9 +35,11 @@ on 2026-11-03, as an explicit exception to principle 4.
 6. **Publishing offers the update.** `release.yml` attaches `Islet_<version>_universal.app.tar.gz`
    and its `.sig` to the draft release. Only publishing the release runs `update-manifest.yml`,
    which writes `latest.json` to the `updater` branch; drafts are never offered.
-7. **Versions only go up.** Each release has its own version (`v<version>` tags, no suffixes),
-   since the updater installs only a version newer than the running one. Versions below 1.0 are
-   marked as pre-releases on GitHub.
+7. **Versions only go up.** Each release has its own version, since the updater installs only
+   a version newer than the running one. The release workflow takes it from the release branch's
+   name (`release/vX.Y.Z`), never from commit messages, and refuses one already released or older
+   than the last. Betas (`vX.Y.Z-beta.N`) are pre-releases downloaded by hand; only latest
+   releases are offered by the updater.
 
 ## Consequences
 
