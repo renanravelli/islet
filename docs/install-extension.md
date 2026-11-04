@@ -1,8 +1,9 @@
 # Install the Islet extension
 
-Islet reads your Google Meet call through a small Chrome extension. Until it is published on
-the Chrome Web Store, you load it yourself with Chrome's **Load unpacked**. This takes about two
-minutes.
+Islet reads your Google Meet call through a small Chrome extension. Most people add it from the
+[Chrome Web Store](https://chromewebstore.google.com/detail/lbhmocnfnfmbiplpkllkacnbcjfcmlop); the listing is unlisted, so it opens from that link and from Islet's
+setup guide, not from the store's search. You can also load it yourself with Chrome's **Load
+unpacked**, which takes about two minutes.
 
 The extension only has access to `meet.google.com`. It never reads the chat, never records
 audio or video and makes no network requests; it only talks to the Islet app on your Mac.
@@ -13,7 +14,17 @@ audio or video and makes no network requests; it only talks to the Islet app on 
   are not supported in v0.1.
 - The Islet app, or a development checkout of this repository.
 
-## 1. Get the extension folder
+## From the Chrome Web Store (recommended)
+
+1. Open the [Islet page on the Chrome Web Store](https://chromewebstore.google.com/detail/lbhmocnfnfmbiplpkllkacnbcjfcmlop), or click **Instalar extensão** in
+   step 2 of Islet's setup guide, which opens it in Chrome.
+2. Click **Add to Chrome**.
+3. Go to [Connect it to the app](#connect-it-to-the-app). Chrome updates the extension on its
+   own.
+
+## Load it by hand
+
+### 1. Get the extension folder
 
 Pick **one** of the two ways below. Most people want the first.
 
@@ -34,27 +45,30 @@ pnpm --filter @islet/extension build
 
 The folder is `extension/dist`.
 
-## 2. Load it in Chrome
+### 2. Load it in Chrome
 
 1. Open `chrome://extensions`.
 2. Turn on **Developer mode** (top right).
 3. Click **Load unpacked** and select the folder from step 1.
 4. Check that the card says **Islet** and the ID is `dhfbcfjjnccdblcpemefndebjeannaam`.
 
-## 3. Connect it to the app
+## Connect it to the app
 
 - **With the app:** open Islet. Step 2 of the first-run guide installs the Chrome bridge and
   waits for the extension. You can also use Settings → Integrações → **Reinstalar ponte do
   Chrome**.
 - **From source:** run `scripts/install-native-host.sh`, then start the app.
 
-Open any `meet.google.com` tab. The guide shows **Conectada** as soon as the extension says
-hello. The island appears once you join a call, not in the lobby.
+Right after it is installed or updated, the extension tests the connection, and the guide
+shows **Conectada**. If the extension was already installed, click **Abrir o Meet para testar**
+in the guide, or open any `meet.google.com` tab: the extension connects while one is open. The
+island appears once you join a call, not in the lobby.
 
 ## Update or remove
 
-- **Update:** replace the folder's contents with the new version, then click the reload icon on
-  the Islet card in `chrome://extensions`.
+- **Update:** from the Chrome Web Store, Chrome updates it on its own. Loaded by hand, replace
+  the folder's contents with the new version, then click the reload icon on the Islet card in
+  `chrome://extensions`.
 - **Remove:** click **Remove** on the card. The app keeps working without it, but shows no calls.
 
 ## Troubleshooting
@@ -64,7 +78,8 @@ To see the extension's own messages, open `chrome://extensions`, find Islet and 
 
 **The guide keeps waiting for the extension.**
 
-- Make sure a `meet.google.com` tab is open: the extension connects only while one exists.
+- Click **Abrir o Meet para testar**, or open a `meet.google.com` tab yourself: an extension
+  installed earlier connects only while one exists.
 - Reload the Meet tab after loading or updating the extension.
 - Check that the extension is enabled and that its ID is `dhfbcfjjnccdblcpemefndebjeannaam`
   (loaded from a release or from source) or `lbhmocnfnfmbiplpkllkacnbcjfcmlop` (from the Chrome

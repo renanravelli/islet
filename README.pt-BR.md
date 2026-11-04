@@ -111,7 +111,7 @@ flowchart LR
 ## Instalação
 
 > [!NOTE]
-> O Islet está em beta público: as builds no GitHub Releases são pré-releases.
+> O Islet é novo e foi testado principalmente em calls em português.
 > [Conte](https://github.com/renanravelli/islet/issues) o que encontrar.
 
 1. **Instale o app.** Baixe o `Islet_<versão>_universal.dmg` (Apple silicon e Intel) no
@@ -119,9 +119,9 @@ flowchart LR
    para Aplicativos. As builds ainda não são notarizadas pela Apple, então o macOS pode dizer que não consegue
    verificar o app. Nesse caso, abra **Ajustes do Sistema → Privacidade e Segurança** e clique em
    **Abrir Mesmo Assim**.
-2. **Instale a extensão do Chrome.** Uma página na Chrome Web Store está a caminho. Por enquanto,
-   baixe o `islet-extension-<versão>.zip` do mesmo release e carregue-o com **Carregar sem
-   compactação** no Chrome; o [guia da extensão](docs/install-extension.md) leva uns dois minutos.
+2. **Instale a extensão do Chrome.** Adicione pela [Chrome Web Store](https://chromewebstore.google.com/detail/lbhmocnfnfmbiplpkllkacnbcjfcmlop). A página não é
+   listada: ela abre por este link e pelo guia de configuração do Islet, não pela busca da loja.
+   Para carregar à mão, siga o [guia da extensão](docs/install-extension.md).
 3. **Siga o guia de configuração.** Na primeira execução, o Islet mostra quatro passos. Ele se
    conecta sozinho ao Chrome e confirma quando a extensão responde.
 
@@ -227,8 +227,8 @@ Por favor, não relate problemas de segurança em issues públicas.
 
 | Plataforma ou app             | Status                       |
 | ----------------------------- | ---------------------------- |
-| macOS + Google Meet no Chrome | **v0.1, em desenvolvimento** |
-| Página na Chrome Web Store    | Próxima                      |
+| macOS + Google Meet no Chrome | **v0.1, disponível**         |
+| Página na Chrome Web Store    | **Disponível (não listada)** |
 | Windows                       | Planejado                    |
 | Linux                         | Planejado                    |
 | Microsoft Teams               | Planejado                    |
