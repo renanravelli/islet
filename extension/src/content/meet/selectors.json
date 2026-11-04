@@ -1,6 +1,6 @@
 {
-  "$comment": "Every DOM dependency of the Meet adapter (docs/adr/0004). Strategies are tried in order; regexes are case-insensitive and every locale is tried. A key is verified only when it was confirmed in a real call; verifiedIn lists the Meet languages it was confirmed in. jsname/jscontroller values come from the owner's inspection and the calibration runner in a real pt-BR call on 2026-11-03 (docs/meet-adapter/reports/); Google can rename them, so each key keeps a label-based fallback. Unverified strategies are educated guesses. See docs/meet-adapter/calibration.md.",
-  "version": 9,
+  "$comment": "Every DOM dependency of the Meet adapter (docs/adr/0004). Strategies are tried in order; regexes are case-insensitive and every locale is tried. A key is verified only when it was confirmed in a real call; verifiedIn lists the Meet languages it was confirmed in. jsname/jscontroller values come from the owner's inspection and the calibration runner in a real pt-BR call on 2026-11-03 (docs/meet-adapter/reports/); Google can rename them, so each key keeps a label-based fallback. The raised-hand mark comes from the probe in a three-person call on 2026-11-04. Unverified strategies are educated guesses. See docs/meet-adapter/calibration.md.",
+  "version": 10,
   "updated": "2026-11-04",
   "keys": {
     "leaveButton": {
@@ -283,6 +283,36 @@
         },
         {
           "css": "img[crossorigin]"
+        }
+      ]
+    },
+    "raisedHand": {
+      "$comment": "UNVERIFIED, from the raised-hands probe (2026-11-04, one call, three people, pt-BR; docs/meet-adapter/reports/): a raised hand shows on its tile as a front_hand icon (an i.google-material-icons), and once two or more are up, next to it the place in line (1, 2, 3, the user's own included). It is absent from a tile whose hand is down. The People panel lists them too (\"Abaixar a mão de …\"), but that control may be the host's only. Only tiles on screen are seen.",
+      "verified": false,
+      "required": false,
+      "strategies": [
+        {
+          "text": {
+            "en": "^\\s*(front_hand|back_hand|pan_tool)\\s*$",
+            "pt-BR": "^\\s*(front_hand|back_hand|pan_tool)\\s*$"
+          },
+          "css": "i.google-material-icons, i.google-symbols"
+        },
+        {
+          "text": {
+            "en": "^\\s*(front_hand|back_hand|pan_tool)\\s*$",
+            "pt-BR": "^\\s*(front_hand|back_hand|pan_tool)\\s*$"
+          },
+          "css": "[aria-hidden='true']"
+        }
+      ],
+      "position": [
+        {
+          "text": {
+            "en": "^\\s*\\d{1,3}\\s*$",
+            "pt-BR": "^\\s*\\d{1,3}\\s*$"
+          },
+          "css": ":scope > *"
         }
       ]
     }

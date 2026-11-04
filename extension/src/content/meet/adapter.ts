@@ -1,11 +1,18 @@
 // The Meet adapter: reads the call state from the page and performs commands (docs/adr/0004).
 //
-// It reads only the call controls, the participant tiles' names and photos, the participant
-// count, the meeting title and Meet's "are you talking?" notice, each through selectors.json. It
+// It reads only the call controls, the participant tiles' names, photos and raised hands, the
+// participant count, the meeting title and Meet's "are you talking?" notice, each through
+// selectors.json. It
 // never reads the chat, never captures audio or video and makes no network requests: a photo is
 // the image Meet already loaded, redrawn small (docs/adr/0007).
 
-import type { Action, CommandErrorCode, DegradedReason, Toggle } from "@islet/protocol-ts";
+import type {
+  Action,
+  CommandErrorCode,
+  DegradedReason,
+  RaisedHands,
+  Toggle,
+} from "@islet/protocol-ts";
 import type { TabAction, TabState } from "../../shared/messages";
 import {
   DEGRADED_REASON,
@@ -65,11 +72,18 @@ export class MeetAdapter {
   private readonly photos = new Map<string, { src: string; data: string }>();
   /** Photo sources that could not be read (a tainted canvas), so they are not tried again. */
   private readonly unreadable = new Set<string>();
+  /** The order hands went up in, as this adapter saw it (data-participant-id), for when Meet
+   * shows no place in line. Memory only. */
+  private readonly handsSeen = new Map<string, number>();
+  private handsSeq = 0;
+  /** The first in line and since when. */
+  private firstHand: { id: string; since: number } | undefined;
 
   constructor(
     private readonly root: Document,
     private readonly registry: Registry = SELECTORS,
     private readonly makeCanvas: CanvasFactory = () => root.createElement("canvas"),
+    private readonly now: () => number = Date.now,
   ) {}
 
   private find(key: SelectorKey): Element | null {
@@ -99,6 +113,8 @@ export class MeetAdapter {
       fail("leaveButton");
       this.photos.clear();
       this.unreadable.clear();
+      this.handsSeen.clear();
+      this.firstHand = undefined;
     }
 
     const self: TabState["self"] = { mic: "unknown", cam: "unknown", hand: "unknown" };
@@ -147,6 +163,8 @@ export class MeetAdapter {
     const ownTile = this.find("selfTile");
     const selfParticipant = ownTile ? this.named(ownTile, this.registry.keys.selfTile) : undefined;
     if (selfParticipant !== undefined) state.self_participant = selfParticipant;
+    const hands = this.raisedHands(ownTile);
+    if (hands !== undefined) state.raised_hands = hands;
     if (degraded.length > 0) state.degraded_reasons = degraded;
     return { state, failed: [...failed] };
   }
@@ -168,6 +186,51 @@ export class MeetAdapter {
       return people;
     }
     return [];
+  }
+
+  /**
+   * Others' raised hands, from the tiles: the first in line and how many. The user's own hand is
+   * left out. The order is the place in line Meet shows, else the order this adapter saw the
+   * hands go up in. `since` changes only when the first in line does.
+   */
+  private raisedHands(ownTile: Element | null): RaisedHands | undefined {
+    const tileEntry = this.registry.keys.participantTile;
+    const handEntry = this.registry.keys.raisedHand;
+    const ownId = ownTile?.getAttribute("data-participant-id") ?? null;
+    const raised = new Map<string, { tile: Element; place: number | undefined }>();
+    for (const strategy of tileEntry.strategies) {
+      const tiles = matchAll(this.root, strategy);
+      if (tiles.length === 0) continue;
+      for (const tile of tiles) {
+        const id = tile.getAttribute("data-participant-id");
+        if (id === null || id === ownId || tile === ownTile || raised.has(id)) continue;
+        const mark = resolve(tile, handEntry.strategies);
+        if (!mark) continue;
+        const place = mark.parentElement
+          ? resolve(mark.parentElement, handEntry.position ?? [])
+          : null;
+        raised.set(id, { tile, place: place ? firstNumber(place) : undefined });
+      }
+      break;
+    }
+
+    for (const id of this.handsSeen.keys()) if (!raised.has(id)) this.handsSeen.delete(id);
+    for (const id of raised.keys()) {
+      if (!this.handsSeen.has(id)) this.handsSeen.set(id, this.handsSeq++);
+    }
+    const line = [...raised.entries()].sort(
+      ([a, x], [b, y]) =>
+        (x.place ?? Infinity) - (y.place ?? Infinity) ||
+        (this.handsSeen.get(a) ?? 0) - (this.handsSeen.get(b) ?? 0),
+    );
+    const head = line[0];
+    const first = head ? this.named(head[1].tile, tileEntry) : undefined;
+    if (!head || !first) {
+      this.firstHand = undefined;
+      return undefined;
+    }
+    if (this.firstHand?.id !== head[0]) this.firstHand = { id: head[0], since: this.now() };
+    return { first, count: line.length, since: this.firstHand.since };
   }
 
   /** A tile's name and, when it can be read, its photo: both from the same tile. */

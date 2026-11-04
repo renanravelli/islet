@@ -16,6 +16,8 @@ the Meet page:
 - the names and profile photos Meet shows on the participant tiles, and who is speaking. A
   photo is the image Meet already loaded, redrawn small (72 pixels); the extension never
   downloads one;
+- which participants have a hand raised, and their place in line, from the hand Meet shows on
+  their tile;
 - the participant count and the meeting title;
 - Meet's "are you talking?" notice, when you speak while muted.
 

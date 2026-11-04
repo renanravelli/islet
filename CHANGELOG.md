@@ -3,6 +3,16 @@
 All notable changes to Islet. Versions follow [Semantic Versioning](https://semver.org); while
 the version is below 1.0, every release is a beta.
 
+## Unreleased
+
+### Added
+
+- **Others' raised hands.** When someone else raises a hand, the island shows the first in line,
+  with their photo, and "+N" for the others; expanded, it names them and says how many hands are
+  up. When the first in line changes, the island opens for 4 seconds to say so. The order is
+  the one Meet shows; your own hand is left out. With **Mostrar nomes e fotos** off, it says
+  "Someone raised their hand".
+
 ## 0.1.2 — 2026-11-04
 
 ### Added

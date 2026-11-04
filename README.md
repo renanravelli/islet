@@ -84,6 +84,8 @@ controls one click away.
 - **Faces, not just initials.** The island shows the photos Meet shows, read from the page:
   nothing is downloaded. Names and photos are optional: turn them off and the island shows
   speaking activity only.
+- **Raised hands at a glance.** When someone else raises a hand, the island shows who is first
+  in line and how many are waiting, and opens briefly when the first one changes.
 - **Feels native.** Global shortcuts, a menu bar item, launch at login, light and dark
   appearance, English and Portuguese.
 
@@ -97,8 +99,8 @@ flowchart LR
     app --> island["Island around the notch"]
 ```
 
-- **The extension** reads only Meet's call controls, the participant tiles' names and photos,
-  the participant count and the meeting title. It never reads the chat and never captures audio or
+- **The extension** reads only Meet's call controls, the participant tiles' names, photos and
+  raised hands, the participant count and the meeting title. It never reads the chat and never captures audio or
   video.
 - **The app** turns what the extension reports into the island, and sends your commands back.
   It only shows a state after Meet confirms it.
@@ -204,13 +206,13 @@ connection is the update check, when you allow it: it asks this repository's Git
 for a new version, sends nothing about you, and installs only when you click **Install and
 restart**.
 
-|                              |                                                                                                                                                                                                                             |
-| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **What the extension reads** | Meet's call controls (mic, camera, hand, leave), the participant tiles' names and photos (the images Meet already loaded, never downloaded), the participant count, the meeting title and Meet's "are you talking?" notice. |
-| **What it never reads**      | The chat, audio, video, your other tabs or any site other than `meet.google.com`.                                                                                                                                           |
-| **Where data lives**         | In the app's memory, only during the call. Names and photos never reach the logs or the disk.                                                                                                                               |
-| **Updates**                  | Off until you turn them on (in the setup guide or Settings → Privacy & About). Every update is signed and checked before it installs.                                                                                       |
-| **Logs**                     | Local files in `~/Library/Logs/io.github.renanravelli.islet/`, without names, photos, titles or meeting codes.                                                                                                              |
+|                              |                                                                                                                                                                                                                                           |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **What the extension reads** | Meet's call controls (mic, camera, hand, leave), the participant tiles' names, photos (the images Meet already loaded, never downloaded) and raised hands, the participant count, the meeting title and Meet's "are you talking?" notice. |
+| **What it never reads**      | The chat, audio, video, your other tabs or any site other than `meet.google.com`.                                                                                                                                                         |
+| **Where data lives**         | In the app's memory, only during the call. Names and photos never reach the logs or the disk.                                                                                                                                             |
+| **Updates**                  | Off until you turn them on (in the setup guide or Settings → Privacy & About). Every update is signed and checked before it installs.                                                                                                     |
+| **Logs**                     | Local files in `~/Library/Logs/io.github.renanravelli.islet/`, without names, photos, titles or meeting codes.                                                                                                                            |
 
 The extension asks for two permissions, and nothing else:
 

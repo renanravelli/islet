@@ -308,15 +308,18 @@ Every open item lives here, not in an assistant's memory. Remove an item when it
     device) and its description.
 - **Others' raised hands (2026-11-04, branch `feat/raised-hands`):** the island shows the first
   in line of others' raised hands and how many (prototype approved: the canvas's "Mão levantada"
-  board; `docs/design/ui-spec.md` section 5). Done: protocol v1's optional `raised_hands` (first
-  in line, count, `since`), the core (anonymized with names off, dropped when stale), the
-  island (compact, pill, expanded row, the 4 s notice), demo mode and `gallery.html`. Open:
-  - **Calibration (owner):** `runCalibration("hands")` in a call with three participants
-    (step 13 of `calibration-session.md`): how Meet marks someone else's raised hand, on the
-    tile, in the People panel or both, and whether it shows the order.
-  - **Then:** the `raisedHand` selector and the adapter (the user left out; the order Meet
-    shows, else the order the extension saw hands go up, in memory), `PRIVACY.md`, the
-    READMEs and the CHANGELOG.
+  board; `docs/design/ui-spec.md` section 5), from the `raisedHand` selector: a `front_hand`
+  icon on the tile, and with two or more up, the place in line next to it (probe report
+  `docs/meet-adapter/reports/calibration-report.pt-BR.hands.json`, three people, pt-BR). The
+  adapter leaves the user's tile out and falls back to the order it saw hands go up in. Open:
+  - **Owner, in a real call:** see the island follow it (who is first, "+N", the 4 s notice when
+    the first lowers the hand: the probe's last step caught no lowering), then mark
+    `raisedHand` verified; Meet in English.
+  - Only tiles on screen are read: in a call bigger than the grid, a hand raised off screen is
+    missed. The People panel lists every raised hand ("Abaixar a mão de …", maybe the host's
+    control only) and is a possible fallback.
+  - **Chrome Web Store:** the listing's privacy form and description, with the photos item
+    above.
 - **Signing (owner):** the release is signed ad hoc until the six `APPLE_*` secrets exist (an
   Apple Developer Program membership); then `release.yml` signs and notarizes.
 - **Extension install:**
