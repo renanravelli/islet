@@ -95,6 +95,7 @@ cargo test --workspace                               # also regenerates the prot
 ```sh
 scripts/gen-extension-key.sh --print                 # the extension's public key and ID
 scripts/install-native-host.sh                       # dev: register target/debug host with Chrome
+scripts/package-store-extension.sh [dir]             # the Chrome Web Store zip (no manifest key)
 pnpm test                                            # Vitest in every package (extension)
 pnpm build                                           # release extension in extension/dist, checked
 pnpm --filter @islet/extension build:dev             # development extension, with isletDebug
@@ -277,7 +278,9 @@ Every open item lives here, not in an assistant's memory. Remove an item when it
   Apple Developer Program membership); then `release.yml` signs and notarizes.
 - **Next version, extension install (the owner's decision, 2026-11-03):** v0.1 keeps the
   manual "Load unpacked" guide; non-technical users get stuck on onboarding step 2.
-  - Publish the extension on the Chrome Web Store as unlisted (the owner's account). On macOS
+  - Publish the extension on the Chrome Web Store as unlisted (the owner's account). The store
+    refuses a manifest `key`, so upload `scripts/package-store-extension.sh`'s zip; the store
+    gives the extension its own ID, and the release zip keeps the development ID. On macOS
     nothing else can install it for the user: off-store external installs are refused, and
     branded Chrome dropped `--load-extension` in 137. Then set `EXTENSION_STORE_URL` and add the
     store's ID to `crates/bridge/extension-ids.txt`.
