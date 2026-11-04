@@ -15,13 +15,17 @@ audio or video and makes no network requests; it only talks to the Islet app on 
 
 ## 1. Get the extension folder
 
-**From a release.**
+Pick **one** of the two ways below. Most people want the first.
+
+**From a release (recommended).**
 Download `islet-extension-<version>.zip` from
-[GitHub Releases](https://github.com/renanravelli/islet/releases) and unzip it. Keep the folder
+[GitHub Releases](https://github.com/renanravelli/islet/releases) and unzip it. The folder is
+ready to load: there is nothing to build or install, so go straight to step 2. Keep the folder
 somewhere permanent, such as `~/Applications/Islet Extension`: Chrome loads the extension from
 it every time it starts.
 
-**From source.** In the repository:
+**From source (for development).** In a clone of this repository, not in the unzipped release
+folder:
 
 ```sh
 pnpm install
