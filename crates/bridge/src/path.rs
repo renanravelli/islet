@@ -34,13 +34,15 @@ pub fn log_dir() -> Option<PathBuf> {
     Some(log_dir_in(Path::new(&home)))
 }
 
+/// [`log_dir`] for the given home folder.
 #[cfg(target_os = "macos")]
-fn log_dir_in(home: &Path) -> PathBuf {
+pub fn log_dir_in(home: &Path) -> PathBuf {
     home.join("Library/Logs").join(BUNDLE_ID)
 }
 
+/// [`log_dir`] for the given home folder.
 #[cfg(not(target_os = "macos"))]
-fn log_dir_in(home: &Path) -> PathBuf {
+pub fn log_dir_in(home: &Path) -> PathBuf {
     home.join(".local/state").join(BUNDLE_ID).join("logs")
 }
 

@@ -294,7 +294,7 @@ async fn also_logs_to_a_daily_file() {
     let (status, _, stderr) = host.close().await;
     assert!(status.success());
 
-    let dir = tmp.0.join("home/Library/Logs/io.github.renanravelli.islet");
+    let dir = islet_bridge::path::log_dir_in(&tmp.0.join("home"));
     let files: Vec<_> = std::fs::read_dir(&dir)
         .unwrap_or_else(|e| panic!("{}: {e}", dir.display()))
         .map(|entry| entry.unwrap().file_name().into_string().unwrap())
