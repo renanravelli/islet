@@ -1,6 +1,6 @@
 {
   "name": "@islet/protocol-ts",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "TypeScript types for the Islet bridge protocol, generated from crates/protocol.",
   "license": "MIT OR Apache-2.0",

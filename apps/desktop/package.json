@@ -1,6 +1,6 @@
 {
   "name": "@islet/desktop",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "The Islet desktop app: Tauri 2 shell and React UI.",
   "license": "MIT OR Apache-2.0",
