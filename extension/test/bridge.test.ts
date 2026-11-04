@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   Bridge,
   CLOSE_AFTER_LAST_TAB_MS,
+  CONNECTION_TEST_MS,
   FIRST_RETRY_MS,
   type NativePort,
   parseAppMessage,
@@ -112,6 +113,35 @@ describe("native port lifecycle", () => {
     native().drop();
     await vi.advanceTimersByTimeAsync(60_000);
     expect(natives).toHaveLength(3);
+  });
+
+  it("tests the connection without a tab: hello, then closed after 10 s", async () => {
+    bridge.testConnection();
+    expect(native().posted).toEqual([
+      { v: 1, type: "hello", extension_version: "0.1.0", browser: "Chrome test" },
+    ]);
+    await vi.advanceTimersByTimeAsync(CONNECTION_TEST_MS - 1);
+    expect(native().disconnected).toBe(false);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(native().disconnected).toBe(true);
+    expect(bridge.nativeOpen).toBe(false);
+  });
+
+  it("keeps the tested port when a Meet tab connects, and never opens a second one", async () => {
+    bridge.testConnection();
+    tab(1);
+    bridge.testConnection();
+    await vi.advanceTimersByTimeAsync(CONNECTION_TEST_MS + CLOSE_AFTER_LAST_TAB_MS);
+    expect(natives).toHaveLength(1);
+    expect(native().disconnected).toBe(false);
+  });
+
+  it("skips the test while a Meet tab already holds the port", async () => {
+    tab(1);
+    bridge.testConnection();
+    await vi.advanceTimersByTimeAsync(CONNECTION_TEST_MS);
+    expect(natives).toHaveLength(1);
+    expect(native().disconnected).toBe(false);
   });
 
   it("keeps the port open when the app is not running", () => {

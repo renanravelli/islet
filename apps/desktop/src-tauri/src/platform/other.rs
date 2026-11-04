@@ -10,6 +10,12 @@ pub fn preferred_language() -> String {
     "en".to_owned()
 }
 
+pub fn activate() {}
+
+pub fn open_in_chrome(target: &str) -> std::io::Result<()> {
+    open(target)
+}
+
 pub fn open(_target: &str) -> std::io::Result<()> {
     Err(std::io::Error::new(
         std::io::ErrorKind::Unsupported,

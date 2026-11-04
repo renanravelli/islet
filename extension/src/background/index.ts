@@ -1,7 +1,8 @@
 // Service worker entry: wires the Bridge to Chrome's APIs.
 //
 // Chrome 105+ keeps the worker alive while the native port is open, and the port is open only
-// while a Meet tab is connected, so the worker sleeps when there is no meeting tab.
+// while a Meet tab is connected (or for the 10 s connection test after an install or update),
+// so the worker sleeps when there is no meeting tab.
 
 import { HOST_NAME } from "../shared/host";
 import { TAB_PORT } from "../shared/messages";
@@ -31,6 +32,9 @@ const bridge = new Bridge({
     browser: browserName(),
   }),
 });
+
+// The app's onboarding waits for this hello right after "Add to Chrome" (ADR 0002).
+chrome.runtime.onInstalled.addListener(() => bridge.testConnection());
 
 chrome.runtime.onConnect.addListener((port) => {
   const tabId = port.sender?.tab?.id;

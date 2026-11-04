@@ -2,6 +2,8 @@
 //
 // - The native port is open only while at least one meet.google.com tab is connected, and closes
 //   30 s after the last one goes away. Nothing stays resident just because Chrome is open.
+// - The one exception is the connection test, when the extension is installed or updated: the
+//   port opens for 10 s, so the app's onboarding sees the extension without a Meet tab.
 // - If the host goes away while tabs remain, it is reconnected with backoff.
 // - `focus_tab` is handled here; other commands go to the tab, which confirms them.
 
@@ -17,6 +19,7 @@ import { warn } from "../shared/log";
 import type { TabToWorker, WorkerToTab } from "../shared/messages";
 
 export const CLOSE_AFTER_LAST_TAB_MS = 30_000;
+export const CONNECTION_TEST_MS = 10_000;
 export const FIRST_RETRY_MS = 1000;
 export const MAX_RETRY_MS = 30_000;
 
@@ -73,6 +76,14 @@ export class Bridge {
     port.onMessage.addListener((message) => this.fromTab(tabId, message));
     port.onDisconnect.addListener(() => void this.removeTab(tabId, port));
     this.openNative();
+  }
+
+  /** The connection test: says hello, then closes after 10 s unless a Meet tab connects. */
+  testConnection(): void {
+    if (this.native || this.tabs.size > 0) return;
+    this.openNative();
+    clearTimeout(this.closeTimer);
+    this.closeTimer = setTimeout(() => this.closeNative(), CONNECTION_TEST_MS);
   }
 
   private async removeTab(tabId: number, port: TabPort): Promise<void> {

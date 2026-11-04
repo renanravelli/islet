@@ -36,9 +36,14 @@ export function useAppLocale(): Locale | undefined {
   return resolveLocale(settings.language, info.system_language);
 }
 
-/** Tells the shell the window has painted, so it can show it without a flash. */
+/**
+ * Tells the shell the page has rendered, so it can show the window without a flash. A timer,
+ * not an animation frame: WebKit runs no frames in a hidden window, so one would never come.
+ */
 export function useWindowReady(ready: boolean): void {
   useEffect(() => {
-    if (ready) requestAnimationFrame(() => void api.windowReady());
+    if (!ready) return;
+    const id = setTimeout(() => void api.windowReady(), 0);
+    return () => clearTimeout(id);
   }, [ready]);
 }

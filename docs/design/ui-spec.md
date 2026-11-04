@@ -156,21 +156,25 @@ A group card with two rows. The row states are driven by real events, never by t
 
 **Row B — Islet extension:**
 
-| State           | Leading icon                                         | Description                                | Trailing element                                    |
-| --------------- | ---------------------------------------------------- | ------------------------------------------ | --------------------------------------------------- |
-| `not_connected` | numbered badge "2" (`--bg-subtle`)                   | `onb2.ext.idle_desc`                       | primary button "Instalar extensão"                  |
-| `waiting`       | 16px spinner (2px ring, `--accent-fill` top segment) | `onb2.ext.waiting_desc_store` or `_manual` | status text "Aguardando conexão…" (`role="status"`) |
-| `connected`     | success circle with check                            | `onb2.ext.connected_desc`                  | status text "Conectada" in `--success-text`         |
+| State           | Leading icon                                         | Description                                         | Trailing element                                    |
+| --------------- | ---------------------------------------------------- | --------------------------------------------------- | --------------------------------------------------- |
+| `not_connected` | numbered badge "2" (`--bg-subtle`)                   | `onb2.ext.idle_desc`                                | primary button "Instalar extensão"                  |
+| `waiting`       | 16px spinner (2px ring, `--accent-fill` top segment) | `onb2.ext.waiting_desc_store`, `_meet` or `_manual` | status text "Aguardando conexão…" (`role="status"`) |
+| `connected`     | success circle with check                            | `onb2.ext.connected_desc`                           | status text "Conectada" in `--success-text`         |
 
 **Behavior:**
 - **"Instalar extensão":**
   - it opens `EXTENSION_STORE_URL`, the extension's Chrome Web Store page, and uses the `_store` description;
   - the manual "Load unpacked" guide (`docs/install-extension.md`) stays reachable through the troubleshooting link.
 - **`connected`** is set only when the extension's real `hello` arrives. If the extension was already connected when the step opens, show `connected` right away.
+  - Right after "Adicionar ao Chrome", the extension runs its connection test (ADR 0002): it says `hello` and closes the bridge 10 s later if no Meet tab is open. Once the `hello` arrived, the step stays `connected` while the window is open, even after the bridge closes.
+  - An extension installed earlier sends nothing until a Meet tab opens. While not connected, a line below the card offers `onb2.ext.have_it` with the text button `onb2.ext.open_meet`: it opens `https://meet.google.com/` and switches the row to `waiting` with the `_meet` description.
+  - The store page and Meet open in Google Chrome, whatever the default browser is (in the default browser only when Chrome is missing).
 - **After 60 s in `waiting`:** show the text button "Não conectou? Ver solução de problemas", which opens the troubleshooting section of the install doc.
 - **Below the card:**
   - when connected: the success banner (`--success-bg`, text `--success-banner-text`, 13);
-  - otherwise: the other-browsers note (12 `--text-tertiary`).
+  - when connected: the banner starts with a 16px check in `--success-text`;
+  - otherwise: the "Já tem a extensão?" line (13 `--text-secondary`, hidden once Meet was opened) and the other-browsers note (12 `--text-tertiary`).
 
 **Footer:**
 - Always: "Voltar" (secondary).
@@ -181,10 +185,10 @@ A group card with two rows. The row states are driven by real events, never by t
 
 - **Two columns, gap 24:**
   - **Left — the steps:** an ordered list of three steps. Each has a 26px number circle (`--accent-fill`, white 13/700) and text at 14, line height 1.45, with the UI names in bold.
-  - **Right — illustration, 250 wide:**
+  - **Right — illustration, 260 wide** (the target option fits on one line):
     - a `--bg-preview` card with the label `onb3.illustration_label`;
-    - a dropdown showing **only the target option**, highlighted with `--accent-fill`, white text and a check;
-    - below it, three neutral placeholder bars (`--border`).
+    - a dropdown menu (1px `--border`, radius 8, `--bg-group`, soft shadow) whose first row is **only the target option**, highlighted with `--accent-fill`, white text and a check on the right;
+    - below it in the same menu, three rows with neutral placeholder bars (`--border`), split by `--separator`.
     - **Never write the text of the other options:** we can't verify Meet's exact copy.
 - **Tip box:** `--bg-preview`, radius 10, info icon, 12, line height 1.5.
 - **Footer:** "Voltar", "Fazer depois" (text button) and "Já desliguei" (primary).
@@ -196,7 +200,7 @@ A group card with two rows. The row states are driven by real events, never by t
 - **Success circle:** 48px, check icon 24.
 - **Title and body.**
 - **Group card:**
-  - two shortcut rows, with a 96-wide keycap column (`⌃ ⌥ I` and `⌃ ⌥ M`);
+  - two shortcut rows, with a 96-wide keycap column on the left (`⌃ ⌥ I` and `⌃ ⌥ M`), then the label;
   - one switch row: "Abrir o Islet ao iniciar o Mac";
   - one switch row: `updates.auto`, with `updates.auto_desc` (ADR 0006).
 - **Shortcut rows:** if a shortcut failed to register, the row shows `shortcut.unavailable` in `--warning-text` instead of looking normal.
@@ -346,8 +350,11 @@ All UI text comes from this dictionary. `{x}` marks an interpolation; `**…**` 
 | `onb2.ext.install`             | Instalar extensão                                                                                                                                             | Install extension                                                                                                                             |
 | `onb2.ext.waiting_desc_store`  | Na página que abriu, clique em Adicionar ao Chrome. Esta tela atualiza sozinha.                                                                               | On the page that opened, click Add to Chrome. This screen updates on its own.                                                                 |
 | `onb2.ext.waiting_desc_manual` | Siga as instruções que abriram no navegador. Esta tela atualiza sozinha.                                                                                      | Follow the instructions that opened in your browser. This screen updates on its own.                                                          |
+| `onb2.ext.waiting_desc_meet`   | Quando o Meet abrir no Chrome, a extensão se conecta. Esta tela atualiza sozinha.                                                                             | Once Meet opens in Chrome, the extension connects. This screen updates on its own.                                                            |
 | `onb2.ext.waiting`             | Aguardando conexão…                                                                                                                                           | Waiting for connection…                                                                                                                       |
 | `onb2.ext.troubleshoot`        | Não conectou? Ver solução de problemas                                                                                                                        | Not connecting? See troubleshooting                                                                                                           |
+| `onb2.ext.have_it`             | Já tem a extensão?                                                                                                                                            | Already have the extension?                                                                                                                   |
+| `onb2.ext.open_meet`           | Abrir o Meet para testar                                                                                                                                      | Open Meet to test it                                                                                                                          |
 | `onb2.ext.connected_desc`      | Versão {version} · respondeu ao teste de conexão.                                                                                                             | Version {version} · passed the connection test.                                                                                               |
 | `onb2.ext.connected`           | Conectada                                                                                                                                                     | Connected                                                                                                                                     |
 | `onb2.banner`                  | Tudo certo. Na próxima call do Meet, a ilha aparece sozinha.                                                                                                  | All set. Your next Meet call will appear in the island automatically.                                                                         |

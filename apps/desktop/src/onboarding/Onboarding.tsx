@@ -16,7 +16,7 @@ import {
   StepIndicator,
   Switch,
 } from "../shared/components";
-import { InfoIcon, LockIcon } from "../shared/icons";
+import { CheckIcon, InfoIcon, LockIcon } from "../shared/icons";
 import { meetStatus, PRODUCT } from "../shared/meet";
 import "./onboarding.css";
 
@@ -40,6 +40,13 @@ export function Onboarding({
   const t = useT();
   const [step, setStep] = useState(initialStep);
   const meet = meetStatus(snapshot);
+  // The extension's connection test closes the port 10 s after an install (ADR 0002): once its
+  // hello arrived, the step stays done.
+  const [seen, setSeen] = useState<string | null>(null);
+  useEffect(() => {
+    if (meet.connected) setSeen(meet.version ?? "");
+  }, [meet.connected, meet.version]);
+  const extension = { connected: meet.connected || seen !== null, version: meet.version ?? seen };
   const next = () => setStep((s) => Math.min(TOTAL, s + 1));
   const back = () => setStep((s) => Math.max(1, s - 1));
 
@@ -54,7 +61,7 @@ export function Onboarding({
           <Button variant="secondary" onClick={back}>
             {t("common.back")}
           </Button>
-          {meet.connected ? (
+          {extension.connected ? (
             <Button onClick={next}>{t("common.continue")}</Button>
           ) : (
             <>
@@ -103,7 +110,7 @@ export function Onboarding({
       <div className="titlebar" data-tauri-drag-region />
       <main className="onb-content">
         {step === 1 && <Welcome info={info} preview={preview} />}
-        {step === 2 && <ConnectChrome meet={meet} />}
+        {step === 2 && <ConnectChrome extension={extension} />}
         {step === 3 && <PictureInPicture />}
         {step === 4 && <AllSet info={info} settings={settings} />}
       </main>
@@ -160,17 +167,26 @@ function Welcome({ info, preview }: { info: AppInfo; preview: UiSnapshot | undef
 
 type ExtensionState = "not_connected" | "waiting" | "connected";
 
-function ConnectChrome({ meet }: { meet: ReturnType<typeof meetStatus> }) {
+function ConnectChrome({
+  extension: seen,
+}: {
+  extension: { connected: boolean; version: string | null };
+}) {
   const t = useT();
   const [bridge, setBridge] = useState<BridgeState>({ state: "unknown" });
-  const [clicked, setClicked] = useState(false);
+  // What the person opened in Chrome: the store page, or Meet to test an installed extension.
+  const [opened, setOpened] = useState<"store" | "meet" | null>(null);
   const [slow, setSlow] = useState(false);
   // Only a real hello sets "connected"; already connected when the step opens shows it at once.
-  const extension: ExtensionState = meet.connected
+  const extension: ExtensionState = seen.connected
     ? "connected"
-    : clicked
+    : opened
       ? "waiting"
       : "not_connected";
+  const openMeet = () => {
+    setOpened("meet");
+    void api.openLink("open_meet");
+  };
 
   useEffect(() => {
     void api.repairBridge().then(setBridge);
@@ -211,7 +227,7 @@ function ConnectChrome({ meet }: { meet: ReturnType<typeof meetStatus> }) {
       <Row
         leading={<StatusCircle tone="success" />}
         label={t("onb2.ext.title")}
-        description={t("onb2.ext.connected_desc", { version: meet.version ?? "" })}
+        description={t("onb2.ext.connected_desc", { version: seen.version ?? "" })}
         trailing={<span className="ok-text">{t("onb2.ext.connected")}</span>}
       />
     );
@@ -222,7 +238,7 @@ function ConnectChrome({ meet }: { meet: ReturnType<typeof meetStatus> }) {
         label={t("onb2.ext.title")}
         description={
           <>
-            {t("onb2.ext.waiting_desc_store")}
+            {t(opened === "meet" ? "onb2.ext.waiting_desc_meet" : "onb2.ext.waiting_desc_store")}
             {slow && (
               <span className="troubleshoot">
                 <Button variant="text" onClick={() => void api.openLink("troubleshooting")}>
@@ -248,7 +264,7 @@ function ConnectChrome({ meet }: { meet: ReturnType<typeof meetStatus> }) {
         trailing={
           <Button
             onClick={() => {
-              setClicked(true);
+              setOpened("store");
               // The extension's Chrome Web Store page (EXTENSION_STORE_URL in the shell).
               void api.openLink("install_extension");
             }}
@@ -271,9 +287,22 @@ function ConnectChrome({ meet }: { meet: ReturnType<typeof meetStatus> }) {
         </Group>
       </div>
       {extension === "connected" ? (
-        <p className="success-banner">{t("onb2.banner")}</p>
+        <p className="success-banner">
+          <CheckIcon size={16} />
+          {t("onb2.banner")}
+        </p>
       ) : (
-        <p className="note">{t("onb2.other_browsers")}</p>
+        <>
+          {opened !== "meet" && (
+            <p className="have-extension">
+              {t("onb2.ext.have_it")}
+              <Button variant="text" onClick={openMeet}>
+                {t("onb2.ext.open_meet")}
+              </Button>
+            </p>
+          )}
+          <p className="note">{t("onb2.other_browsers")}</p>
+        </>
       )}
     </>
   );
@@ -299,25 +328,21 @@ function PictureInPicture() {
         <div className="pip-illustration" aria-hidden="true">
           <span className="pip-label">{t("onb3.illustration_label")}</span>
           {/* Only the target option: Meet's other options are not written, we cannot verify them. */}
-          <span className="pip-option">
-            <svg
-              aria-hidden="true"
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.4"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M5 12.5l4.5 4.5L19 7.5" />
-            </svg>
-            {t("onb3.illustration_option")}
+          <span className="pip-menu">
+            <span className="pip-option">
+              {t("onb3.illustration_option")}
+              <CheckIcon size={14} stroke={2.4} />
+            </span>
+            <span className="pip-row">
+              <span className="pip-bar" />
+            </span>
+            <span className="pip-row">
+              <span className="pip-bar long" />
+            </span>
+            <span className="pip-row">
+              <span className="pip-bar short" />
+            </span>
           </span>
-          <span className="pip-bar" />
-          <span className="pip-bar" />
-          <span className="pip-bar short" />
         </div>
       </div>
       <p className="tip">
@@ -356,14 +381,14 @@ function AllSet({ info, settings }: { info: AppInfo; settings: AppSettings }) {
     key: string,
   ) => (
     <Row
-      label={t(label)}
-      description={ok ? undefined : t("shortcut.unavailable")}
-      descriptionTone="warning"
-      trailing={
+      leading={
         <span className="keycap-column">
           <Keycaps keys={["⌃", "⌥", key]} />
         </span>
       }
+      label={t(label)}
+      description={ok ? undefined : t("shortcut.unavailable")}
+      descriptionTone="warning"
     />
   );
 

@@ -53,7 +53,7 @@
   font: 700 26px / 1.2 var(--font);
 }
 .onb-title.compact-top {
-  margin-top: 8px;
+  margin-top: 0;
 }
 .onb-body {
   margin-top: 10px;
@@ -126,6 +126,9 @@
   margin-left: -10px;
 }
 .success-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   margin-top: 16px;
   padding: 12px 14px;
   border-radius: 10px;
@@ -133,10 +136,25 @@
   color: var(--success-banner-text);
   font: 13px / 1.45 var(--font);
 }
+.success-banner svg {
+  flex: none;
+  color: var(--success-text);
+}
+.have-extension {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-top: 10px;
+  font: 13px / 1.4 var(--font);
+  color: var(--text-secondary);
+}
 .note {
   margin-top: 14px;
   font: 12px / 1.45 var(--font);
   color: var(--text-tertiary);
+}
+.have-extension + .note {
+  margin-top: 6px;
 }
 
 .pip-columns {
@@ -170,7 +188,7 @@
   text-align: center;
 }
 .pip-illustration {
-  width: 250px;
+  width: 260px;
   flex: none;
   padding: 14px;
   border-radius: 12px;
@@ -183,23 +201,46 @@
   font: 600 12px var(--font);
   color: var(--text-secondary);
 }
+.pip-menu {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-group);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
 .pip-option {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 6px;
-  padding: 8px 10px;
-  border-radius: 8px;
+  padding: 9px 10px;
   background: var(--accent-fill);
   color: #ffffff;
   font: 600 12px var(--font);
+  white-space: nowrap;
+}
+.pip-row {
+  display: flex;
+  align-items: center;
+  height: 33px;
+  padding: 0 10px;
+}
+.pip-row + .pip-row {
+  border-top: 1px solid var(--separator);
 }
 .pip-bar {
-  height: 10px;
-  border-radius: 5px;
+  width: 55%;
+  height: 7px;
+  border-radius: 4px;
   background: var(--border);
 }
+.pip-bar.long {
+  width: 70%;
+}
 .pip-bar.short {
-  width: 60%;
+  width: 48%;
 }
 .tip {
   display: flex;
@@ -226,9 +267,14 @@
 .done-title ~ .onb-group {
   margin-top: 16px;
 }
+.done-title ~ .onb-group .row:not(.tall) {
+  min-height: 48px;
+}
+.done-title ~ .onb-group + .menubar-hint {
+  margin-top: 12px;
+}
 .keycap-column {
   width: 96px;
   display: inline-flex;
-  justify-content: flex-end;
-  padding-right: 8px;
+  justify-content: flex-start;
 }

@@ -2,7 +2,9 @@
 //!
 //! Regular windows follow the macOS appearance live. To avoid a white flash in dark mode they
 //! are created hidden with the current theme's background, and shown once the page says it is
-//! ready (`window_ready`).
+//! ready (`window_ready`), or after [`SHOW_ANYWAY_AFTER`] if it never does.
+
+use std::time::Duration;
 
 use tauri::window::Color;
 use tauri::{
@@ -17,6 +19,10 @@ use crate::state::{AppState, lock};
 pub const ISLAND: &str = "island";
 pub const ONBOARDING: &str = "onboarding";
 pub const SETTINGS: &str = "settings";
+
+/// A window whose page has not said it is ready by then is shown anyway: a flash is better than
+/// a click that seems to do nothing.
+const SHOW_ANYWAY_AFTER: Duration = Duration::from_secs(2);
 
 /// Re-reads the screen geometry and moves the island if it changed. Main thread only.
 pub fn refresh_geometry(app: &AppHandle) {
@@ -59,6 +65,7 @@ fn background(theme: Theme) -> Color {
 
 /// Opens (or brings to the front) the onboarding or the settings window.
 pub fn open(app: &AppHandle, label: &str) {
+    platform::activate();
     if let Some(window) = app.get_webview_window(label) {
         let _ = window.show();
         let _ = window.set_focus();
@@ -92,6 +99,22 @@ pub fn open(app: &AppHandle, label: &str) {
     window.on_window_event(move |event| {
         if let WindowEvent::ThemeChanged(theme) = event {
             let _ = follower.set_background_color(Some(background(*theme)));
+        }
+    });
+    let app = app.clone();
+    let label = label.to_owned();
+    tauri::async_runtime::spawn(async move {
+        tokio::time::sleep(SHOW_ANYWAY_AFTER).await;
+        let Some(window) = app.get_webview_window(&label) else {
+            return;
+        };
+        if !window.is_visible().unwrap_or(true) {
+            tracing::warn!(
+                label,
+                "the window did not say it was ready; showing it anyway"
+            );
+            let _ = window.show();
+            let _ = window.set_focus();
         }
     });
 }

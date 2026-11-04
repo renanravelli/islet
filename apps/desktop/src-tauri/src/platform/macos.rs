@@ -1,4 +1,4 @@
-//! macOS: screen geometry, system language and opening files and links.
+//! macOS: screen geometry, system language, app activation and opening files and links.
 //!
 //! The crate denies `unsafe` everywhere but here (CLAUDE.md, "Unsafe code"). The AppKit and
 //! Foundation calls used so far are safe in objc2 0.6, so this module needs none yet; any
@@ -6,7 +6,7 @@
 #![allow(unsafe_code)]
 
 use objc2::MainThreadMarker;
-use objc2_app_kit::NSScreen;
+use objc2_app_kit::{NSApplication, NSScreen};
 use objc2_foundation::{NSLocale, NSRect};
 
 use crate::geometry::{Rect, ScreenInfo};
@@ -48,6 +48,18 @@ pub fn preferred_language() -> String {
         .map_or_else(|| "en".to_owned(), |lang| lang.to_string())
 }
 
+/// Makes Islet the active app, so the next window it shows comes to the front. Islet is a menu
+/// bar app and is never active on its own; call this while handling the person's click, since
+/// macOS 14+ may refuse an activation that comes later. Main thread only: a no-op elsewhere.
+pub fn activate() {
+    let Some(mtm) = MainThreadMarker::new() else {
+        return;
+    };
+    // `activate` exists only from macOS 14 on; this one works on 13 too.
+    #[allow(deprecated)]
+    NSApplication::sharedApplication(mtm).activateIgnoringOtherApps(true);
+}
+
 /// Opens a file, folder or URL with the default app (`/usr/bin/open`).
 pub fn open(target: &str) -> std::io::Result<()> {
     std::process::Command::new("/usr/bin/open")
@@ -57,6 +69,27 @@ pub fn open(target: &str) -> std::io::Result<()> {
         .stderr(std::process::Stdio::null())
         .spawn()
         .map(drop)
+}
+
+/// Opens a URL in Google Chrome, or with the default browser when Chrome is not installed.
+pub fn open_in_chrome(url: &str) -> std::io::Result<()> {
+    let url = url.to_owned();
+    // `open` takes a moment to answer; never on the main thread.
+    std::thread::spawn(move || {
+        let chrome = std::process::Command::new("/usr/bin/open")
+            .args(["-b", "com.google.Chrome", &url])
+            .stdin(std::process::Stdio::null())
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .status();
+        if !chrome.is_ok_and(|status| status.success()) {
+            tracing::info!("Chrome not found; opening the link with the default browser");
+            if let Err(error) = open(&url) {
+                tracing::warn!(%error, "cannot open a link");
+            }
+        }
+    });
+    Ok(())
 }
 
 // --- The island panel -------------------------------------------------------------------------

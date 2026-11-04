@@ -43,6 +43,12 @@ content script (meet.google.com) ⇄ service worker ⇄ native host (stdio) ⇄ 
 - The extension opens the `connectNative` port **only while at least one `meet.google.com` tab
   exists**, including the lobby, and closes it **30 s after the last such tab closes**.
   No service worker or host process stays resident just because Chrome is open.
+- **Connection test (added 2026-11-04):** when the extension is installed or updated
+  (`runtime.onInstalled`), it opens the port without a Meet tab, says `hello` and closes it
+  10 s later unless a Meet tab connects meanwhile. Without it, onboarding step 2 could not tell
+  an installed extension from a missing one until the person opened Meet, and showed "not
+  connected" to people who had done everything right. It runs once per install or update, so
+  nothing stays resident.
 - The host starts only for an allowed origin: Chrome passes the caller's origin as the first
   argument, and the host checks it against `crates/bridge/extension-ids.txt` (exit code 2
   otherwise), on top of Chrome's own `allowed_origins` check.

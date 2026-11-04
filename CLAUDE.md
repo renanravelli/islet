@@ -220,7 +220,11 @@ and every UI string. Where it and the design canvas differ, the spec wins.
    takes clicks. The active speaker is held 3 s after Meet's indicator goes off, because it
    follows the voice's level (gaps of up to 2 s between words, plus ~1 s with Chrome hidden).
 8. **Onboarding and settings windows open hidden** with the theme's background and show once
-   the page has painted (`window_ready`), so dark mode never flashes white.
+   the page has rendered (`window_ready`), so dark mode never flashes white, or after 2 s if it
+   never says so. `window_ready` goes out from a timer, never from `requestAnimationFrame`:
+   WebKit runs no frames in a hidden window, which left the first click on "Configurações…"
+   doing nothing. Opening one also activates the app, during the click: Islet is a menu bar app
+   and its windows would otherwise open behind the frontmost app.
 
 ## Pending by phase
 
@@ -279,27 +283,30 @@ Every open item lives here, not in an assistant's memory. Remove an item when it
   - `docs/testing/manual-checklist.md`, including the Meet section `calibration.md` points to.
 - **Phase 7 (CI), still open:** Dependabot (cargo, npm, actions), the bug and feature issue
   templates and `CODEOWNERS`.
-- **Updates (owner):** add the `TAURI_SIGNING_PRIVATE_KEY` secret (the private key from
-  `~/.tauri/islet-updater.key`, made 2026-11-04; keep a backup, since losing it strands installed
-  apps); the key has no password, so `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` is not needed. Then check the whole flow by hand:
-  install 0.1.1 from its DMG, release 0.1.2 and update from Settings and from the menu bar, with
-  the ad hoc signature (does macOS ask "Open Anyway" again? does launch at login survive?).
+- **Updates (owner):** keep a backup of `~/.tauri/islet-updater.key` (the
+  `TAURI_SIGNING_PRIVATE_KEY` secret, made 2026-11-04, no password): losing it strands installed
+  apps. 0.1.1 is published and `latest.json` offers it, so check the whole flow by hand: update
+  an installed 0.1.1 beta to 0.1.1 from Settings and from the menu bar, with the ad hoc signature
+  (does macOS ask "Open Anyway" again? does launch at login survive?).
 - **Signing (owner):** the release is signed ad hoc until the six `APPLE_*` secrets exist (an
   Apple Developer Program membership); then `release.yml` signs and notarizes.
-- **Next version, extension install (the owner's decision, 2026-11-03):** v0.1 keeps the
-  manual "Load unpacked" guide; non-technical users get stuck on onboarding step 2.
-  - **Chrome Web Store (submitted 2026-11-03, review pending):** ID
-    `lbhmocnfnfmbiplpkllkacnbcjfcmlop`, already in `extension-ids.txt` and `EXTENSION_STORE_URL`
-    (the onboarding's "Install extension" opens it). The store refuses a manifest `key`, so
-    upload `scripts/package-store-extension.sh`'s zip; the release zip keeps the development ID.
-    On macOS nothing else can install it for the user: off-store external installs are refused,
-    and branded Chrome dropped `--load-extension` in 137. Once approved: release the app (the
-    store ID needs a new host manifest), and make the READMEs and `docs/install-extension.md`
-    recommend the store, with "Load unpacked" as the alternative.
+- **Extension install:**
+  - **Chrome Web Store: published, unlisted (2026-11-04), version 0.1.0.** ID
+    `lbhmocnfnfmbiplpkllkacnbcjfcmlop`, in `extension-ids.txt` and `EXTENSION_STORE_URL` (the
+    onboarding's "Install extension" opens it in Chrome); the app accepts it from 0.1.1 on. The
+    READMEs and `docs/install-extension.md` recommend it, with "Load unpacked" as the
+    alternative. The store refuses a manifest `key`, so upload `scripts/package-store-extension.sh`'s
+    zip; the release zip keeps the development ID. The connection test after an install (ADR
+    0002) reaches store users only with the next upload (0.1.2).
+  - **Owner, by hand:** with the development extension, remove and load it again during
+    onboarding step 2, with no Meet tab open: the step must show "Conectada" within seconds and
+    keep it after the bridge closes 10 s later. Then "Abrir o Meet para testar" with the
+    extension already installed, and with Safari as the default browser (the store page and Meet
+    must open in Chrome).
   - Optionally, also write `~/Library/Application Support/Google/Chrome/External
     Extensions/<id>.json` (`external_update_url`), so Chrome asks to enable it on its next start.
-  - Step 2 waits forever without a `meet.google.com` tab, since the extension connects only
-    while one exists (ADR 0002), and nothing tells the user: add an "open Meet" step and button.
+  - The tray's "Extensão não conectada" also shows when the extension is installed but no Meet
+    tab is open; consider wording that does not read as an error.
 
 ## Git
 

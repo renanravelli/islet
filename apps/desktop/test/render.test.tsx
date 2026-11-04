@@ -1,10 +1,12 @@
-import type { Geometry, MeetingSession } from "@islet/ui-types";
+import type { AppInfo, AppSettings, Geometry, MeetingSession, UiSnapshot } from "@islet/ui-types";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { LocaleProvider } from "../src/i18n/i18n";
 import { IslandView } from "../src/island/IslandView";
 import type { Mode } from "../src/island/model";
+import { Onboarding } from "../src/onboarding/Onboarding";
+import { api } from "../src/shared/api";
 import { Switch } from "../src/shared/components";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -155,5 +157,66 @@ describe("switch", () => {
     expect(control?.getAttribute("aria-checked")).toBe("true");
     act(() => control?.click());
     expect(onChange).toHaveBeenCalledWith(false);
+  });
+});
+
+describe("onboarding step 2", () => {
+  const info: AppInfo = {
+    version: "0.1.1",
+    system_language: "en",
+    geometry,
+    shortcuts: { toggle_island: true, toggle_mic: true },
+    bridge: { state: "ready" },
+    demo: false,
+  };
+  const settings: AppSettings = {
+    language: "en",
+    expand_on_hover: false,
+    show_participant_names: true,
+    muted_speaking_alert: false,
+    onboarding_completed_at: null,
+    meet_pip_tip_ack: false,
+    check_for_updates: false,
+  };
+  const meet = (connected: boolean): UiSnapshot => ({
+    primary: null,
+    providers: [
+      { id: "meet", connected, client_version: connected ? "0.1.1" : null, last_health: null },
+    ],
+  });
+  const step2 = (snapshot: UiSnapshot) =>
+    act(() =>
+      root.render(
+        <LocaleProvider locale="en">
+          <Onboarding
+            info={info}
+            settings={settings}
+            snapshot={snapshot}
+            preview={undefined}
+            initialStep={2}
+          />
+        </LocaleProvider>,
+      ),
+    );
+  const button = (text: string) =>
+    [...container.querySelectorAll("button")].find((b) => b.textContent === text);
+
+  it("stays connected after the connection test closes the bridge", () => {
+    step2(meet(false));
+    expect(container.textContent).not.toContain("Version 0.1.1");
+    step2(meet(true));
+    step2(meet(false));
+    expect(container.textContent).toContain("Version 0.1.1 · passed the connection test.");
+    expect(button("Continue")?.disabled).toBe(false);
+  });
+
+  it("opens Meet to test an extension installed earlier", () => {
+    const open = vi.spyOn(api, "openLink").mockResolvedValue(undefined);
+    step2(meet(false));
+    expect(container.textContent).toContain("Already have the extension?");
+    act(() => button("Open Meet to test it")?.click());
+    expect(open).toHaveBeenCalledWith("open_meet");
+    expect(container.textContent).toContain("Once Meet opens in Chrome, the extension connects.");
+    expect(button("Open Meet to test it")).toBeUndefined();
   });
 });

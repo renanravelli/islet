@@ -206,7 +206,12 @@ pub async fn diagnostics(app: AppHandle) -> String {
 
 #[tauri::command]
 pub fn open_link(link: Link) {
-    if let Err(error) = platform::open(link.url()) {
+    let opened = if link.needs_chrome() {
+        platform::open_in_chrome(link.url())
+    } else {
+        platform::open(link.url())
+    };
+    if let Err(error) = opened {
         tracing::warn!(%error, "cannot open a link");
     }
 }

@@ -141,6 +141,8 @@ pub const EXTENSION_STORE_URL: &str =
 #[ts(export, export_to = EXPORT)]
 pub enum Link {
     InstallExtension,
+    /// Meet's home page: loading it connects an installed extension (onboarding step 2).
+    OpenMeet,
     Troubleshooting,
     Source,
     License,
@@ -151,6 +153,7 @@ impl Link {
         const REPO: &str = "https://github.com/renanravelli/islet";
         match self {
             Self::InstallExtension => EXTENSION_STORE_URL,
+            Self::OpenMeet => "https://meet.google.com/",
             Self::Troubleshooting => concat!(
                 "https://github.com/renanravelli/islet",
                 "/blob/main/docs/install-extension.md#troubleshooting"
@@ -161,5 +164,11 @@ impl Link {
                 "/blob/main/LICENSE-MIT"
             ),
         }
+    }
+
+    /// The extension works only in Chrome, so its store page and Meet open there, whatever the
+    /// default browser is.
+    pub fn needs_chrome(self) -> bool {
+        matches!(self, Self::InstallExtension | Self::OpenMeet)
     }
 }
