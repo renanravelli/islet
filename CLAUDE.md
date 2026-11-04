@@ -308,8 +308,9 @@ Every open item lives here, not in an assistant's memory. Remove an item when it
 - **Rulesets** (Settings → Rules): `main` and `updater` refuse force pushes and deletion, for
   everyone. `main` also needs a pull request with the five CI checks green and linear history
   (squash or rebase; no merge commits); repository admins bypass that rule, which is how the
-  owner pushes straight to `main`. Only admins and the GitHub Actions app (the release workflow)
-  create, move or delete `v*` tags.
+  owner pushes straight to `main`. Only admins move or delete `v*` tags; creating one needs
+  write access, which only the owner and the release workflow have (a personal repository cannot
+  list GitHub Actions as a ruleset bypass, so tag creation is not restricted further).
 - **CI** (`.github/workflows/ci.yml`): the portable crates on Linux, macOS and Windows (`-p`,
   since `islet-desktop` needs Tauri's system libraries on Linux); the workspace, a stale
   generated-types check and the universal app on macOS; lint, typecheck, test and build of the
