@@ -290,11 +290,15 @@ Every open item lives here, not in an assistant's memory. Remove an item when it
   (does macOS ask "Open Anyway" again? does launch at login survive?).
 - **Real participant photos (planned 2026-11-04, target 0.2.0):** the island draws initials;
   the owner wants Meet's profile photos instead.
-  - **Phase 0, the probe (owner, a real call with the iPhone):** `runCalibration("avatars")`
-    (step 12 of `calibration-session.md`) reports where Meet draws the photos (video tiles, own
-    tile, People panel, camera on) and whether the extension can read their pixels from the page
-    (`toDataURL` on a 48 px canvas; "tainted" means a cross-origin image without CORS).
-  - **Only if readable:** the extension sends a small `data:image/...` (about 48 px, a few KB),
+  - **Phase 0 done (2026-11-04, `docs/meet-adapter/reports/calibration-report.pt-BR.avatars.json`,
+    one call, two people, pt-BR): readable.** Each video tile holds a hidden 75×75
+    `<img crossorigin="use-credentials">` under `div[jsname=Jaieyd]`; a 48 px WebP of it is
+    0.8–1.9 KB. Every visible photo is tainted (the tile's 480 px one, the top bar's 64 px stack,
+    the People panel's 192/512 px). With a camera on, that tile has no photo, so the core keeps
+    each participant's last photo in memory for the call. Still to check: that the 75 px image
+    is the person's photo and not a placeholder, an account without a photo, 3+ people and
+    English (`runCalibration("avatars")` again).
+  - **The plan (path "B"):** the extension sends a small `data:image/...` (about 48 px, a few KB),
     never a URL: no request from the extension or the app, no new permission. Protocol v1, an
     optional `avatar` on `Participant` and the active speaker, only for those the island shows;
     the core accepts only `data:image/(png|jpeg|webp);base64,` under a size cap and redacts it
@@ -304,8 +308,6 @@ Every open item lives here, not in an assistant's memory. Remove an item when it
     and `gallery.html`; the webview's CSP allows `img-src data:`. ADR 0007 first; then
     `PRIVACY.md`, the READMEs' privacy section, the onboarding and settings privacy text, and the
     Chrome Web Store privacy form.
-  - **If tainted:** stop. The alternatives (the app or the extension downloads the photo) break
-    "local-first" and need the owner's decision in their own ADR.
 - **Signing (owner):** the release is signed ad hoc until the six `APPLE_*` secrets exist (an
   Apple Developer Program membership); then `release.yml` signs and notarizes.
 - **Extension install:**

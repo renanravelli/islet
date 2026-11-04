@@ -1,0 +1,567 @@
+{
+  "tool": "islet-calibration-runner",
+  "selectorsVersion": 8,
+  "locale": "pt-BR",
+  "browser": "Google Chrome 156",
+  "date": "2026-11-04",
+  "entry": "avatars",
+  "part": "main",
+  "steps": [
+    {
+      "number": 2,
+      "id": "in-call-mic-on",
+      "title": "Both in the call",
+      "status": "done",
+      "waits": [
+        {
+          "ask": "Join the call on the Mac.",
+          "until": "inCall",
+          "status": "met",
+          "waitedMs": 0
+        },
+        {
+          "ask": "Join from the iPhone with the meeting code, then admit it on the Mac.",
+          "until": "participants",
+          "status": "met",
+          "waitedMs": 14777
+        }
+      ],
+      "commands": [
+        {
+          "action": "toggle_mic",
+          "result": "confirmed",
+          "ms": 84,
+          "before": "off",
+          "after": "on"
+        }
+      ],
+      "set": [
+        {
+          "field": "mic",
+          "target": "on",
+          "outcome": "set through execute"
+        },
+        {
+          "field": "cam",
+          "target": "off",
+          "outcome": "already"
+        },
+        {
+          "field": "hand",
+          "target": "off",
+          "outcome": "already"
+        }
+      ],
+      "files": [
+        "meet-real-in-call-mic-on.pt-BR.html",
+        "meet-real-in-call-mic-on.pt-BR.expected.json",
+        "meet-real-in-call-mic-on.pt-BR.observed.json"
+      ],
+      "measurements": {},
+      "expected": {
+        "inCall": true,
+        "self": {
+          "mic": "on",
+          "cam": "off",
+          "hand": "off"
+        },
+        "participant_count": 2
+      },
+      "mismatches": [
+        {
+          "field": "self",
+          "expected": {
+            "mic": "on",
+            "cam": "off",
+            "hand": "off"
+          },
+          "observed": {
+            "mic": "off",
+            "cam": "off",
+            "hand": "off"
+          }
+        }
+      ],
+      "observed": {
+        "inCall": true,
+        "state": {
+          "meeting_code": "[meeting-code]",
+          "self": {
+            "mic": "off",
+            "cam": "off",
+            "hand": "off"
+          },
+          "signals": {
+            "speaking_while_muted": false
+          },
+          "capabilities": ["toggle_mic", "toggle_cam", "toggle_hand", "leave", "focus_tab"],
+          "health": "ok",
+          "title": "[title]",
+          "participant_count": 2,
+          "participants": [
+            {
+              "display_name": "[name]"
+            }
+          ]
+        },
+        "failed": [],
+        "remoteHand": false,
+        "speakingTiles": [],
+        "avatarCount": 2
+      },
+      "find": {
+        "leaveButton": {
+          "strategy": 0,
+          "tag": "button",
+          "data": {},
+          "role": "button",
+          "jsname": "CQylAd",
+          "jscontroller": "PIVayb"
+        },
+        "micButton": {
+          "strategy": 0,
+          "tag": "button",
+          "data": {
+            "data-is-muted": "true"
+          },
+          "role": "button",
+          "jsname": "hw0c9",
+          "jscontroller": "PIVayb"
+        },
+        "camButton": {
+          "strategy": 0,
+          "tag": "button",
+          "data": {
+            "data-is-muted": "true"
+          },
+          "role": "button",
+          "jsname": "psRWwc",
+          "jscontroller": "PIVayb"
+        },
+        "handButton": {
+          "strategy": 0,
+          "tag": "button",
+          "data": {},
+          "role": "button",
+          "jsname": "FpSaz",
+          "jscontroller": "PIVayb"
+        },
+        "activeSpeaker": null,
+        "participantCount": {
+          "strategy": 0,
+          "tag": "div",
+          "data": {},
+          "role": "button",
+          "jsname": "ocqpFe"
+        },
+        "mutedSpeakingNotice": null,
+        "meetingTitle": {
+          "strategy": 0,
+          "tag": "div",
+          "data": {},
+          "jsname": "NeC6gb",
+          "jscontroller": "yEvoid"
+        },
+        "justLeaveButton": null,
+        "participantTile": {
+          "strategy": 0,
+          "tag": "div",
+          "data": {
+            "data-participant-id": "[value]",
+            "data-tile-media-id": "[value]"
+          },
+          "jsname": "E2KThb",
+          "jscontroller": "K3Z5Df"
+        },
+        "selfTile": {
+          "strategy": 0,
+          "tag": "div",
+          "data": {
+            "data-participant-id": "[value]",
+            "data-tile-media-id": "[value]"
+          },
+          "jsname": "E2KThb",
+          "jscontroller": "K3Z5Df"
+        }
+      }
+    },
+    {
+      "number": 12,
+      "id": "avatars",
+      "title": "Participant photos",
+      "status": "done",
+      "waits": [
+        {
+          "ask": "On the iPhone, turn the camera off and stay in the call.",
+          "until": "pause",
+          "status": "met",
+          "waitedMs": 10064
+        },
+        {
+          "ask": "On the Mac, open the People panel (top bar) and leave it open.",
+          "until": "pause",
+          "status": "met",
+          "waitedMs": 10077
+        },
+        {
+          "ask": "Close the People panel. On the iPhone, turn the camera on.",
+          "until": "pause",
+          "status": "met",
+          "waitedMs": 10085
+        }
+      ],
+      "commands": [],
+      "set": [
+        {
+          "field": "mic",
+          "target": "off",
+          "outcome": "already"
+        },
+        {
+          "field": "cam",
+          "target": "off",
+          "outcome": "already"
+        },
+        {
+          "field": "hand",
+          "target": "off",
+          "outcome": "already"
+        }
+      ],
+      "files": [],
+      "measurements": {
+        "avatars.tiles": [
+          {
+            "where": "other",
+            "kind": "img",
+            "source": "googleusercontent",
+            "crossOrigin": null,
+            "natural": [64, 64],
+            "rendered": [11, 11],
+            "onScreen": true,
+            "path": ["div", "span[data-avatar-count]", "div", "div[jsname=QbKf1d]", "div"],
+            "pixels": "tainted"
+          },
+          {
+            "where": "other",
+            "kind": "img",
+            "source": "googleusercontent",
+            "crossOrigin": null,
+            "natural": [64, 64],
+            "rendered": [11, 11],
+            "onScreen": true,
+            "path": ["div", "span[data-avatar-count]", "div", "div[jsname=QbKf1d]", "div"],
+            "pixels": "tainted"
+          },
+          {
+            "where": "tile",
+            "tile": 0,
+            "kind": "img",
+            "source": "googleusercontent",
+            "crossOrigin": "use-credentials",
+            "natural": [75, 75],
+            "rendered": [0, 0],
+            "onScreen": false,
+            "path": [
+              "div",
+              "div[jsname=Jaieyd]",
+              "div[data-resolution-cap][data-layout][data-context][data-use-raw-local-presentation-stream]",
+              "div",
+              "div"
+            ],
+            "pixels": "readable",
+            "bytes": 827,
+            "format": "image/webp"
+          },
+          {
+            "where": "tile",
+            "tile": 0,
+            "kind": "img",
+            "source": "googleusercontent",
+            "crossOrigin": null,
+            "natural": [480, 480],
+            "rendered": [96, 96],
+            "onScreen": true,
+            "path": [
+              "div",
+              "div",
+              "div",
+              "div[jsname=Jaieyd]",
+              "div[data-resolution-cap][data-layout][data-context][data-use-raw-local-presentation-stream]"
+            ],
+            "pixels": "tainted"
+          },
+          {
+            "where": "self-tile",
+            "kind": "img",
+            "source": "googleusercontent",
+            "crossOrigin": "use-credentials",
+            "natural": [75, 75],
+            "rendered": [0, 0],
+            "onScreen": false,
+            "path": [
+              "div",
+              "div[jsname=Jaieyd]",
+              "div[data-resolution-cap][data-layout][data-context][data-use-raw-local-presentation-stream]",
+              "div",
+              "div"
+            ],
+            "pixels": "readable",
+            "bytes": 1911,
+            "format": "image/webp"
+          },
+          {
+            "where": "self-tile",
+            "kind": "img",
+            "source": "googleusercontent",
+            "crossOrigin": null,
+            "natural": [480, 480],
+            "rendered": [48, 48],
+            "onScreen": true,
+            "path": [
+              "div",
+              "div",
+              "div",
+              "div[jsname=Jaieyd]",
+              "div[data-resolution-cap][data-layout][data-context][data-use-raw-local-presentation-stream]"
+            ],
+            "pixels": "tainted"
+          },
+          {
+            "where": "participant-list",
+            "kind": "img",
+            "source": "googleusercontent",
+            "crossOrigin": null,
+            "natural": [192, 192],
+            "rendered": [0, 0],
+            "onScreen": false,
+            "path": [
+              "div",
+              "div",
+              "div[role=listitem][data-participant-id][data-scroll-target]",
+              "div[jsname=jrQDbd][role=list]",
+              "span[role=region]"
+            ],
+            "pixels": "tainted"
+          },
+          {
+            "where": "participant-list",
+            "kind": "img",
+            "source": "googleusercontent",
+            "crossOrigin": null,
+            "natural": [512, 512],
+            "rendered": [0, 0],
+            "onScreen": false,
+            "path": [
+              "div",
+              "div",
+              "div[role=listitem][data-participant-id][data-scroll-target]",
+              "div[jsname=jrQDbd][role=list]",
+              "span[role=region]"
+            ],
+            "pixels": "tainted"
+          }
+        ],
+        "avatars.people-panel": [
+          {
+            "where": "other",
+            "kind": "img",
+            "source": "googleusercontent",
+            "crossOrigin": null,
+            "natural": [64, 64],
+            "rendered": [11, 11],
+            "onScreen": true,
+            "path": ["div", "span[data-avatar-count]", "div", "div[jsname=QbKf1d]", "div"],
+            "pixels": "tainted"
+          },
+          {
+            "where": "other",
+            "kind": "img",
+            "source": "googleusercontent",
+            "crossOrigin": null,
+            "natural": [64, 64],
+            "rendered": [11, 11],
+            "onScreen": true,
+            "path": ["div", "span[data-avatar-count]", "div", "div[jsname=QbKf1d]", "div"],
+            "pixels": "tainted"
+          },
+          {
+            "where": "tile",
+            "tile": 0,
+            "kind": "img",
+            "source": "googleusercontent",
+            "crossOrigin": "use-credentials",
+            "natural": [75, 75],
+            "rendered": [0, 0],
+            "onScreen": false,
+            "path": [
+              "div",
+              "div[jsname=Jaieyd]",
+              "div[data-resolution-cap][data-layout][data-context][data-use-raw-local-presentation-stream]",
+              "div",
+              "div"
+            ],
+            "pixels": "readable",
+            "bytes": 827,
+            "format": "image/webp"
+          },
+          {
+            "where": "tile",
+            "tile": 0,
+            "kind": "img",
+            "source": "googleusercontent",
+            "crossOrigin": null,
+            "natural": [480, 480],
+            "rendered": [96, 96],
+            "onScreen": true,
+            "path": [
+              "div",
+              "div",
+              "div",
+              "div[jsname=Jaieyd]",
+              "div[data-resolution-cap][data-layout][data-context][data-use-raw-local-presentation-stream]"
+            ],
+            "pixels": "tainted"
+          },
+          {
+            "where": "self-tile",
+            "kind": "img",
+            "source": "googleusercontent",
+            "crossOrigin": "use-credentials",
+            "natural": [75, 75],
+            "rendered": [0, 0],
+            "onScreen": false,
+            "path": [
+              "div",
+              "div[jsname=Jaieyd]",
+              "div[data-resolution-cap][data-layout][data-context][data-use-raw-local-presentation-stream]",
+              "div",
+              "div"
+            ],
+            "pixels": "readable",
+            "bytes": 1911,
+            "format": "image/webp"
+          },
+          {
+            "where": "self-tile",
+            "kind": "img",
+            "source": "googleusercontent",
+            "crossOrigin": null,
+            "natural": [480, 480],
+            "rendered": [48, 48],
+            "onScreen": true,
+            "path": [
+              "div",
+              "div",
+              "div",
+              "div[jsname=Jaieyd]",
+              "div[data-resolution-cap][data-layout][data-context][data-use-raw-local-presentation-stream]"
+            ],
+            "pixels": "tainted"
+          },
+          {
+            "where": "participant-list",
+            "kind": "img",
+            "source": "googleusercontent",
+            "crossOrigin": null,
+            "natural": [192, 192],
+            "rendered": [0, 0],
+            "onScreen": false,
+            "path": [
+              "div",
+              "div",
+              "div[role=listitem][data-participant-id][data-scroll-target]",
+              "div[jsname=jrQDbd][role=list]",
+              "span[role=region]"
+            ],
+            "pixels": "tainted"
+          },
+          {
+            "where": "participant-list",
+            "kind": "img",
+            "source": "googleusercontent",
+            "crossOrigin": null,
+            "natural": [512, 512],
+            "rendered": [0, 0],
+            "onScreen": false,
+            "path": [
+              "div",
+              "div",
+              "div[role=listitem][data-participant-id][data-scroll-target]",
+              "div[jsname=jrQDbd][role=list]",
+              "span[role=region]"
+            ],
+            "pixels": "tainted"
+          }
+        ],
+        "avatars.camera-on": [
+          {
+            "where": "other",
+            "kind": "img",
+            "source": "googleusercontent",
+            "crossOrigin": null,
+            "natural": [64, 64],
+            "rendered": [32, 32],
+            "onScreen": true,
+            "path": ["div", "span[data-avatar-count]", "div", "div[jsname=QbKf1d]", "div"],
+            "pixels": "tainted"
+          },
+          {
+            "where": "self-tile",
+            "kind": "img",
+            "source": "googleusercontent",
+            "crossOrigin": "use-credentials",
+            "natural": [75, 75],
+            "rendered": [0, 0],
+            "onScreen": false,
+            "path": [
+              "div",
+              "div[jsname=Jaieyd]",
+              "div[data-resolution-cap][data-layout][data-context][data-use-raw-local-presentation-stream]",
+              "div",
+              "div"
+            ],
+            "pixels": "readable",
+            "bytes": 1911,
+            "format": "image/webp"
+          },
+          {
+            "where": "self-tile",
+            "kind": "img",
+            "source": "googleusercontent",
+            "crossOrigin": null,
+            "natural": [480, 480],
+            "rendered": [72, 72],
+            "onScreen": true,
+            "path": [
+              "div",
+              "div",
+              "div",
+              "div[jsname=Jaieyd]",
+              "div[data-resolution-cap][data-layout][data-context][data-use-raw-local-presentation-stream]"
+            ],
+            "pixels": "tainted"
+          },
+          {
+            "where": "participant-list",
+            "kind": "img",
+            "source": "googleusercontent",
+            "crossOrigin": null,
+            "natural": [192, 192],
+            "rendered": [0, 0],
+            "onScreen": false,
+            "path": [
+              "div",
+              "div",
+              "div[role=listitem][data-participant-id][data-scroll-target]",
+              "div[jsname=jrQDbd][role=list]",
+              "span[role=region]"
+            ],
+            "pixels": "tainted"
+          }
+        ]
+      }
+    }
+  ],
+  "failedKeys": {}
+}
