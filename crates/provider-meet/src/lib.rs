@@ -11,7 +11,7 @@ use std::sync::{Arc, Mutex, MutexGuard};
 use islet_core::{
     CapabilitySet, Command, CommandError, CommandFuture, DegradedReason, EndReason, EventSink,
     Field, Health, MAX_PARTICIPANTS, Provider, ProviderDetail, ProviderId, ProviderStatus,
-    SessionEvent, SessionState, Signals, Speaker, Toggle,
+    RaisedHands, SessionEvent, SessionState, Signals, Speaker, Toggle,
 };
 use islet_protocol as wire;
 use islet_protocol::{AppMessage, ExtensionMessage};
@@ -23,6 +23,9 @@ pub const MEET: ProviderId = ProviderId::from_static("meet");
 pub type ConnectionId = u64;
 
 /// What the shell's bridge server tells the provider.
+// A session update (photos included, ADR 0007) is about 250 bytes; events go through a channel
+// one at a time, so boxing it would only add an allocation.
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug)]
 pub enum BridgeEvent {
     /// A native host connected. Messages for it go to `outbox`.
@@ -327,24 +330,35 @@ fn session_state(update: wire::SessionUpdate) -> SessionState {
         hand: toggle(update.self_state.hand),
         active_speaker: update
             .active_speaker
-            .map(|speaker| Speaker::new(speaker.display_name)),
+            .map(|speaker| Speaker::new(speaker.display_name).with_avatar(speaker.avatar)),
         participant_count: update.participant_count,
         participants: update
             .participants
             .unwrap_or_default()
             .into_iter()
             .take(MAX_PARTICIPANTS)
-            .map(|participant| Speaker::new(participant.display_name))
+            .map(speaker)
             .collect(),
-        self_participant: update
-            .self_participant
-            .map(|participant| Speaker::new(participant.display_name)),
+        self_participant: update.self_participant.map(speaker),
+        raised_hands: update
+            .raised_hands
+            .filter(|hands| hands.count > 0)
+            .map(|hands| RaisedHands {
+                first: speaker(hands.first),
+                count: hands.count,
+                since: hands.since,
+            }),
         signals: Signals {
             speaking_while_muted: update.signals.speaking_while_muted == Some(true),
         },
         capabilities: update.capabilities.into_iter().map(command).collect(),
         health,
     }
+}
+
+/// The name and, when the core accepts it, the photo (docs/adr/0007).
+fn speaker(participant: wire::Participant) -> Speaker {
+    Speaker::new(participant.display_name).with_avatar(participant.avatar)
 }
 
 fn toggle(toggle: wire::Toggle) -> Toggle {

@@ -2,7 +2,12 @@
 
 export type Action = "toggle_mic" | "toggle_cam" | "toggle_hand" | "leave" | "focus_tab";
 
-export type ActiveSpeaker = { display_name: string, };
+export type ActiveSpeaker = { display_name: string, 
+/**
+ * The photo Meet shows for them, read from the page as a small `data:image/...` URL
+ * (docs/adr/0007). Never a URL to fetch.
+ */
+avatar?: string, };
 
 /**
  * A message from the app (or the native host speaking for it) to the extension, as it appears
@@ -58,13 +63,35 @@ export type Hello = { extension_version: string,
  */
 browser: string, };
 
-export type Participant = { display_name: string, };
+export type Participant = { display_name: string, 
+/**
+ * As [`ActiveSpeaker::avatar`].
+ */
+avatar?: string, };
 
 /**
  * The `v` field of every message. It serializes as `1`, and deserializing any other value fails,
  * so a message from an incompatible peer cannot be mistaken for a valid one.
  */
 export type ProtocolVersion = 1;
+
+/**
+ * The line of raised hands, the user left out. `Debug` redacts the first one's name and photo.
+ */
+export type RaisedHands = { 
+/**
+ * The first in line: of those with a hand up, who raised it first.
+ */
+first: Participant, 
+/**
+ * How many have a hand up, `first` included.
+ */
+count: number, 
+/**
+ * When `first` became the first in line, in milliseconds since the Unix epoch. The island
+ * announces a new first one.
+ */
+since: number, };
 
 export type SelfState = { mic: Toggle, cam: Toggle, hand: Toggle, };
 
@@ -90,7 +117,12 @@ participants?: Array<Participant>,
 /**
  * The user, as Meet names them, when the adapter can tell which tile is theirs.
  */
-self_participant?: Participant, signals: Signals, 
+self_participant?: Participant, 
+/**
+ * Other participants with a raised hand. Absent when nobody else has one, or when the
+ * adapter cannot tell.
+ */
+raised_hands?: RaisedHands, signals: Signals, 
 /**
  * Actions this tab can perform right now.
  */

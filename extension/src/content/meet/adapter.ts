@@ -1,10 +1,18 @@
 // The Meet adapter: reads the call state from the page and performs commands (docs/adr/0004).
 //
-// It reads only the call controls, the participant tiles' names, the participant count, the
-// meeting title and Meet's "are you talking?" notice, each through selectors.json. It never
-// reads the chat, never captures audio or video and makes no network requests.
+// It reads only the call controls, the participant tiles' names, photos and raised hands, the
+// participant count, the meeting title and Meet's "are you talking?" notice, each through
+// selectors.json. It
+// never reads the chat, never captures audio or video and makes no network requests: a photo is
+// the image Meet already loaded, redrawn small (docs/adr/0007).
 
-import type { Action, CommandErrorCode, DegradedReason, Toggle } from "@islet/protocol-ts";
+import type {
+  Action,
+  CommandErrorCode,
+  DegradedReason,
+  RaisedHands,
+  Toggle,
+} from "@islet/protocol-ts";
 import type { TabAction, TabState } from "../../shared/messages";
 import {
   DEGRADED_REASON,
@@ -16,6 +24,7 @@ import {
   resolve,
   SELECTORS,
   type SelectorKey,
+  type Strategy,
 } from "./selectors";
 
 /** How long a command waits to see its effect before reporting `not_confirmed`. */
@@ -33,6 +42,17 @@ const MEETING_CODE = /^\/([a-z]{3}-[a-z]{4}-[a-z]{3})(?:[/?#]|$)/;
 /** How many names the avatar row needs (islet-core's MAX_PARTICIPANTS). */
 export const MAX_PARTICIPANTS = 3;
 
+/** The photo's side in pixels, and the largest data URL sent (islet-core accepts 16 KB). */
+// Meet's copy is 75 px; 72 keeps the 44 pt avatar sharp on a Retina screen.
+export const AVATAR_SIZE = 72;
+const MAX_AVATAR = 12_000;
+/** Profile photos. Anything else (a video frame, a blob) is never read. */
+const PHOTO_HOST = /(^|\.)googleusercontent\.com$/;
+
+export type CanvasFactory = () => HTMLCanvasElement;
+
+type Named = { display_name: string; avatar?: string };
+
 const TOGGLES = [
   { action: "toggle_mic", key: "micButton", field: "mic" },
   { action: "toggle_cam", key: "camButton", field: "cam" },
@@ -47,9 +67,23 @@ export interface Reading {
 }
 
 export class MeetAdapter {
+  /** The last photo of each tile (data-participant-id), for the call: a camera turned on hides
+   * it. Memory only. */
+  private readonly photos = new Map<string, { src: string; data: string }>();
+  /** Photo sources that could not be read (a tainted canvas), so they are not tried again. */
+  private readonly unreadable = new Set<string>();
+  /** The order hands went up in, as this adapter saw it (data-participant-id), for when Meet
+   * shows no place in line. Memory only. */
+  private readonly handsSeen = new Map<string, number>();
+  private handsSeq = 0;
+  /** The first in line and since when. */
+  private firstHand: { id: string; since: number } | undefined;
+
   constructor(
     private readonly root: Document,
     private readonly registry: Registry = SELECTORS,
+    private readonly makeCanvas: CanvasFactory = () => root.createElement("canvas"),
+    private readonly now: () => number = Date.now,
   ) {}
 
   private find(key: SelectorKey): Element | null {
@@ -75,7 +109,13 @@ export class MeetAdapter {
     };
 
     const leave = this.find("leaveButton");
-    if (!leave) fail("leaveButton");
+    if (!leave) {
+      fail("leaveButton");
+      this.photos.clear();
+      this.unreadable.clear();
+      this.handsSeen.clear();
+      this.firstHand = undefined;
+    }
 
     const self: TabState["self"] = { mic: "unknown", cam: "unknown", hand: "unknown" };
     const capabilities: Action[] = [];
@@ -93,10 +133,10 @@ export class MeetAdapter {
     const title = text(this.find("meetingTitle"));
     if (title === undefined) fail("meetingTitle");
 
-    let activeSpeaker: string | undefined;
+    let activeSpeaker: Named | undefined;
     const tile = this.find("activeSpeaker");
     if (tile) {
-      activeSpeaker = text(resolve(tile, this.registry.keys.activeSpeaker.name ?? []));
+      activeSpeaker = this.named(tile, this.registry.keys.activeSpeaker);
       if (activeSpeaker === undefined) fail("activeSpeaker");
     }
 
@@ -116,34 +156,133 @@ export class MeetAdapter {
       health: degraded.length > 0 ? "degraded" : "ok",
     };
     if (title !== undefined) state.title = title;
-    if (activeSpeaker !== undefined) state.active_speaker = { display_name: activeSpeaker };
+    if (activeSpeaker !== undefined) state.active_speaker = activeSpeaker;
     if (participants !== undefined) state.participant_count = participants;
     const people = this.participants();
     if (people.length > 0) state.participants = people;
     const ownTile = this.find("selfTile");
-    const selfName = ownTile
-      ? text(resolve(ownTile, this.registry.keys.selfTile.name ?? []))
-      : undefined;
-    if (selfName !== undefined) state.self_participant = { display_name: selfName };
+    const selfParticipant = ownTile ? this.named(ownTile, this.registry.keys.selfTile) : undefined;
+    if (selfParticipant !== undefined) state.self_participant = selfParticipant;
+    const hands = this.raisedHands(ownTile);
+    if (hands !== undefined) state.raised_hands = hands;
     if (degraded.length > 0) state.degraded_reasons = degraded;
     return { state, failed: [...failed] };
   }
 
-  /** Up to MAX_PARTICIPANTS names from the participant tiles, in page order, each once. */
-  private participants(): { display_name: string }[] {
+  /** Up to MAX_PARTICIPANTS people from the participant tiles, in page order, each once. */
+  private participants(): Named[] {
     const entry = this.registry.keys.participantTile;
     for (const strategy of entry.strategies) {
       const tiles = matchAll(this.root, strategy);
       if (tiles.length === 0) continue;
-      const names: string[] = [];
+      const people: Named[] = [];
       for (const tile of tiles) {
-        const name = text(resolve(tile, entry.name ?? []));
-        if (name !== undefined && !names.includes(name)) names.push(name);
-        if (names.length === MAX_PARTICIPANTS) break;
+        const person = this.named(tile, entry);
+        if (person && !people.some((p) => p.display_name === person.display_name)) {
+          people.push(person);
+        }
+        if (people.length === MAX_PARTICIPANTS) break;
       }
-      return names.map((display_name) => ({ display_name }));
+      return people;
     }
     return [];
+  }
+
+  /**
+   * Others' raised hands, from the tiles: the first in line and how many. The user's own hand is
+   * left out. The order is the place in line Meet shows, else the order this adapter saw the
+   * hands go up in. `since` changes only when the first in line does.
+   */
+  private raisedHands(ownTile: Element | null): RaisedHands | undefined {
+    const tileEntry = this.registry.keys.participantTile;
+    const handEntry = this.registry.keys.raisedHand;
+    const ownId = ownTile?.getAttribute("data-participant-id") ?? null;
+    const raised = new Map<string, { tile: Element; place: number | undefined }>();
+    for (const strategy of tileEntry.strategies) {
+      const tiles = matchAll(this.root, strategy);
+      if (tiles.length === 0) continue;
+      for (const tile of tiles) {
+        const id = tile.getAttribute("data-participant-id");
+        if (id === null || id === ownId || tile === ownTile || raised.has(id)) continue;
+        const mark = resolve(tile, handEntry.strategies);
+        if (!mark) continue;
+        const place = mark.parentElement
+          ? resolve(mark.parentElement, handEntry.position ?? [])
+          : null;
+        raised.set(id, { tile, place: place ? firstNumber(place) : undefined });
+      }
+      break;
+    }
+
+    for (const id of this.handsSeen.keys()) if (!raised.has(id)) this.handsSeen.delete(id);
+    for (const id of raised.keys()) {
+      if (!this.handsSeen.has(id)) this.handsSeen.set(id, this.handsSeq++);
+    }
+    const line = [...raised.entries()].sort(
+      ([a, x], [b, y]) =>
+        (x.place ?? Infinity) - (y.place ?? Infinity) ||
+        (this.handsSeen.get(a) ?? 0) - (this.handsSeen.get(b) ?? 0),
+    );
+    const head = line[0];
+    const first = head ? this.named(head[1].tile, tileEntry) : undefined;
+    if (!head || !first) {
+      this.firstHand = undefined;
+      return undefined;
+    }
+    if (this.firstHand?.id !== head[0]) this.firstHand = { id: head[0], since: this.now() };
+    return { first, count: line.length, since: this.firstHand.since };
+  }
+
+  /** A tile's name and, when it can be read, its photo: both from the same tile. */
+  private named(
+    tile: Element,
+    entry: { name?: Strategy[]; avatar?: Strategy[] },
+  ): Named | undefined {
+    const display_name = text(resolve(tile, entry.name ?? []));
+    if (display_name === undefined) return undefined;
+    const avatar = this.photo(tile, entry.avatar ?? []);
+    return avatar === undefined ? { display_name } : { display_name, avatar };
+  }
+
+  /** The tile's photo as a small data URL, or the last one this tile showed. */
+  private photo(tile: Element, strategies: Strategy[]): string | undefined {
+    const id = tile.getAttribute("data-participant-id");
+    const img = resolve(tile, strategies);
+    const src = img instanceof HTMLImageElement ? img.currentSrc || img.src : "";
+    const known = id === null ? undefined : this.photos.get(id);
+    if (
+      img instanceof HTMLImageElement &&
+      known?.src !== src &&
+      isPhoto(src) &&
+      img.complete &&
+      img.naturalWidth > 0 &&
+      !this.unreadable.has(src)
+    ) {
+      const data = this.redraw(img);
+      if (data === undefined) this.unreadable.add(src);
+      else if (id === null) return data;
+      else this.photos.set(id, { src, data });
+    }
+    return id === null ? undefined : this.photos.get(id)?.data;
+  }
+
+  /** Draws the photo's center square at AVATAR_SIZE. A tainted canvas throws: no photo. */
+  private redraw(img: HTMLImageElement): string | undefined {
+    try {
+      const canvas = this.makeCanvas();
+      canvas.width = AVATAR_SIZE;
+      canvas.height = AVATAR_SIZE;
+      const context = canvas.getContext("2d");
+      if (!context) return undefined;
+      const side = Math.min(img.naturalWidth, img.naturalHeight || img.naturalWidth);
+      const x = (img.naturalWidth - side) / 2;
+      const y = ((img.naturalHeight || side) - side) / 2;
+      context.drawImage(img, x, y, side, side, 0, 0, AVATAR_SIZE, AVATAR_SIZE);
+      const url = canvas.toDataURL("image/webp", 0.8);
+      return url.startsWith("data:image/") && url.length <= MAX_AVATAR ? url : undefined;
+    } catch {
+      return undefined;
+    }
   }
 
   /** Clicks the control and waits until the change shows on the page. */
@@ -204,6 +343,15 @@ function endsForEveryone(el: Element): boolean {
 function click(el: Element): void {
   if (el instanceof HTMLElement) el.click();
   else el.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+}
+
+function isPhoto(src: string): boolean {
+  try {
+    const url = new URL(src);
+    return url.protocol === "https:" && PHOTO_HOST.test(url.hostname);
+  } catch {
+    return false;
+  }
 }
 
 function text(el: Element | null): string | undefined {

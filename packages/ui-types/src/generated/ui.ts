@@ -56,7 +56,11 @@ participants: Array<Speaker>,
 /**
  * The user, when the provider can tell; the island shows them before anyone speaks.
  */
-self_participant: Speaker | null, signals: Signals, 
+self_participant: Speaker | null, 
+/**
+ * Other participants with a raised hand; `None` when nobody else has one.
+ */
+raised_hands: RaisedHands | null, signals: Signals, 
 /**
  * Commands this session supports right now. The UI renders only these.
  */
@@ -89,6 +93,24 @@ export type ProviderView = { id: ProviderId, connected: boolean, client_version:
 last_health: Health | null, };
 
 /**
+ * The line of raised hands, the user left out. The island shows the first one in line and how
+ * many there are; `Debug` redacts the name and photo through [`Speaker`].
+ */
+export type RaisedHands = { 
+/**
+ * Of those with a hand up, who raised it first.
+ */
+first: Speaker, 
+/**
+ * How many have a hand up, `first` included; at least 1.
+ */
+count: number, 
+/**
+ * When `first` became the first in line, in milliseconds since the Unix epoch.
+ */
+since: number, };
+
+/**
  * Identifies a session across providers. `id` is the provider's own id, such as a tab id.
  */
 export type SessionKey = { provider: ProviderId, id: string, };
@@ -115,7 +137,11 @@ participants: Array<Speaker>,
 /**
  * The user, when the provider can tell; the island shows them before anyone speaks.
  */
-self_participant: Speaker | null, signals: Signals, 
+self_participant: Speaker | null, 
+/**
+ * Other participants with a raised hand; `None` when nobody else has one.
+ */
+raised_hands: RaisedHands | null, signals: Signals, 
 /**
  * Commands this session supports right now. The UI renders only these.
  */
@@ -139,10 +165,14 @@ show_participant_names: boolean, };
 export type Signals = { speaking_while_muted: boolean, };
 
 /**
- * A participant. `display_name` is `None` when names are hidden
- * ([`Settings::show_participant_names`](crate::Settings)); `Debug` redacts it.
+ * A participant. `display_name` and `avatar` are `None` when names are hidden
+ * ([`Settings::show_participant_names`](crate::Settings)); `Debug` redacts both.
  */
-export type Speaker = { display_name: string | null, };
+export type Speaker = { display_name: string | null, 
+/**
+ * Their photo as a small `data:image/(png|jpeg|webp);base64,` URL; never a URL to load.
+ */
+avatar?: string, };
 
 /**
  * A media or hand state. `Unknown` means the provider could not tell, and it is never shown as

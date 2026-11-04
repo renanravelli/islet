@@ -171,6 +171,33 @@ On demand only: the whole session leaves it out; see [Participant photos](#parti
 - **No snapshot:** snapshots drop every image anyway. The findings are in the report, under
   `measurements`, as `avatars.tiles`, `avatars.people-panel` and `avatars.camera-on`.
 
+### 13. Raised hands
+
+On demand only: the whole session leaves it out; see [Raised hands](#raised-hands).
+
+- **The runner** turns the Mac's mic, camera and hand off. Then **you:**
+  "Bring a third participant into the call (another device or person), besides the iPhone."
+  It waits until Meet counts 3 and probes once with no hand up.
+- **It probes** every raised-hand mark on the page: an `aria-label` or a text that says a hand
+  is raised ("levantou a mão", "raised hand", "mãos levantadas"…), or a hand icon
+  (`front_hand`, `back_hand`, `pan_tool`). For each: where it is (a video tile, the own tile,
+  the People panel, a live notice or elsewhere), the participant as an alias (P1, P2… by
+  `data-participant-id`, the same for the whole run), the matched words with everything else
+  replaced by `[text]`, whether it is on screen, a one- or two-digit number next to it (a place
+  in line?) and its nearest ancestors. Never a name or other text.
+- **Then, probing after each:**
+  1. "On the iPhone, raise the hand." (it waits until it sees one), then
+     "Wait for Meet's notice to go away."
+  2. "Now raise the third participant's hand. The iPhone's stays up."
+  3. The runner raises the Mac's hand, probes, and lowers it.
+  4. "On the Mac, open the People panel (top bar) and leave it open."
+  5. "Close the People panel. Lower the iPhone's hand; the third participant's stays up."
+
+  Last: "Lower every hand."
+- **No snapshot:** snapshots drop free text, and with it the marks. The findings are in the
+  report, under `measurements`, as `hands.none`, `hands.one`, `hands.two`, `hands.two-and-mac`,
+  `hands.people-panel` and `hands.first-lowered`.
+
 ## Short session
 
 To check only who speaks, the muted notice and leaving as the host, start a call from the Mac
@@ -186,6 +213,14 @@ To find out whether the island can show participants' real photos without any ne
 runner and run `runCalibration("avatars")`. It runs steps 2 and 12 and saves
 `calibration-report.<locale>.avatars.json`. The iPhone account needs a profile photo, and so
 does yours if you can: an account without one shows Google's letter image.
+
+## Raised hands
+
+To find out how Meet marks other participants' raised hands and their order (the island shows
+the first one in line), start a call from the Mac, paste the runner and run
+`runCalibration("hands")`. It runs steps 2 and 13 and saves
+`calibration-report.<locale>.hands.json`. It needs three participants: the Mac, the iPhone and
+one more (another computer, a second Chrome profile, or a person).
 
 ## Manual alternative
 

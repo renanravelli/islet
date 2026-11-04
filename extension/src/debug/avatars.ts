@@ -66,7 +66,7 @@ function describe(el: Element): string {
   return text;
 }
 
-function ancestors(el: Element): string[] {
+export function ancestors(el: Element): string[] {
   const out: string[] = [];
   for (let at = el.parentElement; at && out.length < ANCESTORS; at = at.parentElement) {
     out.push(describe(at));

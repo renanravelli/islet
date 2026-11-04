@@ -135,10 +135,12 @@ mod tests {
             },
             active_speaker: Some(ActiveSpeaker {
                 display_name: "Alex Example".into(),
+                avatar: None,
             }),
             participant_count: None,
             participants: None,
             self_participant: None,
+            raised_hands: None,
             signals: Signals::default(),
             capabilities: vec![Action::ToggleMic, Action::Leave],
             health: Health::Ok,

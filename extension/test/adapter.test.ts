@@ -1,5 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { CONFIRM_TIMEOUT_MS, MeetAdapter, meetingCode } from "../src/content/meet/adapter";
+import {
+  AVATAR_SIZE,
+  CONFIRM_TIMEOUT_MS,
+  MeetAdapter,
+  meetingCode,
+} from "../src/content/meet/adapter";
 import { SELECTORS } from "../src/content/meet/selectors";
 import { button, FIXTURES, load } from "./dom";
 
@@ -277,5 +282,204 @@ describe("participant tiles", () => {
     own?.append(Object.assign(document.createElement("div"), { innerHTML: "" }));
     own?.lastElementChild?.setAttribute("jsname", "Ac69Jc");
     expect(adapter().readState().state.self_participant).toEqual({ display_name: "Sam Example" });
+  });
+});
+
+describe("others' raised hands", () => {
+  // Synthetic, shaped like the probe's report (2026-11-04): Meet draws the hand as an icon in the
+  // tile and, with two or more up, the place in line next to it.
+  const tile = (id: string) => document.querySelector(`[data-participant-id='${id}']`);
+  const raise = (id: string, place?: number) => {
+    const badge = document.createElement("div");
+    badge.className = "hand";
+    badge.innerHTML = `<i class="google-material-icons notranslate" aria-hidden="true">front_hand</i>${
+      place === undefined ? "" : `<div>${place}</div>`
+    }`;
+    tile(id)?.append(badge);
+  };
+  const lower = (id: string) => tile(id)?.querySelector(".hand")?.remove();
+  const addTile = (id: string, name: string) => {
+    const el = document.createElement("div");
+    el.setAttribute("data-participant-id", id);
+    el.setAttribute("jsname", "E2KThb");
+    el.innerHTML = `<span class="notranslate">${name}</span>`;
+    document.querySelector("[role=toolbar]")?.before(el);
+  };
+
+  it("leaves raised_hands out while no one else has a hand up", () => {
+    load(FIXTURES.inCallEn);
+    expect(adapter().readState().state.raised_hands).toBeUndefined();
+  });
+
+  it("shows the first in line by name, how many, and since when", () => {
+    load(FIXTURES.inCallEn);
+    raise("p2");
+    const state = new MeetAdapter(document, SELECTORS, undefined, () => 1000).readState().state;
+    expect(state.raised_hands).toEqual({
+      first: { display_name: "Sam Example" },
+      count: 1,
+      since: 1000,
+    });
+    expect(state.participants?.map((p) => p.display_name)).toEqual(["Alex Example", "Sam Example"]);
+  });
+
+  it("follows Meet's place in line and leaves the user out", () => {
+    load(FIXTURES.inCallEn);
+    addTile("p3", "Kim Example");
+    tile("p2")?.append(Object.assign(document.createElement("div"), { id: "own" }));
+    document.getElementById("own")?.setAttribute("jsname", "Ac69Jc");
+    raise("p1", 2);
+    raise("p2", 1);
+    raise("p3", 3);
+    expect(adapter().readState().state.raised_hands).toMatchObject({
+      first: { display_name: "Alex Example" },
+      count: 2,
+    });
+  });
+
+  it("without places, keeps the order hands went up in; since moves only with the first", () => {
+    load(FIXTURES.inCallEn);
+    let now = 1000;
+    const meet = new MeetAdapter(document, SELECTORS, undefined, () => now);
+    addTile("p3", "Kim Example");
+    raise("p3");
+    expect(meet.readState().state.raised_hands).toEqual({
+      first: { display_name: "Kim Example" },
+      count: 1,
+      since: 1000,
+    });
+    now = 2000;
+    raise("p1");
+    expect(meet.readState().state.raised_hands).toEqual({
+      first: { display_name: "Kim Example" },
+      count: 2,
+      since: 1000,
+    });
+    now = 3000;
+    lower("p3");
+    expect(meet.readState().state.raised_hands).toEqual({
+      first: { display_name: "Alex Example" },
+      count: 1,
+      since: 3000,
+    });
+    lower("p1");
+    expect(meet.readState().state.raised_hands).toBeUndefined();
+  });
+
+  it("counts a person once, and never sends a tile's id", () => {
+    load(FIXTURES.inCallEn);
+    addTile("p1", "Alex Example");
+    const [main, second] = document.querySelectorAll("[data-participant-id='p1']");
+    for (const el of [main, second]) {
+      el?.insertAdjacentHTML("beforeend", `<i class="google-material-icons">front_hand</i>`);
+    }
+    const state = adapter().readState().state;
+    expect(state.raised_hands?.count).toBe(1);
+    expect(JSON.stringify(state)).not.toContain("p1");
+  });
+});
+
+describe("participant photos (docs/adr/0007)", () => {
+  // Synthetic: the URL stands in for a profile photo; the canvas is a fake, since jsdom has none.
+  const PHOTO_URL = "https://lh3.googleusercontent.com/a/SYNTHETIC=s75-c-mo";
+  const DATA = "data:image/webp;base64,UklGRg==";
+  let drawn: { size: [number, number]; args: unknown[] }[];
+  let tainted: boolean;
+
+  const canvas = () => {
+    const fake = {
+      width: 0,
+      height: 0,
+      getContext: () => ({
+        drawImage: (...args: unknown[]) =>
+          void drawn.push({ size: [fake.width, fake.height], args }),
+      }),
+      toDataURL: () => {
+        if (tainted) throw new DOMException("tainted", "SecurityError");
+        return DATA;
+      },
+    };
+    return fake as unknown as HTMLCanvasElement;
+  };
+  const withPhotos = () => new MeetAdapter(document, SELECTORS, canvas);
+
+  function photo(tile: string, src = PHOTO_URL, crossorigin = "use-credentials"): HTMLImageElement {
+    const img = document.createElement("img");
+    img.src = src;
+    img.setAttribute("crossorigin", crossorigin);
+    Object.defineProperty(img, "complete", { value: true });
+    Object.defineProperty(img, "naturalWidth", { value: 75 });
+    Object.defineProperty(img, "naturalHeight", { value: 75 });
+    document.querySelector(`[data-participant-id='${tile}']`)?.append(img);
+    return img;
+  }
+
+  beforeEach(() => {
+    drawn = [];
+    tainted = false;
+    load(FIXTURES.inCallEn);
+  });
+
+  it("sends each tile's photo with its name, redrawn at 72 px", () => {
+    photo("p1");
+    const { state } = withPhotos().readState();
+    expect(state.participants).toEqual([
+      { display_name: "Alex Example", avatar: DATA },
+      { display_name: "Sam Example" },
+    ]);
+    // Alex speaks: the same tile, the same photo.
+    expect(state.active_speaker).toEqual({ display_name: "Alex Example", avatar: DATA });
+    expect(drawn[0]?.size).toEqual([AVATAR_SIZE, AVATAR_SIZE]);
+  });
+
+  it("keeps a tile's last photo when the camera turns on and hides it", () => {
+    const adapter = withPhotos();
+    const img = photo("p1");
+    adapter.readState();
+    img.remove();
+    expect(adapter.readState().state.participants?.[0]).toEqual({
+      display_name: "Alex Example",
+      avatar: DATA,
+    });
+  });
+
+  it("reads a photo once, and forgets every photo after the call", () => {
+    const adapter = withPhotos();
+    photo("p1");
+    adapter.readState();
+    adapter.readState();
+    expect(drawn).toHaveLength(1);
+    // After the call (no Leave button), then a new call with no photo on screen.
+    load(FIXTURES.lobby);
+    adapter.readState();
+    load(FIXTURES.inCallEn);
+    expect(adapter.readState().state.participants?.[0]).toEqual({ display_name: "Alex Example" });
+  });
+
+  it("leaves the photo out when the page does not let it be read, and does not retry", () => {
+    tainted = true;
+    const adapter = withPhotos();
+    photo("p1");
+    expect(adapter.readState().state.participants?.[0]).toEqual({ display_name: "Alex Example" });
+    const tries = drawn.length;
+    adapter.readState();
+    expect(drawn).toHaveLength(tries);
+  });
+
+  it("reads only profile photos: never another host, a blob or a frame", () => {
+    photo("p1", "https://example.com/a.png");
+    photo("p2", "blob:https://meet.google.com/1234");
+    const { state } = withPhotos().readState();
+    expect(state.participants).toEqual([
+      { display_name: "Alex Example" },
+      { display_name: "Sam Example" },
+    ]);
+    expect(drawn).toEqual([]);
+  });
+
+  it("never sends a URL", () => {
+    photo("p1");
+    photo("p2");
+    expect(JSON.stringify(withPhotos().readState().state)).not.toContain("googleusercontent");
   });
 });

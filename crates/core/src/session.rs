@@ -84,6 +84,8 @@ pub struct SessionState {
     pub participants: Vec<Speaker>,
     /// The user, when the provider can tell; the island shows them before anyone speaks.
     pub self_participant: Option<Speaker>,
+    /// Other participants with a raised hand; `None` when nobody else has one.
+    pub raised_hands: Option<RaisedHands>,
     pub signals: Signals,
     /// Commands this session supports right now. The UI renders only these.
     pub capabilities: CapabilitySet,
@@ -102,6 +104,7 @@ impl fmt::Debug for SessionState {
             .field("participant_count", &self.participant_count)
             .field("participants", &self.participants)
             .field("self_participant", &self.self_participant)
+            .field("raised_hands", &self.raised_hands)
             .field("signals", &self.signals)
             .field("capabilities", &self.capabilities)
             .field("health", &self.health)
@@ -112,25 +115,61 @@ impl fmt::Debug for SessionState {
 /// How many participants the island's avatar row shows; a provider's extra ones are dropped.
 pub const MAX_PARTICIPANTS: usize = 3;
 
-/// A participant. `display_name` is `None` when names are hidden
-/// ([`Settings::show_participant_names`](crate::Settings)); `Debug` redacts it.
+/// The largest participant photo the core accepts, in bytes of its data URL (docs/adr/0007).
+/// The extension sends about 1–2 KB.
+pub const MAX_AVATAR_BYTES: usize = 16 * 1024;
+
+/// A participant. `display_name` and `avatar` are `None` when names are hidden
+/// ([`Settings::show_participant_names`](crate::Settings)); `Debug` redacts both.
 #[derive(Clone, PartialEq, Eq, Serialize, TS)]
 #[ts(export, export_to = "ui-types/src/generated/ui.ts")]
 pub struct Speaker {
     pub display_name: Option<String>,
+    /// Their photo as a small `data:image/(png|jpeg|webp);base64,` URL; never a URL to load.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub avatar: Option<String>,
 }
 
 impl Speaker {
     pub fn new(display_name: impl Into<String>) -> Self {
         Self {
             display_name: Some(display_name.into()),
+            avatar: None,
         }
     }
 
     /// Someone is speaking; who is not shown.
     pub fn anonymous() -> Self {
-        Self { display_name: None }
+        Self {
+            display_name: None,
+            avatar: None,
+        }
     }
+
+    /// Adds the photo if it is a small inline image; anything else is dropped.
+    #[must_use]
+    pub fn with_avatar(mut self, avatar: Option<String>) -> Self {
+        self.avatar = avatar.filter(|avatar| is_inline_image(avatar));
+        self
+    }
+}
+
+/// `data:image/(png|jpeg|webp);base64,` and base64 text, at most [`MAX_AVATAR_BYTES`].
+fn is_inline_image(url: &str) -> bool {
+    if url.len() > MAX_AVATAR_BYTES {
+        return false;
+    }
+    let Some(data) = ["png", "jpeg", "webp"]
+        .iter()
+        .find_map(|format| url.strip_prefix(&format!("data:image/{format};base64,")))
+    else {
+        return false;
+    };
+    !data.is_empty()
+        && data
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'+' | b'/' | b'='))
 }
 
 impl fmt::Debug for Speaker {
@@ -140,8 +179,23 @@ impl fmt::Debug for Speaker {
                 "display_name",
                 &self.display_name.as_ref().map(|_| Redacted),
             )
+            .field("avatar", &self.avatar.as_ref().map(|_| Redacted))
             .finish()
     }
+}
+
+/// The line of raised hands, the user left out. The island shows the first one in line and how
+/// many there are; `Debug` redacts the name and photo through [`Speaker`].
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, TS)]
+#[ts(export, export_to = "ui-types/src/generated/ui.ts")]
+pub struct RaisedHands {
+    /// Of those with a hand up, who raised it first.
+    pub first: Speaker,
+    /// How many have a hand up, `first` included; at least 1.
+    pub count: u32,
+    /// When `first` became the first in line, in milliseconds since the Unix epoch.
+    #[ts(type = "number")]
+    pub since: u64,
 }
 
 /// Experimental signals. A signal is `true` only when the provider observed it.
@@ -305,5 +359,45 @@ struct Redacted;
 impl fmt::Debug for Redacted {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str("<redacted>")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const PHOTO: &str =
+        "data:image/webp;base64,UklGRiIAAABXRUJQVlA4IBYAAAAwAQCdASoBAAEADsD+JaQAA3AAAAAA";
+
+    fn avatar(url: &str) -> Option<String> {
+        Speaker::new("Alex Example")
+            .with_avatar(Some(url.to_owned()))
+            .avatar
+    }
+
+    #[test]
+    fn keeps_only_small_inline_images() {
+        assert_eq!(avatar(PHOTO).as_deref(), Some(PHOTO));
+        assert!(avatar("data:image/png;base64,iVBORw0KGgo=").is_some());
+        assert!(avatar("data:image/jpeg;base64,/9j/4AAQ").is_some());
+        for refused in [
+            "https://lh3.googleusercontent.com/a/photo",
+            "data:image/svg+xml;base64,PHN2Zz4=",
+            "data:text/html;base64,PGh0bWw+",
+            "data:image/png;base64,",
+            "data:image/png;base64,abc\"onerror=1",
+            "data:image/png,raw",
+        ] {
+            assert!(avatar(refused).is_none(), "{refused}");
+        }
+        let large = format!("data:image/png;base64,{}", "A".repeat(MAX_AVATAR_BYTES));
+        assert!(avatar(&large).is_none());
+    }
+
+    #[test]
+    fn debug_never_shows_the_photo() {
+        let speaker = Speaker::new("Alex Example").with_avatar(Some(PHOTO.to_owned()));
+        let text = format!("{speaker:?}");
+        assert!(!text.contains("Alex") && !text.contains("base64"), "{text}");
     }
 }

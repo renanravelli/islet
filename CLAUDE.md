@@ -23,8 +23,9 @@ Windows, Linux and other meeting apps (Teams, Zoom, Slack) without implementing 
    `capabilities`. The UI renders only declared controls. v0.1: `MeetProvider`, `DemoProvider`.
 3. **Never show a state we do not know.** Media state is `On | Off | Unknown`; `Unknown` has its
    own neutral visual. No optimistic UI: state changes only when the provider confirms.
-4. **Local-first:** no network calls, no telemetry, no accounts. Participant names stay in memory
-   and never reach logs. The one exception is the in-app updater (ADR 0006): it asks GitHub for
+4. **Local-first:** no network calls, no telemetry, no accounts. Participant names and photos
+   stay in memory and never reach logs; a photo is the image Meet already loaded, redrawn small
+   by the extension, never downloaded (ADR 0007). The one exception is the in-app updater (ADR 0006): it asks GitHub for
    a new version only when the person allows it or asks, and installs only when they click.
 5. **Meet selectors are data** (`selectors.json`), with fallback strategies and health checks.
 6. **Portability:** `protocol`, `core` and `provider-meet` build and test on macOS, Windows and
@@ -33,7 +34,7 @@ Windows, Linux and other meeting apps (Teams, Zoom, Slack) without implementing 
    reasons; the island shows a discreet indicator instead of wrong data.
 
 Decisions and their rationale live in `docs/adr/` (0001 monorepo/Tauri, 0002 bridge, 0003
-`Unknown` policy, 0004 selectors as data, 0005 keeping Meet rendering while hidden, 0006 in-app updates). Read the relevant ADR before changing those areas.
+`Unknown` policy, 0004 selectors as data, 0005 keeping Meet rendering while hidden, 0006 in-app updates, 0007 participant photos). Read the relevant ADR before changing those areas.
 
 ## Layout
 
@@ -126,7 +127,12 @@ onboarding step or settings pane.
   frames while the tab is hidden, because Meet does not update its controls otherwise (ADR
   0005). The release check fails if it does anything more.
 - Every Meet DOM dependency goes through `selectors.json`; nothing in the adapter queries the
-  page directly. Selector keys are opaque `provider_details` in the core and must match
+  page directly.
+- **Photos (ADR 0007):** the adapter reads a tile's photo only from the `<img>` its entry's
+  `avatar` names, only from `https://*.googleusercontent.com`, by redrawing it on a 72 px canvas
+  (WebP data URL); a tainted canvas means no photo. It keeps each tile's last photo
+  (`data-participant-id`) for the call and never sends a URL. The core accepts only
+  `data:image/(png|jpeg|webp);base64,` up to `MAX_AVATAR_BYTES`. Selector keys are opaque `provider_details` in the core and must match
   `islet-provider-meet` (a test checks).
 - Tests run against synthetic fixtures in `extension/test/fixtures`, marked as such. Real
   snapshots come only through `docs/meet-adapter/calibration.md`, anonymized and reviewed. The
@@ -206,10 +212,10 @@ and every UI string. Where it and the design canvas differ, the spec wins.
    icon in the right ear while the camera is on (ears widen when it does not fit), and the alert's
    amber glow is drawn inside the contour (rule 6); shadows outside the contour are the macOS
    window shadow (`IslandLayout.shadow`).
-5. **Avatars:** initials on the canvas's three colors, given in the order people first appear
-   (memory only). The expanded island shows up to three participants (`MAX_PARTICIPANTS` in
-   `islet-core`), "+N" for the rest, and the count. With names off, the core makes them
-   anonymous and the UI draws generic avatars. With nobody speaking, the island shows who
+5. **Avatars:** the participant's photo when the core has one (ADR 0007), else initials on the
+   canvas's three colors, given in the order people first appear (memory only). The expanded island shows up to three participants (`MAX_PARTICIPANTS` in
+   `islet-core`), "+N" for the rest, and the count. With names off ("Mostrar nomes e fotos"),
+   the core drops names and photos and the UI draws generic avatars. With nobody speaking, the island shows who
    spoke last, labelled `island.last_speaker`, and before anyone spoke the user, labelled
    `island.you`; both without the green ring or a moving wave: never as speaking.
 6. **Strings are generated, not copied:** `apps/desktop/src/i18n/strings.json` comes from
@@ -288,26 +294,31 @@ Every open item lives here, not in an assistant's memory. Remove an item when it
   apps. 0.1.1 is published and `latest.json` offers it, so check the whole flow by hand: update
   an installed 0.1.1 beta to 0.1.1 from Settings and from the menu bar, with the ad hoc signature
   (does macOS ask "Open Anyway" again? does launch at login survive?).
-- **Real participant photos (planned 2026-11-04, target 0.2.0):** the island draws initials;
-  the owner wants Meet's profile photos instead.
-  - **Phase 0 done (2026-11-04, `docs/meet-adapter/reports/calibration-report.pt-BR.avatars.json`,
-    one call, two people, pt-BR): readable.** Each video tile holds a hidden 75×75
-    `<img crossorigin="use-credentials">` under `div[jsname=Jaieyd]`; a 48 px WebP of it is
-    0.8–1.9 KB. Every visible photo is tainted (the tile's 480 px one, the top bar's 64 px stack,
-    the People panel's 192/512 px). With a camera on, that tile has no photo, so the core keeps
-    each participant's last photo in memory for the call. Still to check: that the 75 px image
-    is the person's photo and not a placeholder, an account without a photo, 3+ people and
-    English (`runCalibration("avatars")` again).
-  - **The plan (path "B"):** the extension sends a small `data:image/...` (about 48 px, a few KB),
-    never a URL: no request from the extension or the app, no new permission. Protocol v1, an
-    optional `avatar` on `Participant` and the active speaker, only for those the island shows;
-    the core accepts only `data:image/(png|jpeg|webp);base64,` under a size cap and redacts it
-    in `Debug`. Photos are treated like names: memory only, never logged, hidden with "show
-    names" off (rename it "names and photos"); a photo comes from the same tile as its name, or
-    the island draws initials. A new `participantAvatar` selector; synthetic images in fixtures
-    and `gallery.html`; the webview's CSP allows `img-src data:`. ADR 0007 first; then
-    `PRIVACY.md`, the READMEs' privacy section, the onboarding and settings privacy text, and the
-    Chrome Web Store privacy form.
+- **Participant photos (ADR 0007, in 0.1.2):**
+  from the probe's first report (`docs/meet-adapter/reports/calibration-report.pt-BR.avatars.json`,
+  one call, two people, pt-BR): each video tile holds a hidden 75×75
+  `<img crossorigin="use-credentials">` a canvas can read; every visible photo is tainted.
+  - **Seen in a real call (2026-11-04, two people, pt-BR):** the island showed the owner's own
+    photo, and for the iPhone account, which has none, Google's letter image, as Meet does.
+  - **Owner, still to check:** a remote participant with a real photo, 3+ people (the right face
+    for each), and Meet in English (`runCalibration("avatars")` again); then mark the tile
+    entries' `avatar` verified in `selectors.json`.
+  - **Owner, Chrome Web Store:** before uploading an extension that reads photos, update the
+    listing's privacy form (personal information: participants' photos, used only on the
+    device) and its description.
+- **Others' raised hands (in 0.1.2):** the island shows the first
+  in line of others' raised hands and how many (prototype approved: the canvas's "Mão levantada"
+  board; `docs/design/ui-spec.md` section 5), from the `raisedHand` selector: a `front_hand`
+  icon on the tile, and with two or more up, the place in line next to it (probe report
+  `docs/meet-adapter/reports/calibration-report.pt-BR.hands.json`, three people, pt-BR). The
+  adapter leaves the user's tile out and falls back to the order it saw hands go up in. Seen
+  working in a real call by the owner (2026-11-04, pt-BR). Open:
+  - Meet in English (`runCalibration("hands")`), then add `en` to `verifiedIn`.
+  - Only tiles on screen are read: in a call bigger than the grid, a hand raised off screen is
+    missed. The People panel lists every raised hand ("Abaixar a mão de …", maybe the host's
+    control only) and is a possible fallback.
+  - **Chrome Web Store:** the listing's privacy form and description, with the photos item
+    above.
 - **Signing (owner):** the release is signed ad hoc until the six `APPLE_*` secrets exist (an
   Apple Developer Program membership); then `release.yml` signs and notarizes.
 - **Extension install:**

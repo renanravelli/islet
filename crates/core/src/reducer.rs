@@ -34,6 +34,9 @@ impl Default for Timings {
 }
 
 /// An input to [`reduce`].
+// A full `SessionState` (photos included, ADR 0007) is about 240 bytes. Events are short-lived
+// and go through a channel one at a time, so boxing it would only add an allocation.
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Event {
     Updated(SessionKey, SessionState),
@@ -241,6 +244,7 @@ fn forget_live_state(state: &mut SessionState) {
     state.cam = Toggle::Unknown;
     state.hand = Toggle::Unknown;
     state.active_speaker = None;
+    state.raised_hands = None;
     state.signals = Signals::default();
 }
 
@@ -266,6 +270,7 @@ mod tests {
             participant_count: Some(3),
             participants: Vec::new(),
             self_participant: None,
+            raised_hands: None,
             signals: Signals {
                 speaking_while_muted: true,
             },
@@ -470,6 +475,11 @@ mod tests {
         let mut reported = state(Toggle::On, Toggle::Off);
         reported.health = Health::degraded([DegradedReason::Unreadable(Field::ParticipantCount)])
             .with_details(ProviderDetail::new("participantCount"));
+        reported.raised_hands = Some(crate::RaisedHands {
+            first: Speaker::new("Sam Example"),
+            count: 1,
+            since: 1_793_700_060_000,
+        });
         clock.at(0.0, Event::Updated(key("1"), reported.clone()));
         assert_eq!(
             clock.sessions.next_deadline(),
@@ -493,6 +503,10 @@ mod tests {
         assert_eq!(stale.state.mic, Toggle::Unknown);
         assert_eq!(stale.state.cam, Toggle::Unknown);
         assert_eq!(stale.state.active_speaker, None);
+        assert_eq!(
+            stale.state.raised_hands, None,
+            "a stale line of hands is not shown"
+        );
         assert!(!stale.state.signals.speaking_while_muted);
         // Still offers controls: the provider may yet answer.
         assert!(stale.state.capabilities.contains(Command::ToggleMic));

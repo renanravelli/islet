@@ -45,7 +45,9 @@ export type Action =
   /** Leave through execute; record any dialog's button labels without clicking them. */
   | { kind: "leave" }
   /** Where Meet draws participant photos and whether their pixels are readable (avatars.ts). */
-  | { kind: "avatarProbe"; label: string };
+  | { kind: "avatarProbe"; label: string }
+  /** Where Meet marks other participants' raised hands, and in what order (hands.ts). */
+  | { kind: "handProbe"; label: string };
 
 export interface Step {
   number: number;
@@ -235,6 +237,53 @@ export const STEPS: Step[] = [
       { kind: "avatarProbe", label: "camera-on" },
     ],
   },
+  {
+    number: 13,
+    id: "raised-hands",
+    title: "Raised hands",
+    onlyIf: { kind: "inCall", value: true },
+    onDemand: true,
+    actions: [
+      { kind: "set", self: ALL_OFF },
+      {
+        kind: "wait",
+        ask: "Bring a third participant into the call (another device or person), besides the iPhone.",
+        until: { kind: "participants", count: 3 },
+        timeoutMs: 3 * MINUTE,
+      },
+      { kind: "handProbe", label: "none" },
+      {
+        kind: "wait",
+        ask: "On the iPhone, raise the hand.",
+        until: { kind: "remoteHand" },
+        timeoutMs: 2 * MINUTE,
+      },
+      { kind: "pause", text: "Wait for Meet's notice to go away.", ms: 8000 },
+      { kind: "handProbe", label: "one" },
+      {
+        kind: "pause",
+        text: "Now raise the third participant's hand. The iPhone's stays up.",
+        ms: 15_000,
+      },
+      { kind: "handProbe", label: "two" },
+      { kind: "set", self: { mic: "off", cam: "off", hand: "on" } },
+      { kind: "handProbe", label: "two-and-mac" },
+      { kind: "set", self: ALL_OFF },
+      {
+        kind: "pause",
+        text: "On the Mac, open the People panel (top bar) and leave it open.",
+        ms: 10_000,
+      },
+      { kind: "handProbe", label: "people-panel" },
+      {
+        kind: "pause",
+        text: "Close the People panel. Lower the iPhone's hand; the third participant's stays up.",
+        ms: 15_000,
+      },
+      { kind: "handProbe", label: "first-lowered" },
+      { kind: "tell", text: "Lower every hand." },
+    ],
+  },
 ];
 
 /** Named subsets of the steps, run with runCalibration("<name>"). */
@@ -251,4 +300,6 @@ export const PRESETS: Record<string, string[]> = {
   ],
   /** Where Meet draws participant photos, for real avatars on the island. */
   avatars: ["in-call-mic-on", "avatars"],
+  /** Where Meet marks other participants' raised hands, for the island's raised-hand line. */
+  hands: ["in-call-mic-on", "raised-hands"],
 };

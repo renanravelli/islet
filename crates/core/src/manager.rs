@@ -12,6 +12,9 @@ use crate::{
 };
 
 /// What providers send the manager through their [`EventSink`].
+// A full `SessionState` (photos included, ADR 0007) is about 240 bytes. Events are short-lived
+// and go through a channel one at a time, so boxing it would only add an allocation.
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug)]
 pub(crate) enum Input {
     Event(Event),
@@ -226,6 +229,9 @@ impl Actor {
             }
             for participant in &mut session.state.participants {
                 *participant = Speaker::anonymous();
+            }
+            if let Some(hands) = &mut session.state.raised_hands {
+                hands.first = Speaker::anonymous();
             }
         }
         let providers = self

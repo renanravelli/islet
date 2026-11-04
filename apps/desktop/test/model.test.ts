@@ -1,6 +1,7 @@
 import type { AppSettings, Geometry, MeetingSession } from "@islet/ui-types";
 import { describe, expect, it } from "vitest";
 import {
+  announces,
   avatarColor,
   contour,
   controls,
@@ -36,6 +37,7 @@ function session(overrides: Partial<MeetingSession> = {}): MeetingSession {
     participant_count: 3,
     participants: [],
     self_participant: null,
+    raised_hands: null,
     signals: { speaking_while_muted: false },
     capabilities: ["toggle_mic", "toggle_cam", "toggle_hand", "leave", "focus_tab"],
     health: { status: "ok" },
@@ -72,6 +74,24 @@ describe("mode", () => {
       "compact",
     );
   });
+
+  it("announces a new first raised hand, below expanding and the alert", () => {
+    const raised = session({
+      raised_hands: { first: { display_name: "Sam Example" }, count: 1, since: 0 },
+    });
+    const notice = { ...ui, handNotice: true };
+    expect(mode(raised, notice, settings)).toBe("notice");
+    expect(mode(raised, ui, settings)).toBe("compact");
+    expect(mode(session(), notice, settings)).toBe("compact");
+    expect(mode(raised, { ...notice, expanded: true }, settings)).toBe("expanded");
+    const alerting = { ...raised, mic: "off", signals: { speaking_while_muted: true } } as const;
+    expect(mode(alerting, notice, { ...settings, muted_speaking_alert: true })).toBe("alert");
+  });
+
+  it("does not announce a line that was there before the app started", () => {
+    expect(announces(1000, 2000)).toBe(true);
+    expect(announces(0, 10_000)).toBe(false);
+  });
 });
 
 describe("contour", () => {
@@ -85,6 +105,11 @@ describe("contour", () => {
     expect(contour("compact", noNotch)).toEqual({ width: 340, height: 34 });
     expect(contour("expanded", notch)).toEqual({ width: 560, height: 32 + SIZE.expandedBody });
     expect(contour("alert", notch)).toEqual({ width: 440, height: 32 + SIZE.alertBody });
+    expect(contour("notice", notch)).toEqual({ width: 440, height: 32 + SIZE.noticeBody });
+    expect(contour("expanded", notch, false, SIZE.ear, true)).toEqual({
+      width: 560,
+      height: 32 + SIZE.expandedBody + SIZE.handsRow,
+    });
     expect(contour("hidden", notch)).toEqual({ width: 0, height: 0 });
   });
 });
@@ -107,6 +132,16 @@ describe("earWidth", () => {
     expect(contour("compact", notch, false, hourIn).width).toBe(185 + 2 * (hourIn + 14));
     // Ended shows only the timer.
     expect(earWidth(busy, "ended", 0, 62 * minute)).toBe(SIZE.ear);
+  });
+
+  it("widens both ears for others' raised hands at the left", () => {
+    const hands = (count: number) =>
+      session({ raised_hands: { first: { display_name: "Sam Example" }, count, since: 0 } });
+    // 51 speaker + 8 + 12 hand + 4 + 18 avatar = 93, plus 4 + "+1" (6.8 + 7.3).
+    expect(earWidth(hands(1), "compact", 0)).toBe(93);
+    expect(earWidth(hands(2), "compact", 0)).toBe(112);
+    expect(earWidth(hands(12), "compact", 0)).toBe(119);
+    expect(earWidth(hands(2), "ended", 0, 0)).toBe(SIZE.ear);
   });
 });
 
