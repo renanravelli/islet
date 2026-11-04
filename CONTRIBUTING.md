@@ -63,7 +63,7 @@ pnpm --filter @islet/desktop dev:app       # the app, with hot reload
 
 Load `extension/dist` in `chrome://extensions` with **Load unpacked**
 ([guide](docs/install-extension.md)). To work on the island without a call, run the app in demo
-mode (`./target/debug/islet --demo`, or **Demo mode** in the menu bar), or open
+mode (`./target/debug/islet --demo`, or **Demo mode** in the menu bar; development builds only), or open
 `http://localhost:1420/gallery.html?locale=pt-BR` on the dev server, which draws every state.
 
 ## Checks

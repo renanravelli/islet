@@ -75,7 +75,7 @@ export type Language = "auto" | "pt-BR" | "en";
 /**
  * Links the UI may open. Arbitrary URLs are never opened.
  */
-export type Link = "install_extension" | "troubleshooting" | "providers" | "source" | "license";
+export type Link = "install_extension" | "troubleshooting" | "source" | "license";
 
 /**
  * Whether each fixed shortcut was registered. One already taken by another app is not.

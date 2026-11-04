@@ -40,7 +40,9 @@ fn isolated() -> bool {
 
 pub fn run() {
     logging::init();
-    let demo_at_start = std::env::args().any(|arg| arg == "--demo");
+    // Demo mode is a development tool: release builds ignore `--demo` and leave it out of the
+    // tray, so a published app shows only what works for real.
+    let demo_at_start = cfg!(debug_assertions) && std::env::args().any(|arg| arg == "--demo");
 
     let mut app = tauri::Builder::default();
     if !isolated() {

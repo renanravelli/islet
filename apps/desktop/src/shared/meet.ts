@@ -6,8 +6,6 @@ import type { Health, UiSnapshot } from "@islet/ui-types";
 export const PRODUCT = "Islet";
 export const MEET = "Google Meet";
 export const REPO_DISPLAY = "github.com/renanravelli/islet";
-/** Planned integrations, shown with a "Planned" badge; none is implemented in v0.1. */
-export const PLANNED = ["Microsoft Teams", "Zoom", "Slack (huddles)"] as const;
 /** Language names, each in its own language, in both locales. */
 export const LANGUAGE_NAMES = { "pt-BR": "Português (Brasil)", en: "English" } as const;
 

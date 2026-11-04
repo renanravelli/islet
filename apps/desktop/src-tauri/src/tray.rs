@@ -115,14 +115,17 @@ fn menu(app: &AppHandle) -> tauri::Result<Menu<Wry>> {
             None::<&str>,
         )?)?;
     }
-    menu.append(&CheckMenuItem::with_id(
-        app,
-        "demo",
-        t(locale, "tray.demo"),
-        true,
-        state.demo.is_on(),
-        None::<&str>,
-    )?)?;
+    // Development builds only (see `run`).
+    if cfg!(debug_assertions) {
+        menu.append(&CheckMenuItem::with_id(
+            app,
+            "demo",
+            t(locale, "tray.demo"),
+            true,
+            state.demo.is_on(),
+            None::<&str>,
+        )?)?;
+    }
     menu.append(&MenuItem::with_id(
         app,
         "settings",

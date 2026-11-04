@@ -15,7 +15,7 @@ import {
   Switch,
 } from "../shared/components";
 import { LockIcon, PillIcon, PlugIcon, SlidersIcon, VideoIcon } from "../shared/icons";
-import { LANGUAGE_NAMES, MEET, meetStatus, PLANNED, PRODUCT, REPO_DISPLAY } from "../shared/meet";
+import { LANGUAGE_NAMES, MEET, meetStatus, PRODUCT, REPO_DISPLAY } from "../shared/meet";
 import "./settings.css";
 
 export type Pane = "general" | "island" | "integrations" | "privacy";
@@ -314,27 +314,6 @@ function Integrations({ info, snapshot }: { info: AppInfo; snapshot: UiSnapshot 
             </span>
           </div>
         </Group>
-      </div>
-      <div>
-        <SectionLabel>{t("settings.integrations.planned")}</SectionLabel>
-        <Group>
-          {PLANNED.map((name) => (
-            <Row
-              key={name}
-              label={name}
-              trailing={<Badge tone="planned">{t("badge.planned")}</Badge>}
-            />
-          ))}
-        </Group>
-        <p className="footnote">
-          <button
-            type="button"
-            className="link-button"
-            onClick={() => void api.openLink("providers")}
-          >
-            {t("settings.integrations.contribute")}
-          </button>
-        </p>
       </div>
     </div>
   );

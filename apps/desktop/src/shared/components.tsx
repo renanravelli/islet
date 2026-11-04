@@ -107,13 +107,7 @@ export function StatusPill({
   );
 }
 
-export function Badge({
-  tone,
-  children,
-}: {
-  tone: "experimental" | "planned";
-  children: ReactNode;
-}) {
+export function Badge({ tone, children }: { tone: "experimental"; children: ReactNode }) {
   return <span className={`badge badge-${tone}`}>{children}</span>;
 }
 

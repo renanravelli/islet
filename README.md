@@ -186,10 +186,10 @@ Shortcuts are fixed in v0.1. If one is already taken by another app, the menu ba
 
 ### Menu bar
 
-The Islet menu shows whether the extension is connected, and opens **Settings…**, the setup guide
-and **Demo mode**, which plays every state with sample data. In Settings you can turn on expand on
-hover, hide participant names, turn on the speaking-while-muted alert, change the language and
-reinstall the Chrome bridge.
+The Islet menu shows whether the extension is connected, opens **Settings…** and the setup guide,
+and offers **Install version … and restart** when an update is available. In Settings you can
+turn on expand on hover, hide participant names, turn on the speaking-while-muted alert, change
+the language, check for updates and reinstall the Chrome bridge.
 
 <p align="center">
   <img src="docs/assets/settings.png" width="560" alt="Islet Settings, General pane: launch at login, language and the shortcuts">
@@ -263,7 +263,7 @@ pnpm --filter @islet/desktop dev:app
 ```
 
 Load `extension/dist` in Chrome as the [extension guide](docs/install-extension.md) describes,
-then open a Meet call. Choose **Demo mode** in the menu bar to see every state without a call.
+then open a Meet call. In development builds, **Demo mode** in the menu bar plays every state without a call.
 
 **Build Islet.app:**
 

@@ -182,6 +182,8 @@ warnings. UI changes must also be checked in demo mode (`--demo`), with and with
   the call for everyone, the adapter picks "Sair da chamada" / "leave" (`justLeaveButton`). It
   refuses to click any control whose label ends the call for everyone, whatever a selector says
   (tested), and leaves a dialog it does not recognize for the person to answer.
+- **Release builds show only what works:** demo mode (`--demo` and the tray item) exists only in
+  development builds, and Settings → Integrations lists no planned apps.
 - **Out of scope for v0.1:** Windows, Linux, Teams, Zoom, Slack, calendar reminders, speaker video
   thumbnails, OS-level call detection, system-level mute, Firefox, Safari. (The
   Chrome Web Store listing came after all, by the owner's decision on 2026-11-03.)
@@ -272,8 +274,6 @@ Every open item lives here, not in an assistant's memory. Remove an item when it
   - `SECURITY.md`: GitHub's private vulnerability reporting is off on the repository; turn it on
     (owner) and point to it.
   - Threat model: the development extension ID can be reproduced by anyone from the public key.
-  - `docs/providers.md` (how to write a provider) does not exist yet, but Settings →
-    Integrations links to it (`Link::Providers`): a broken link until then.
   - The READMEs do not link `CONTRIBUTING.md`, which names the ADRs and the UI spec (the owner's
     rule above); GitHub shows it on new issues and pull requests.
   - `docs/testing/manual-checklist.md`, including the Meet section `calibration.md` points to.

@@ -197,10 +197,6 @@ a:focus-visible {
   background: var(--warning-bg);
   color: var(--warning-text);
 }
-.badge-planned {
-  background: var(--bg-subtle);
-  color: var(--text-secondary);
-}
 
 .steps {
   display: flex;

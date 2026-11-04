@@ -188,10 +188,11 @@ avisa.
 
 ### Barra de menus
 
-O menu do Islet mostra se a extensão está conectada e abre **Configurações…**, o guia de
-configuração e o **Modo demo**, que mostra todos os estados com dados de exemplo. Nas
+O menu do Islet mostra se a extensão está conectada, abre **Configurações…** e o guia de
+configuração e oferece **Instalar a versão … e reiniciar** quando há uma atualização. Nas
 Configurações você pode expandir ao passar o mouse, esconder os nomes dos participantes, ligar o
-aviso de falando no mudo, trocar o idioma e reinstalar a ponte com o Chrome.
+aviso de falando no mudo, trocar o idioma, procurar atualizações e reinstalar a ponte com o
+Chrome.
 
 <p align="center">
   <img src="docs/assets/settings.png" width="560" alt="Configurações do Islet, painel Geral: abrir ao iniciar o Mac, idioma e atalhos">
@@ -265,8 +266,8 @@ pnpm --filter @islet/desktop dev:app
 ```
 
 Carregue `extension/dist` no Chrome como o [guia da extensão](docs/install-extension.md)
-descreve e entre numa call do Meet. Escolha **Modo demo** na barra de menus para ver todos os
-estados sem uma call.
+descreve e entre numa call do Meet. Nas builds de desenvolvimento, o **Modo demo** na barra de menus
+mostra todos os estados sem uma call.
 
 **Gerar o Islet.app:**
 

@@ -142,7 +142,6 @@ pub const EXTENSION_STORE_URL: &str =
 pub enum Link {
     InstallExtension,
     Troubleshooting,
-    Providers,
     Source,
     License,
 }
@@ -155,10 +154,6 @@ impl Link {
             Self::Troubleshooting => concat!(
                 "https://github.com/renanravelli/islet",
                 "/blob/main/docs/install-extension.md#troubleshooting"
-            ),
-            Self::Providers => concat!(
-                "https://github.com/renanravelli/islet",
-                "/blob/main/docs/providers.md"
             ),
             Self::Source => REPO,
             Self::License => concat!(
