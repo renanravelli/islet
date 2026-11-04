@@ -34,6 +34,9 @@ impl Default for Timings {
 }
 
 /// An input to [`reduce`].
+// A full `SessionState` (photos included, ADR 0007) is about 240 bytes. Events are short-lived
+// and go through a channel one at a time, so boxing it would only add an allocation.
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Event {
     Updated(SessionKey, SessionState),

@@ -135,6 +135,7 @@ mod tests {
             },
             active_speaker: Some(ActiveSpeaker {
                 display_name: "Alex Example".into(),
+                avatar: None,
             }),
             participant_count: None,
             participants: None,

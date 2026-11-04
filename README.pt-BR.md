@@ -82,7 +82,9 @@ nada mais usa, e deixa os controles a um clique.
 - **Estados honestos.** Quando o Islet não consegue ler um estado, mostra-o como desconhecido,
   nunca como ligado. Se o Meet mudar a interface, um pontinho âmbar avisa que podem faltar dados.
 - **Funciona com o Chrome em segundo plano**, que é justamente o caso: você está em outro app.
-- **Nomes são opcionais.** Desligue-os e a ilha mostra só a atividade de fala.
+- **Rostos, não só iniciais.** A ilha mostra as fotos que o Meet mostra, lidas da própria
+  página: nada é baixado. Nomes e fotos são opcionais: desligue-os e a ilha mostra só a
+  atividade de fala.
 - **Parece nativo.** Atalhos globais, ícone na barra de menus, abrir ao iniciar o Mac, aparência
   clara e escura, inglês e português.
 
@@ -96,8 +98,8 @@ flowchart LR
     app --> island["Ilha ao redor do notch"]
 ```
 
-- **A extensão** lê só os controles da call do Meet, os nomes nos blocos dos participantes, o
-  número de participantes e o título da reunião. Ela nunca lê o chat e nunca captura áudio ou
+- **A extensão** lê só os controles da call do Meet, os nomes e as fotos nos blocos dos
+  participantes, o número de participantes e o título da reunião. Ela nunca lê o chat e nunca captura áudio ou
   vídeo.
 - **O app** transforma o que a extensão informa na ilha e devolve os seus comandos. Ele só mostra
   um estado depois que o Meet o confirma.
@@ -190,7 +192,7 @@ avisa.
 
 O menu do Islet mostra se a extensão está conectada, abre **Configurações…** e o guia de
 configuração e oferece **Instalar a versão … e reiniciar** quando há uma atualização. Nas
-Configurações você pode expandir ao passar o mouse, esconder os nomes dos participantes, ligar o
+Configurações você pode expandir ao passar o mouse, esconder os nomes e as fotos dos participantes, ligar o
 aviso de falando no mudo, trocar o idioma, procurar atualizações e reinstalar a ponte com o
 Chrome.
 
@@ -204,13 +206,13 @@ O Islet roda inteiro no seu Mac. Ele não tem contas e não envia telemetria. A 
 rede é a busca por atualizações, quando você permite: ela consulta os releases deste repositório
 no GitHub, não envia nada sobre você e só instala quando você clica em **Instalar e reiniciar**.
 
-|                         |                                                                                                                                                                                            |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **O que a extensão lê** | Os controles da call do Meet (microfone, câmera, mão, sair), os nomes nos blocos dos participantes, o número de participantes, o título da reunião e o aviso "você está falando?" do Meet. |
-| **O que ela nunca lê**  | O chat, o áudio, o vídeo, as suas outras abas ou qualquer site além de `meet.google.com`.                                                                                                  |
-| **Onde os dados ficam** | Na memória do app, só durante a call. Os nomes nunca chegam aos logs.                                                                                                                      |
-| **Atualizações**        | Desligadas até você ligar (no guia inicial ou em Configurações → Privacidade e sobre). Toda atualização é assinada e conferida antes de instalar.                                          |
-| **Logs**                | Arquivos locais em `~/Library/Logs/io.github.renanravelli.islet/`, sem nomes, títulos ou códigos de reunião.                                                                               |
+|                         |                                                                                                                                                                                                                                                           |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **O que a extensão lê** | Os controles da call do Meet (microfone, câmera, mão, sair), os nomes e as fotos nos blocos dos participantes (as imagens que o Meet já carregou, nunca baixadas), o número de participantes, o título da reunião e o aviso "você está falando?" do Meet. |
+| **O que ela nunca lê**  | O chat, o áudio, o vídeo, as suas outras abas ou qualquer site além de `meet.google.com`.                                                                                                                                                                 |
+| **Onde os dados ficam** | Na memória do app, só durante a call. Nomes e fotos nunca chegam aos logs nem ao disco.                                                                                                                                                                   |
+| **Atualizações**        | Desligadas até você ligar (no guia inicial ou em Configurações → Privacidade e sobre). Toda atualização é assinada e conferida antes de instalar.                                                                                                         |
+| **Logs**                | Arquivos locais em `~/Library/Logs/io.github.renanravelli.islet/`, sem nomes, fotos, títulos ou códigos de reunião.                                                                                                                                       |
 
 A extensão pede duas permissões, e nada mais:
 
@@ -335,7 +337,7 @@ plataformas.
 
 Não. O Islet nunca captura áudio ou vídeo, e a extensão não faz conexões de rede. A única
 conexão do app é a busca por atualizações, quando você permite. A extensão só lê o estado
-dos controles do Meet e os nomes que o Meet já mostra na tela.
+dos controles do Meet e os nomes e fotos que o Meet já mostra na tela.
 </details>
 
 <details>

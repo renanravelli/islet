@@ -2,7 +2,12 @@
 
 export type Action = "toggle_mic" | "toggle_cam" | "toggle_hand" | "leave" | "focus_tab";
 
-export type ActiveSpeaker = { display_name: string, };
+export type ActiveSpeaker = { display_name: string, 
+/**
+ * The photo Meet shows for them, read from the page as a small `data:image/...` URL
+ * (docs/adr/0007). Never a URL to fetch.
+ */
+avatar?: string, };
 
 /**
  * A message from the app (or the native host speaking for it) to the extension, as it appears
@@ -58,7 +63,11 @@ export type Hello = { extension_version: string,
  */
 browser: string, };
 
-export type Participant = { display_name: string, };
+export type Participant = { display_name: string, 
+/**
+ * As [`ActiveSpeaker::avatar`].
+ */
+avatar?: string, };
 
 /**
  * The `v` field of every message. It serializes as `1`, and deserializing any other value fails,

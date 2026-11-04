@@ -30,6 +30,8 @@ export interface SelectorEntry {
   state?: StateRule[];
   /** For the active speaker and the participant tiles: where the name is, inside a tile. */
   name?: Strategy[];
+  /** For the tiles: the participant's photo, an <img> a canvas can read (docs/adr/0007). */
+  avatar?: Strategy[];
   /** For the participant count: where the number is, inside the resolved element. */
   count?: Strategy[];
   /** Only elements on screen count: Meet may keep a notice in the page after hiding it. */
