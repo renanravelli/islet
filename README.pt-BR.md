@@ -85,6 +85,8 @@ nada mais usa, e deixa os controles a um clique.
 - **Rostos, não só iniciais.** A ilha mostra as fotos que o Meet mostra, lidas da própria
   página: nada é baixado. Nomes e fotos são opcionais: desligue-os e a ilha mostra só a
   atividade de fala.
+- **Mãos levantadas à vista.** Quando outra pessoa levanta a mão, a ilha mostra quem é a primeira
+  da fila e quantas estão esperando, e abre por um instante quando a primeira muda.
 - **Parece nativo.** Atalhos globais, ícone na barra de menus, abrir ao iniciar o Mac, aparência
   clara e escura, inglês e português.
 
@@ -98,8 +100,8 @@ flowchart LR
     app --> island["Ilha ao redor do notch"]
 ```
 
-- **A extensão** lê só os controles da call do Meet, os nomes e as fotos nos blocos dos
-  participantes, o número de participantes e o título da reunião. Ela nunca lê o chat e nunca captura áudio ou
+- **A extensão** lê só os controles da call do Meet, os nomes, as fotos e as mãos levantadas nos
+  blocos dos participantes, o número de participantes e o título da reunião. Ela nunca lê o chat e nunca captura áudio ou
   vídeo.
 - **O app** transforma o que a extensão informa na ilha e devolve os seus comandos. Ele só mostra
   um estado depois que o Meet o confirma.
@@ -206,13 +208,13 @@ O Islet roda inteiro no seu Mac. Ele não tem contas e não envia telemetria. A 
 rede é a busca por atualizações, quando você permite: ela consulta os releases deste repositório
 no GitHub, não envia nada sobre você e só instala quando você clica em **Instalar e reiniciar**.
 
-|                         |                                                                                                                                                                                                                                                           |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **O que a extensão lê** | Os controles da call do Meet (microfone, câmera, mão, sair), os nomes e as fotos nos blocos dos participantes (as imagens que o Meet já carregou, nunca baixadas), o número de participantes, o título da reunião e o aviso "você está falando?" do Meet. |
-| **O que ela nunca lê**  | O chat, o áudio, o vídeo, as suas outras abas ou qualquer site além de `meet.google.com`.                                                                                                                                                                 |
-| **Onde os dados ficam** | Na memória do app, só durante a call. Nomes e fotos nunca chegam aos logs nem ao disco.                                                                                                                                                                   |
-| **Atualizações**        | Desligadas até você ligar (no guia inicial ou em Configurações → Privacidade e sobre). Toda atualização é assinada e conferida antes de instalar.                                                                                                         |
-| **Logs**                | Arquivos locais em `~/Library/Logs/io.github.renanravelli.islet/`, sem nomes, fotos, títulos ou códigos de reunião.                                                                                                                                       |
+|                         |                                                                                                                                                                                                                                                                               |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **O que a extensão lê** | Os controles da call do Meet (microfone, câmera, mão, sair), os nomes, as fotos (as imagens que o Meet já carregou, nunca baixadas) e as mãos levantadas nos blocos dos participantes, o número de participantes, o título da reunião e o aviso "você está falando?" do Meet. |
+| **O que ela nunca lê**  | O chat, o áudio, o vídeo, as suas outras abas ou qualquer site além de `meet.google.com`.                                                                                                                                                                                     |
+| **Onde os dados ficam** | Na memória do app, só durante a call. Nomes e fotos nunca chegam aos logs nem ao disco.                                                                                                                                                                                       |
+| **Atualizações**        | Desligadas até você ligar (no guia inicial ou em Configurações → Privacidade e sobre). Toda atualização é assinada e conferida antes de instalar.                                                                                                                             |
+| **Logs**                | Arquivos locais em `~/Library/Logs/io.github.renanravelli.islet/`, sem nomes, fotos, títulos ou códigos de reunião.                                                                                                                                                           |
 
 A extensão pede duas permissões, e nada mais:
 

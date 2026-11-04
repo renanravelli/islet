@@ -5,8 +5,8 @@ use std::time::Duration;
 
 use islet_core::{
     Command, CommandError, DegradedReason, EndReason, Field, Health, MeetingSession,
-    ProviderDetail, SessionHandle, SessionKey, SessionManager, SessionStatus, Speaker, Timings,
-    Toggle, UiSnapshot,
+    ProviderDetail, RaisedHands, SessionHandle, SessionKey, SessionManager, SessionStatus, Speaker,
+    Timings, Toggle, UiSnapshot,
 };
 use islet_protocol::{
     self as wire, Action, ActiveSpeaker, AppMessage, CommandErrorCode, CommandResult,
@@ -129,6 +129,14 @@ fn update(tab_id: u32) -> SessionUpdate {
             display_name: "Jo Example".into(),
             avatar: None,
         }),
+        raised_hands: Some(wire::RaisedHands {
+            first: Participant {
+                display_name: "Sam Example".into(),
+                avatar: Some(PHOTO.into()),
+            },
+            count: 2,
+            since: 1_793_700_060_000,
+        }),
         signals: Signals {
             speaking_while_muted: Some(true),
         },
@@ -167,6 +175,14 @@ async fn maps_session_updates() {
     assert_eq!(
         session.state.self_participant,
         Some(Speaker::new("Jo Example"))
+    );
+    assert_eq!(
+        session.state.raised_hands,
+        Some(RaisedHands {
+            first: Speaker::new("Sam Example").with_avatar(Some(PHOTO.into())),
+            count: 2,
+            since: 1_793_700_060_000,
+        })
     );
     assert!(session.state.signals.speaking_while_muted);
     assert_eq!(

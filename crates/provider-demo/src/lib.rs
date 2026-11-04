@@ -9,8 +9,8 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use islet_core::{
     CapabilitySet, Command, CommandError, CommandFuture, DegradedReason, EndReason, EventSink,
-    Field, Health, Provider, ProviderDetail, ProviderId, SessionEvent, SessionState, Signals,
-    Speaker, Toggle,
+    Field, Health, Provider, ProviderDetail, ProviderId, RaisedHands, SessionEvent, SessionState,
+    Signals, Speaker, Toggle,
 };
 use tokio::sync::{mpsc, oneshot, watch};
 use tokio::time::{Instant, sleep, sleep_until};
@@ -36,6 +36,8 @@ pub enum Change {
     Mic(Toggle),
     Cam(Toggle),
     Hand(Toggle),
+    /// Others' raised hands: the first in line and how many, or nobody.
+    RaisedHands(Option<(&'static str, u32)>),
     SpeakingWhileMuted(bool),
     Health(Health),
     End(EndReason),
@@ -64,8 +66,9 @@ pub struct Script {
 }
 
 impl Script {
-    /// About 45 s through every island state: compact, mic off, the speaking-while-muted alert,
-    /// raised hand, an `Unknown` mic, degraded, ended and idle. Then it starts over.
+    /// About a minute through every island state: compact, mic off, the speaking-while-muted
+    /// alert, raised hands (the user's and others'), an `Unknown` mic, degraded, ended and idle.
+    /// Then it starts over.
     pub fn tour() -> Self {
         let s = Duration::from_secs;
         let steps = vec![
@@ -83,6 +86,10 @@ impl Script {
             Step::new(s(5), Change::SpeakingWhileMuted(false)),
             Step::new(s(1), Change::Hand(Toggle::On)),
             Step::new(s(4), Change::Hand(Toggle::Off)),
+            Step::new(s(1), Change::RaisedHands(Some(("Sam Taylor", 1)))),
+            Step::new(s(6), Change::RaisedHands(Some(("Sam Taylor", 2)))),
+            Step::new(s(4), Change::RaisedHands(Some(("Alex Rivera", 1)))),
+            Step::new(s(6), Change::RaisedHands(None)),
             Step::new(s(1), Change::Speaker(None)),
             Step::new(s(3), Change::Mic(Toggle::Unknown)),
             Step::new(
@@ -323,6 +330,7 @@ impl Player {
                     .map(Speaker::new)
                     .collect(),
                 self_participant: Some(Speaker::new("Jordan Kim")),
+                raised_hands: None,
                 signals: Signals::default(),
                 capabilities: CapabilitySet::all(),
                 health: Health::Ok,
@@ -348,6 +356,21 @@ impl Player {
             }
             Change::Cam(cam) => state.cam = cam,
             Change::Hand(hand) => state.hand = hand,
+            Change::RaisedHands(hands) => {
+                let since = match (&state.raised_hands, hands) {
+                    (Some(current), Some((first, _)))
+                        if current.first.display_name.as_deref() == Some(first) =>
+                    {
+                        current.since
+                    }
+                    _ => unix_millis(),
+                };
+                state.raised_hands = hands.map(|(first, count)| RaisedHands {
+                    first: Speaker::new(first),
+                    count,
+                    since,
+                });
+            }
             Change::SpeakingWhileMuted(on) => state.signals.speaking_while_muted = on,
             Change::Health(health) => state.health = health,
             Change::End(reason) => {

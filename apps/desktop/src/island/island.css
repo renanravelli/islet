@@ -117,6 +117,10 @@ div.pill-body {
   object-fit: cover;
   display: block;
 }
+/* The first one in the line of raised hands. */
+.avatar.is-raised {
+  box-shadow: 0 0 0 1.5px var(--island-attention);
+}
 .compact .avatar.is-speaking,
 .pill-body .avatar.is-speaking {
   box-shadow: 0 0 0 1.5px var(--island-speaking);
@@ -538,6 +542,103 @@ div.pill-body {
 .alert-button:focus-visible {
   outline: 2px solid var(--island-text);
   outline-offset: 2px;
+}
+
+/* Others' raised hands (the canvas's "Mão levantada" board): amber, at the left of the notch;
+   the user's own hand stays in the right ear. */
+.hands-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+  color: var(--island-attention);
+}
+.hands-more {
+  font-size: 11px;
+  font-weight: 600;
+}
+.hands-row {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 40px;
+  margin-top: 14px;
+  padding: 0 12px;
+  border-radius: 12px;
+  background: var(--island-control);
+  color: var(--island-attention);
+  flex: none;
+}
+.hands-by {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--island-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hands-count,
+.notice-count {
+  flex: none;
+  font-size: 12px;
+  color: var(--island-text-2);
+}
+
+/* The notice: the alert's size, without its outline or glow. */
+.notice-live {
+  width: 100%;
+  height: 100%;
+}
+.notice {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  padding: 0 16px 14px;
+  cursor: pointer;
+}
+div.notice {
+  cursor: default;
+}
+.notice:focus-visible {
+  outline: 2px solid var(--island-primary);
+  outline-offset: -2px;
+}
+.notice-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--island-attention);
+  white-space: nowrap;
+}
+.notice-body {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+}
+.notice-body .avatar.is-raised {
+  box-shadow: 0 0 0 2px var(--island-attention);
+}
+.notice-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.notice-by {
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Last: ended dims everything, the timer included. */

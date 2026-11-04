@@ -285,6 +285,100 @@ describe("participant tiles", () => {
   });
 });
 
+describe("others' raised hands", () => {
+  // Synthetic, shaped like the probe's report (2026-11-04): Meet draws the hand as an icon in the
+  // tile and, with two or more up, the place in line next to it.
+  const tile = (id: string) => document.querySelector(`[data-participant-id='${id}']`);
+  const raise = (id: string, place?: number) => {
+    const badge = document.createElement("div");
+    badge.className = "hand";
+    badge.innerHTML = `<i class="google-material-icons notranslate" aria-hidden="true">front_hand</i>${
+      place === undefined ? "" : `<div>${place}</div>`
+    }`;
+    tile(id)?.append(badge);
+  };
+  const lower = (id: string) => tile(id)?.querySelector(".hand")?.remove();
+  const addTile = (id: string, name: string) => {
+    const el = document.createElement("div");
+    el.setAttribute("data-participant-id", id);
+    el.setAttribute("jsname", "E2KThb");
+    el.innerHTML = `<span class="notranslate">${name}</span>`;
+    document.querySelector("[role=toolbar]")?.before(el);
+  };
+
+  it("leaves raised_hands out while no one else has a hand up", () => {
+    load(FIXTURES.inCallEn);
+    expect(adapter().readState().state.raised_hands).toBeUndefined();
+  });
+
+  it("shows the first in line by name, how many, and since when", () => {
+    load(FIXTURES.inCallEn);
+    raise("p2");
+    const state = new MeetAdapter(document, SELECTORS, undefined, () => 1000).readState().state;
+    expect(state.raised_hands).toEqual({
+      first: { display_name: "Sam Example" },
+      count: 1,
+      since: 1000,
+    });
+    expect(state.participants?.map((p) => p.display_name)).toEqual(["Alex Example", "Sam Example"]);
+  });
+
+  it("follows Meet's place in line and leaves the user out", () => {
+    load(FIXTURES.inCallEn);
+    addTile("p3", "Kim Example");
+    tile("p2")?.append(Object.assign(document.createElement("div"), { id: "own" }));
+    document.getElementById("own")?.setAttribute("jsname", "Ac69Jc");
+    raise("p1", 2);
+    raise("p2", 1);
+    raise("p3", 3);
+    expect(adapter().readState().state.raised_hands).toMatchObject({
+      first: { display_name: "Alex Example" },
+      count: 2,
+    });
+  });
+
+  it("without places, keeps the order hands went up in; since moves only with the first", () => {
+    load(FIXTURES.inCallEn);
+    let now = 1000;
+    const meet = new MeetAdapter(document, SELECTORS, undefined, () => now);
+    addTile("p3", "Kim Example");
+    raise("p3");
+    expect(meet.readState().state.raised_hands).toEqual({
+      first: { display_name: "Kim Example" },
+      count: 1,
+      since: 1000,
+    });
+    now = 2000;
+    raise("p1");
+    expect(meet.readState().state.raised_hands).toEqual({
+      first: { display_name: "Kim Example" },
+      count: 2,
+      since: 1000,
+    });
+    now = 3000;
+    lower("p3");
+    expect(meet.readState().state.raised_hands).toEqual({
+      first: { display_name: "Alex Example" },
+      count: 1,
+      since: 3000,
+    });
+    lower("p1");
+    expect(meet.readState().state.raised_hands).toBeUndefined();
+  });
+
+  it("counts a person once, and never sends a tile's id", () => {
+    load(FIXTURES.inCallEn);
+    addTile("p1", "Alex Example");
+    const [main, second] = document.querySelectorAll("[data-participant-id='p1']");
+    for (const el of [main, second]) {
+      el?.insertAdjacentHTML("beforeend", `<i class="google-material-icons">front_hand</i>`);
+    }
+    const state = adapter().readState().state;
+    expect(state.raised_hands?.count).toBe(1);
+    expect(JSON.stringify(state)).not.toContain("p1");
+  });
+});
+
 describe("participant photos (docs/adr/0007)", () => {
   // Synthetic: the URL stands in for a profile photo; the canvas is a fake, since jsdom has none.
   const PHOTO_URL = "https://lh3.googleusercontent.com/a/SYNTHETIC=s75-c-mo";

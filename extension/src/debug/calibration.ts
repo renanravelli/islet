@@ -19,6 +19,7 @@ import {
 } from "../content/meet/selectors";
 import type { TabAction } from "../shared/messages";
 import { type CanvasFactory, probeAvatars, summarize } from "./avatars";
+import { probeHands, RAISED_HAND, summarizeHands } from "./hands";
 import { saveFile } from "./save";
 import { captureSnapshot, isInChat, redact, selectorDataAttributes } from "./snapshot";
 import {
@@ -42,10 +43,6 @@ const MAX_NOTICE = 120;
 /** Live notices worth recording while waiting for the muted notice: they mention the mic or talking. */
 const NOTICE_WORDS =
   /microfone|microphone|\bmic\b|mudo|muted|mute|silenciad|falando|talking|speaking/i;
-
-/** Labels of "X raised a hand" notifications and badges (heuristic, also reported). */
-const RAISED_HAND =
-  /raised (a |their |the )?hand|hand (is )?raised|levantou a m[ãa]o|m[ãa]os? levantadas?/i;
 
 export interface RunnerDeps {
   adapter: MeetAdapter;
@@ -204,6 +201,8 @@ class Runner {
   private readonly reports: Report[] = [];
   private conditionMetAt = 0;
   private readonly noticeTexts = new Set<string>();
+  /** data-participant-id → P1, P2…, the same across a run's hand probes; memory only. */
+  private readonly handAliases = new Map<string, string>();
 
   constructor(
     private readonly deps: RunnerDeps,
@@ -320,6 +319,12 @@ class Runner {
         const findings = probeAvatars(this.doc, this.registry, this.deps.makeCanvas);
         record.measurements[`avatars.${action.label}`] = findings;
         this.log.info(`Islet ▸ photos (${action.label}): ${summarize(findings)}`);
+        break;
+      }
+      case "handProbe": {
+        const findings = probeHands(this.doc, this.registry, this.handAliases);
+        record.measurements[`hands.${action.label}`] = findings;
+        this.log.info(`Islet ▸ hands (${action.label}): ${summarizeHands(findings)}`);
         break;
       }
     }

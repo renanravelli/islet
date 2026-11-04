@@ -312,6 +312,12 @@ These complement the visual spec in the kickoff and the approved canvas:
 - **Degraded indicator:** a small `--island-attention` dot at the end of the right ear, with tooltip `island.degraded_tooltip`.
 - **Names off:** when `show_participant_names` is off, there are no names, photos or initials; a generic avatar is shown.
 - **Participant photos (docs/adr/0007):** an avatar with `avatar` draws that photo, cropped to the circle (`object-fit: cover`), instead of the initials, at every size (20, 24 and 44 pt); the speaking ring and the stack's outline stay as they are. Without a photo (before the first one arrives, an account without one, or a page that does not allow reading it) it draws the initials on their color, as before. A photo is always the same person's: the core gets it from the same tile as the name.
+- **Others' raised hands (the owner's request, 2026-11-04; the canvas's "Mão levantada" board):** the left of the notch shows others, the right the user. The user's own hand stays the amber icon in the right ear and never counts here. When others have a hand up (`raised_hands`), the island shows the first in line, who raised it earliest, and how many there are:
+  - **Compact:** after the speaker's wave, an amber hand (12 pt), the first one's 18 pt avatar with a 1.5 pt `--island-attention` ring and, with more than one, "+N" (11 pt semibold, amber). Both ears widen to fit, as for the camera. The group's aria-label is `island.hand_raised_by`, followed by `island.hands_count` with more than one.
+  - **Pill:** the same group after the speaker; the title shortens.
+  - **Expanded:** a 40 pt row on `--island-control` (12 pt radius) between the speaker and the controls, 14 pt below the speaker: an amber 16 pt hand, the 24 pt avatar with the amber ring, `island.hand_raised_by` (13 pt semibold) and, with more than one, `island.hands_count` in `--island-text-2` at the right. The island grows by 54 pt while it shows.
+  - **Notice:** when the first in line changes to someone new, the island opens for 4 s at the alert's size (440 pt, 22 pt radius) without the amber outline or glow (it is not the user's problem): `island.hands_notice` with the hand in amber at the left of the strip, the timer at the right; below, the 36 pt avatar with a 2 pt amber ring, `island.hand_raised_by` (14 pt semibold) and, with more than one, `island.hands_count`. A click expands the island. Someone joining the end of the line only raises the count. Not shown while the island is expanded or alerting, nor for a line already there when the app starts or reconnects.
+  - **Names off:** the generic avatar, and `island.hand_raised_someone` instead of `island.hand_raised_by`.
 
 ---
 
@@ -462,34 +468,38 @@ works for real.
 
 ### Island
 
-| Key                       | pt-BR                                                                        | en                                                                      |
-| ------------------------- | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| `island.expand`           | Expandir controles da reunião                                                | Expand meeting controls                                                 |
-| `island.collapse`         | Recolher a ilha                                                              | Collapse the island                                                     |
-| `island.speaking_now`     | Falando agora                                                                | Speaking now                                                            |
-| `island.last_speaker`     | Falou por último                                                             | Last speaker                                                            |
-| `island.participants`     | {n} na chamada                                                               | {n} in the call                                                         |
-| `island.you`              | Você                                                                         | You                                                                     |
-| `island.mic`              | Microfone                                                                    | Microphone                                                              |
-| `island.mic_muted`        | Mudo                                                                         | Muted                                                                   |
-| `island.mic_aria_mute`    | Desativar microfone                                                          | Mute microphone                                                         |
-| `island.mic_aria_unmute`  | Ativar microfone                                                             | Unmute microphone                                                       |
-| `island.cam`              | Câmera                                                                       | Camera                                                                  |
-| `island.cam_off`          | Sem vídeo                                                                    | Camera off                                                              |
-| `island.cam_aria_off`     | Desativar câmera                                                             | Turn camera off                                                         |
-| `island.cam_aria_on`      | Ativar câmera                                                                | Turn camera on                                                          |
-| `island.hand_raise`       | Levantar mão                                                                 | Raise hand                                                              |
-| `island.hand_lower`       | Abaixar mão                                                                  | Lower hand                                                              |
-| `island.open_tab`         | Abrir aba                                                                    | Open tab                                                                |
-| `island.open_tab_aria`    | Abrir a aba da reunião                                                       | Open the meeting tab                                                    |
-| `island.leave`            | Sair                                                                         | Leave                                                                   |
-| `island.leave_aria`       | Sair da reunião                                                              | Leave the meeting                                                       |
-| `island.unknown`          | Estado desconhecido                                                          | Unknown state                                                           |
-| `island.alert`            | Você está falando com o microfone desligado                                  | You're talking while muted                                              |
-| `island.alert_dismiss`    | Ignorar                                                                      | Dismiss                                                                 |
-| `island.alert_unmute`     | Ativar microfone                                                             | Unmute                                                                  |
-| `island.ended`            | Encerrada                                                                    | Ended                                                                   |
-| `island.degraded_tooltip` | O Islet não encontrou parte da interface do Meet. Alguns dados podem faltar. | Islet couldn't find part of Meet's interface. Some data may be missing. |
+| Key                          | pt-BR                                                                        | en                                                                      |
+| ---------------------------- | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `island.expand`              | Expandir controles da reunião                                                | Expand meeting controls                                                 |
+| `island.collapse`            | Recolher a ilha                                                              | Collapse the island                                                     |
+| `island.speaking_now`        | Falando agora                                                                | Speaking now                                                            |
+| `island.last_speaker`        | Falou por último                                                             | Last speaker                                                            |
+| `island.participants`        | {n} na chamada                                                               | {n} in the call                                                         |
+| `island.you`                 | Você                                                                         | You                                                                     |
+| `island.mic`                 | Microfone                                                                    | Microphone                                                              |
+| `island.mic_muted`           | Mudo                                                                         | Muted                                                                   |
+| `island.mic_aria_mute`       | Desativar microfone                                                          | Mute microphone                                                         |
+| `island.mic_aria_unmute`     | Ativar microfone                                                             | Unmute microphone                                                       |
+| `island.cam`                 | Câmera                                                                       | Camera                                                                  |
+| `island.cam_off`             | Sem vídeo                                                                    | Camera off                                                              |
+| `island.cam_aria_off`        | Desativar câmera                                                             | Turn camera off                                                         |
+| `island.cam_aria_on`         | Ativar câmera                                                                | Turn camera on                                                          |
+| `island.hand_raise`          | Levantar mão                                                                 | Raise hand                                                              |
+| `island.hand_lower`          | Abaixar mão                                                                  | Lower hand                                                              |
+| `island.open_tab`            | Abrir aba                                                                    | Open tab                                                                |
+| `island.open_tab_aria`       | Abrir a aba da reunião                                                       | Open the meeting tab                                                    |
+| `island.leave`               | Sair                                                                         | Leave                                                                   |
+| `island.leave_aria`          | Sair da reunião                                                              | Leave the meeting                                                       |
+| `island.unknown`             | Estado desconhecido                                                          | Unknown state                                                           |
+| `island.alert`               | Você está falando com o microfone desligado                                  | You're talking while muted                                              |
+| `island.alert_dismiss`       | Ignorar                                                                      | Dismiss                                                                 |
+| `island.alert_unmute`        | Ativar microfone                                                             | Unmute                                                                  |
+| `island.hands_notice`        | Mão levantada                                                                | Hand raised                                                             |
+| `island.hand_raised_by`      | {name} levantou a mão                                                        | {name} raised their hand                                                |
+| `island.hand_raised_someone` | Alguém levantou a mão                                                        | Someone raised their hand                                               |
+| `island.hands_count`         | {n} mãos levantadas                                                          | {n} raised hands                                                        |
+| `island.ended`               | Encerrada                                                                    | Ended                                                                   |
+| `island.degraded_tooltip`    | O Islet não encontrou parte da interface do Meet. Alguns dados podem faltar. | Islet couldn't find part of Meet's interface. Some data may be missing. |
 
 ---
 

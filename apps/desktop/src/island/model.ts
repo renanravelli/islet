@@ -4,7 +4,7 @@
 import type { AppSettings, Command, Geometry, MeetingSession, Toggle } from "@islet/ui-types";
 import type { Key } from "../i18n/i18n";
 
-export type Mode = "hidden" | "compact" | "expanded" | "alert" | "ended";
+export type Mode = "hidden" | "compact" | "expanded" | "alert" | "notice" | "ended";
 
 /** Sizes from the approved mock (CLAUDE.md, "Design tokens"), in points. */
 export const SIZE = {
@@ -22,6 +22,10 @@ export const SIZE = {
   alertRadius: 22,
   /** Below the top strip: 10 + one 19 line + 12 + 44 buttons + 14. */
   alertBody: 99,
+  /** The raised-hand notice is the alert's size. Below the strip: 10 + the 36 avatar + 14. */
+  noticeBody: 60,
+  /** The expanded island's raised-hand row: 14 above it + 40. */
+  handsRow: 54,
   /** Under the pointer the compact island and the pill grow a little: the hover cue. */
   hoverGrowWidth: 16,
   hoverGrowHeight: 3,
@@ -56,11 +60,22 @@ export function avatarColor(name: string | null | undefined): string | undefined
 export const SPEAKER_HOLD_MS = 3000;
 /** The expanded island collapses after this long without the pointer over it. */
 export const IDLE_COLLAPSE_MS = 6000;
+/** How long the island announces a new first one in the line of raised hands. */
+export const HAND_NOTICE_MS = 4000;
+/** A line older than this is not announced: it was there before the app started or reconnected. */
+export const HAND_NOTICE_FRESH_MS = 10_000;
 
 export interface UiState {
   expanded: boolean;
   /** "Ignore" on the alert, until Meet's notice goes away. */
   alertDismissed: boolean;
+  /** Announcing a new first one in the line of raised hands. */
+  handNotice?: boolean;
+}
+
+/** Whether a line of raised hands that started at `since` is new enough to announce. */
+export function announces(since: number, now: number): boolean {
+  return now - since < HAND_NOTICE_FRESH_MS;
 }
 
 export function mode(session: MeetingSession | null, ui: UiState, settings: AppSettings): Mode {
@@ -75,20 +90,35 @@ export function mode(session: MeetingSession | null, ui: UiState, settings: AppS
   ) {
     return "alert";
   }
+  if (ui.handNotice && session.raised_hands) return "notice";
   return "compact";
 }
 
-/** The island window's size: exactly its contour, so no invisible area takes clicks. */
 /**
  * The right ear's items, measured in Chrome with the island's font (12 pt semibold, tabular
  * digits): a timer digit is 7.9 wide and a colon 4; icons are 14, the degraded dot 6, gaps 7.
  */
 const EAR_ITEMS = { icon: 14, dot: 6, gap: 7, digit: 7.9, colon: 4 } as const;
+/**
+ * The left ear: the 20 avatar, 8, the five-bar wave (23); with others' hands up, 8, then the
+ * 12 hand, 4, the 18 avatar and, with more than one, 4 and "+N" (11 pt semibold: "+" 6.8, a
+ * digit 7.3).
+ */
+const LEFT_EAR = { speaker: 51, gap: 8, hand: 12, inner: 4, avatar: 18, plus: 6.8, digit: 7.3 };
+
+/** The left ear's width with others' raised hands, or 0 without them. */
+function leftEar(session: MeetingSession): number {
+  const hands = session.raised_hands;
+  if (!hands) return 0;
+  const { speaker, gap, hand, inner, avatar, plus, digit } = LEFT_EAR;
+  const more = hands.count > 1 ? inner + plus + String(hands.count - 1).length * digit : 0;
+  return speaker + gap + hand + inner + avatar + more;
+}
 
 /**
  * The width of each ear around the notch: the mock's 88, or more when the right ear holds the
- * hand, the camera, an hour-long timer or the degraded dot, so nothing slides under the notch.
- * Both ears match, which keeps the notch centered.
+ * hand, the camera, an hour-long timer or the degraded dot, or the left one others' raised
+ * hands, so nothing slides under the notch. Both ears match, which keeps the notch centered.
  */
 export function earWidth(
   session: MeetingSession | null,
@@ -107,14 +137,18 @@ export function earWidth(
     if (session.health.status !== "ok") items.push(EAR_ITEMS.dot);
   }
   const content = items.reduce((sum, w) => sum + w, 0) + EAR_ITEMS.gap * (items.length - 1);
-  return Math.max(SIZE.ear, Math.ceil(content));
+  const left = m === "ended" ? 0 : leftEar(session);
+  return Math.max(SIZE.ear, Math.ceil(content), Math.ceil(left));
 }
 
+/** The island window's size: exactly its contour, so no invisible area takes clicks. */
 export function contour(
   m: Mode,
   geometry: Geometry,
   hovered = false,
   ear: number = SIZE.ear,
+  /** The expanded island shows the raised-hand row. */
+  hands = false,
 ): { width: number; height: number } {
   const top = geometry.has_notch ? geometry.top_inset : SIZE.pillHeight;
   switch (m) {
@@ -136,9 +170,14 @@ export function contour(
         : base;
     }
     case "expanded":
-      return { width: SIZE.expandedWidth, height: top + SIZE.expandedBody };
+      return {
+        width: SIZE.expandedWidth,
+        height: top + SIZE.expandedBody + (hands ? SIZE.handsRow : 0),
+      };
     case "alert":
       return { width: SIZE.alertWidth, height: top + SIZE.alertBody };
+    case "notice":
+      return { width: SIZE.alertWidth, height: top + SIZE.noticeBody };
   }
 }
 

@@ -24,6 +24,7 @@ const session: MeetingSession = {
   participant_count: 4,
   participants: [],
   self_participant: null,
+  raised_hands: null,
   signals: { speaking_while_muted: false },
   capabilities: ["toggle_mic", "toggle_cam", "leave"],
   health: { status: "ok" },
@@ -115,6 +116,37 @@ describe("island", () => {
     const button = container.querySelector("button");
     expect(button?.getAttribute("aria-label")).toBe("Expandir controles da reunião");
     expect(container.querySelector(".timer")?.textContent).toBe("1:00");
+  });
+
+  it("shows others' raised hands at the left: the first in line and how many", () => {
+    const raised_hands = { first: { display_name: "Bruno Example" }, count: 3, since: 0 };
+    render("compact", { raised_hands });
+    const chip = container.querySelector(".ear.left .hands-chip");
+    expect(chip?.getAttribute("aria-label")).toBe(
+      "Bruno Example levantou a mão, 3 mãos levantadas",
+    );
+    expect(chip?.textContent).toBe("BE+2");
+    // The user's own hand is a different mark, at the right.
+    expect(container.querySelector(".ear.right .status-icon.attention")).toBeNull();
+
+    render("expanded", { raised_hands });
+    expect(container.querySelector(".hands-row")?.textContent).toBe(
+      "BEBruno Example levantou a mão3 mãos levantadas",
+    );
+
+    render("notice", { raised_hands: { ...raised_hands, count: 1 } });
+    const notice = container.querySelector(".notice");
+    expect(notice?.tagName).toBe("BUTTON");
+    expect(notice?.textContent).toContain("Mão levantada");
+    expect(notice?.textContent).toContain("Bruno Example levantou a mão");
+    expect(notice?.textContent).not.toContain("mãos levantadas");
+  });
+
+  it("with names hidden, says someone raised their hand", () => {
+    render("expanded", { raised_hands: { first: { display_name: null }, count: 1, since: 0 } });
+    expect(container.querySelector(".hands-by")?.textContent).toBe("Alguém levantou a mão");
+    render("compact");
+    expect(container.querySelector(".hands-chip")).toBeNull();
   });
 
   it("shows the camera icon only while the camera is on", () => {

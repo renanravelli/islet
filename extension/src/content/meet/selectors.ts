@@ -34,6 +34,8 @@ export interface SelectorEntry {
   avatar?: Strategy[];
   /** For the participant count: where the number is, inside the resolved element. */
   count?: Strategy[];
+  /** For the raised hand: the place in line Meet shows next to the mark, inside its parent. */
+  position?: Strategy[];
   /** Only elements on screen count: Meet may keep a notice in the page after hiding it. */
   onScreen?: boolean;
 }
@@ -56,7 +58,9 @@ export type SelectorKey =
   /** Every participant tile, for the avatar row. Optional and never reported. */
   | "participantTile"
   /** The user's own tile. Optional and never reported. */
-  | "selfTile";
+  | "selfTile"
+  /** The raised-hand mark inside a participant tile. Optional and never reported. */
+  | "raisedHand";
 
 export interface Registry {
   version: number;
@@ -84,6 +88,7 @@ export const SELECTOR_KEYS: SelectorKey[] = [
   "justLeaveButton",
   "participantTile",
   "selfTile",
+  "raisedHand",
 ];
 
 const compiled = new Map<string, RegExp>();

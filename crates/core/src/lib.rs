@@ -17,6 +17,7 @@ pub use provider::{CommandFuture, EventSink, ManagerStopped, Provider, SessionEv
 pub use reducer::{Event, Sessions, Timings, UiSnapshot, reduce};
 pub use session::{
     DegradedReason, EndReason, Field, Health, MAX_AVATAR_BYTES, MAX_PARTICIPANTS, MeetingSession,
-    ProviderDetail, ProviderId, SessionKey, SessionState, SessionStatus, Signals, Speaker, Toggle,
+    ProviderDetail, ProviderId, RaisedHands, SessionKey, SessionState, SessionStatus, Signals,
+    Speaker, Toggle,
 };
 pub use status::{Diagnostics, ProviderDiagnostics, ProviderStatus, ProviderView, Settings};

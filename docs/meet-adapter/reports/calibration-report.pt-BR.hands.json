@@ -1,0 +1,1024 @@
+{
+  "tool": "islet-calibration-runner",
+  "selectorsVersion": 9,
+  "locale": "pt-BR",
+  "browser": "Google Chrome 156",
+  "date": "2026-11-04",
+  "entry": "hands",
+  "part": "main",
+  "steps": [
+    {
+      "number": 2,
+      "id": "in-call-mic-on",
+      "title": "Both in the call",
+      "status": "done",
+      "waits": [
+        {
+          "ask": "Join the call on the Mac.",
+          "until": "inCall",
+          "status": "met",
+          "waitedMs": 0
+        },
+        {
+          "ask": "Join from the iPhone with the meeting code, then admit it on the Mac.",
+          "until": "participants",
+          "status": "met",
+          "waitedMs": 64053
+        }
+      ],
+      "commands": [
+        {
+          "action": "toggle_mic",
+          "result": "confirmed",
+          "ms": 77,
+          "before": "off",
+          "after": "on"
+        }
+      ],
+      "set": [
+        {
+          "field": "mic",
+          "target": "on",
+          "outcome": "set through execute"
+        },
+        {
+          "field": "cam",
+          "target": "off",
+          "outcome": "already"
+        },
+        {
+          "field": "hand",
+          "target": "off",
+          "outcome": "already"
+        }
+      ],
+      "files": [
+        "meet-real-in-call-mic-on.pt-BR.html",
+        "meet-real-in-call-mic-on.pt-BR.expected.json",
+        "meet-real-in-call-mic-on.pt-BR.observed.json"
+      ],
+      "measurements": {},
+      "expected": {
+        "inCall": true,
+        "self": {
+          "mic": "on",
+          "cam": "off",
+          "hand": "off"
+        },
+        "participant_count": 2
+      },
+      "mismatches": [],
+      "observed": {
+        "inCall": true,
+        "state": {
+          "meeting_code": "[meeting-code]",
+          "self": {
+            "mic": "on",
+            "cam": "off",
+            "hand": "off"
+          },
+          "signals": {
+            "speaking_while_muted": false
+          },
+          "capabilities": ["toggle_mic", "toggle_cam", "toggle_hand", "leave", "focus_tab"],
+          "health": "ok",
+          "title": "[title]",
+          "participant_count": 2,
+          "participants": [
+            {
+              "display_name": "[name]"
+            },
+            {
+              "display_name": "[name]"
+            }
+          ],
+          "self_participant": {
+            "display_name": "[name]"
+          }
+        },
+        "failed": [],
+        "remoteHand": false,
+        "speakingTiles": [],
+        "avatarCount": 2
+      },
+      "find": {
+        "leaveButton": {
+          "strategy": 0,
+          "tag": "button",
+          "data": {},
+          "role": "button",
+          "jsname": "CQylAd",
+          "jscontroller": "PIVayb"
+        },
+        "micButton": {
+          "strategy": 0,
+          "tag": "button",
+          "data": {
+            "data-is-muted": "false"
+          },
+          "role": "button",
+          "jsname": "hw0c9",
+          "jscontroller": "PIVayb"
+        },
+        "camButton": {
+          "strategy": 0,
+          "tag": "button",
+          "data": {
+            "data-is-muted": "true"
+          },
+          "role": "button",
+          "jsname": "psRWwc",
+          "jscontroller": "PIVayb"
+        },
+        "handButton": {
+          "strategy": 0,
+          "tag": "button",
+          "data": {},
+          "role": "button",
+          "jsname": "FpSaz",
+          "jscontroller": "PIVayb"
+        },
+        "activeSpeaker": null,
+        "participantCount": {
+          "strategy": 0,
+          "tag": "div",
+          "data": {},
+          "role": "button",
+          "jsname": "ocqpFe"
+        },
+        "mutedSpeakingNotice": null,
+        "meetingTitle": {
+          "strategy": 0,
+          "tag": "div",
+          "data": {},
+          "jsname": "NeC6gb",
+          "jscontroller": "yEvoid"
+        },
+        "justLeaveButton": null,
+        "participantTile": {
+          "strategy": 0,
+          "tag": "div",
+          "data": {
+            "data-participant-id": "[value]",
+            "data-tile-media-id": "[value]"
+          },
+          "jsname": "E2KThb",
+          "jscontroller": "K3Z5Df"
+        },
+        "selfTile": {
+          "strategy": 0,
+          "tag": "div",
+          "data": {
+            "data-participant-id": "[value]",
+            "data-tile-media-id": "[value]"
+          },
+          "jsname": "E2KThb",
+          "jscontroller": "K3Z5Df"
+        }
+      }
+    },
+    {
+      "number": 13,
+      "id": "raised-hands",
+      "title": "Raised hands",
+      "status": "done",
+      "waits": [
+        {
+          "ask": "Bring a third participant into the call (another device or person), besides the iPhone.",
+          "until": "participants",
+          "status": "met",
+          "waitedMs": 1031
+        },
+        {
+          "ask": "On the iPhone, raise the hand.",
+          "until": "remoteHand",
+          "status": "met",
+          "waitedMs": 9537
+        },
+        {
+          "ask": "Wait for Meet's notice to go away.",
+          "until": "pause",
+          "status": "met",
+          "waitedMs": 8056
+        },
+        {
+          "ask": "Now raise the third participant's hand. The iPhone's stays up.",
+          "until": "pause",
+          "status": "met",
+          "waitedMs": 15092
+        },
+        {
+          "ask": "On the Mac, open the People panel (top bar) and leave it open.",
+          "until": "pause",
+          "status": "met",
+          "waitedMs": 10070
+        },
+        {
+          "ask": "Close the People panel. Lower the iPhone's hand; the third participant's stays up.",
+          "until": "pause",
+          "status": "met",
+          "waitedMs": 15014
+        }
+      ],
+      "commands": [
+        {
+          "action": "toggle_mic",
+          "result": "confirmed",
+          "ms": 56,
+          "before": "on",
+          "after": "off"
+        },
+        {
+          "action": "toggle_hand",
+          "result": "confirmed",
+          "ms": 170,
+          "before": "off",
+          "after": "on"
+        },
+        {
+          "action": "toggle_hand",
+          "result": "confirmed",
+          "ms": 205,
+          "before": "on",
+          "after": "off"
+        }
+      ],
+      "set": [
+        {
+          "field": "mic",
+          "target": "off",
+          "outcome": "set through execute"
+        },
+        {
+          "field": "cam",
+          "target": "off",
+          "outcome": "already"
+        },
+        {
+          "field": "hand",
+          "target": "off",
+          "outcome": "already"
+        },
+        {
+          "field": "mic",
+          "target": "off",
+          "outcome": "already"
+        },
+        {
+          "field": "cam",
+          "target": "off",
+          "outcome": "already"
+        },
+        {
+          "field": "hand",
+          "target": "on",
+          "outcome": "set through execute"
+        },
+        {
+          "field": "mic",
+          "target": "off",
+          "outcome": "already"
+        },
+        {
+          "field": "cam",
+          "target": "off",
+          "outcome": "already"
+        },
+        {
+          "field": "hand",
+          "target": "off",
+          "outcome": "set through execute"
+        }
+      ],
+      "files": [],
+      "measurements": {
+        "hands.none": [
+          {
+            "where": "other",
+            "kind": "text",
+            "shape": "Mãos levantadas",
+            "onScreen": false,
+            "path": [
+              "div",
+              "div[jsname=ocqpFe][role=button][data-tooltip-id]",
+              "div",
+              "span[data-tooltip-anchor-boundary-type]",
+              "span[data-is-tooltip-wrapper]"
+            ]
+          },
+          {
+            "where": "other",
+            "kind": "text",
+            "shape": "Mãos levantadas",
+            "onScreen": false,
+            "path": [
+              "span[data-is-tooltip-wrapper]",
+              "span[data-unique-tt-id]",
+              "div",
+              "div[role=region][data-enable-badge-expansion]",
+              "div"
+            ]
+          },
+          {
+            "where": "other",
+            "kind": "icon",
+            "shape": "front_hand",
+            "onScreen": false,
+            "path": ["div[jsname=Y4QCpb]", "div[jsname=vdp2Fc]", "div", "div", "div"]
+          }
+        ],
+        "hands.one": [
+          {
+            "where": "other",
+            "kind": "text",
+            "shape": "Mãos levantadas",
+            "onScreen": false,
+            "path": [
+              "div",
+              "div[jsname=ocqpFe][role=button][data-tooltip-id]",
+              "div",
+              "span[data-tooltip-anchor-boundary-type][data-hide-mouse-tooltip]",
+              "span[data-is-tooltip-wrapper]"
+            ]
+          },
+          {
+            "where": "other",
+            "kind": "icon",
+            "shape": "front_hand",
+            "onScreen": true,
+            "path": [
+              "div[jsname=QbKf1d]",
+              "div",
+              "div[jsname=nav9Xe]",
+              "div",
+              "div[jsname=ocqpFe][role=button][data-tooltip-id]"
+            ]
+          },
+          {
+            "where": "tile",
+            "tile": 0,
+            "participant": "P1",
+            "kind": "icon",
+            "shape": "front_hand",
+            "onScreen": true,
+            "path": ["div", "div", "div", "div", "div"]
+          },
+          {
+            "where": "other",
+            "kind": "icon",
+            "shape": "front_hand",
+            "onScreen": false,
+            "path": ["div[jsname=Y4QCpb]", "div[jsname=vdp2Fc]", "div", "div", "div"]
+          },
+          {
+            "where": "other",
+            "kind": "text",
+            "shape": "Mãos levantadas",
+            "onScreen": false,
+            "number": 1,
+            "path": ["div", "span", "div", "div[jsname=yPG7g][role=button]", "div"]
+          },
+          {
+            "where": "other",
+            "kind": "label",
+            "shape": "Mãos levantadas",
+            "onScreen": false,
+            "path": ["div", "div", "div", "div", "div"]
+          },
+          {
+            "where": "other",
+            "kind": "label",
+            "shape": "[text] mão levantada",
+            "onScreen": false,
+            "path": ["span[role=region]", "div", "div", "div", "div"]
+          },
+          {
+            "where": "participant-list",
+            "participant": "P1",
+            "kind": "icon",
+            "shape": "front_hand",
+            "onScreen": false,
+            "path": [
+              "div[jsname=v8MrR]",
+              "div",
+              "div",
+              "div",
+              "div[role=listitem][data-participant-id]"
+            ]
+          },
+          {
+            "where": "participant-list",
+            "participant": "P1",
+            "kind": "label",
+            "shape": "Abaixar a mão de [text]",
+            "onScreen": false,
+            "path": [
+              "div[data-is-touch-wrapper]",
+              "div",
+              "div",
+              "div",
+              "div[role=listitem][data-participant-id]"
+            ]
+          },
+          {
+            "where": "notice",
+            "kind": "text",
+            "shape": "[text] levantou a mão [text]",
+            "onScreen": true,
+            "path": ["body", "html[data-lt-installed]"]
+          }
+        ],
+        "hands.two": [
+          {
+            "where": "other",
+            "kind": "text",
+            "shape": "Mãos levantadas",
+            "onScreen": false,
+            "path": [
+              "div",
+              "div[jsname=ocqpFe][role=button][data-tooltip-id]",
+              "div",
+              "span[data-tooltip-anchor-boundary-type][data-hide-mouse-tooltip]",
+              "span[data-is-tooltip-wrapper]"
+            ]
+          },
+          {
+            "where": "other",
+            "kind": "icon",
+            "shape": "front_hand",
+            "onScreen": true,
+            "path": [
+              "div[jsname=QbKf1d]",
+              "div",
+              "div[jsname=nav9Xe]",
+              "div",
+              "div[jsname=ocqpFe][role=button][data-tooltip-id]"
+            ]
+          },
+          {
+            "where": "tile",
+            "tile": 0,
+            "participant": "P1",
+            "kind": "icon",
+            "shape": "front_hand",
+            "onScreen": true,
+            "number": 1,
+            "path": ["div", "div", "div", "div", "div"]
+          },
+          {
+            "where": "tile",
+            "tile": 2,
+            "participant": "P2",
+            "kind": "icon",
+            "shape": "front_hand",
+            "onScreen": true,
+            "number": 2,
+            "path": ["div", "div", "div", "div", "div"]
+          },
+          {
+            "where": "other",
+            "kind": "icon",
+            "shape": "front_hand",
+            "onScreen": false,
+            "path": ["div[jsname=Y4QCpb]", "div[jsname=vdp2Fc]", "div", "div", "div"]
+          },
+          {
+            "where": "other",
+            "kind": "text",
+            "shape": "Mãos levantadas",
+            "onScreen": false,
+            "number": 2,
+            "path": ["div", "span", "div", "div[jsname=yPG7g][role=button]", "div"]
+          },
+          {
+            "where": "other",
+            "kind": "label",
+            "shape": "Mãos levantadas",
+            "onScreen": false,
+            "path": ["div", "div", "div", "div", "div"]
+          },
+          {
+            "where": "other",
+            "kind": "label",
+            "shape": "[text] mãos levantadas [text]",
+            "onScreen": false,
+            "path": ["span[role=region]", "div", "div", "div", "div"]
+          },
+          {
+            "where": "participant-list",
+            "participant": "P1",
+            "kind": "icon",
+            "shape": "front_hand",
+            "onScreen": false,
+            "path": [
+              "div[jsname=v8MrR]",
+              "div",
+              "div",
+              "div",
+              "div[role=listitem][data-participant-id]"
+            ]
+          },
+          {
+            "where": "participant-list",
+            "participant": "P1",
+            "kind": "label",
+            "shape": "Abaixar a mão de [text]",
+            "onScreen": false,
+            "path": [
+              "div[data-is-touch-wrapper]",
+              "div",
+              "div",
+              "div",
+              "div[role=listitem][data-participant-id]"
+            ]
+          },
+          {
+            "where": "participant-list",
+            "participant": "P2",
+            "kind": "icon",
+            "shape": "front_hand",
+            "onScreen": false,
+            "path": [
+              "div[jsname=v8MrR]",
+              "div",
+              "div",
+              "div",
+              "div[role=listitem][data-participant-id]"
+            ]
+          },
+          {
+            "where": "participant-list",
+            "participant": "P2",
+            "kind": "label",
+            "shape": "Abaixar a mão de [text]",
+            "onScreen": false,
+            "path": [
+              "div[data-is-touch-wrapper]",
+              "div",
+              "div",
+              "div",
+              "div[role=listitem][data-participant-id]"
+            ]
+          }
+        ],
+        "hands.two-and-mac": [
+          {
+            "where": "other",
+            "kind": "text",
+            "shape": "Mãos levantadas",
+            "onScreen": false,
+            "path": [
+              "div",
+              "div[jsname=ocqpFe][role=button][data-tooltip-id]",
+              "div",
+              "span[data-tooltip-anchor-boundary-type][data-hide-mouse-tooltip]",
+              "span[data-is-tooltip-wrapper]"
+            ]
+          },
+          {
+            "where": "other",
+            "kind": "icon",
+            "shape": "front_hand",
+            "onScreen": true,
+            "path": [
+              "div[jsname=QbKf1d]",
+              "div",
+              "div[jsname=nav9Xe]",
+              "div",
+              "div[jsname=ocqpFe][role=button][data-tooltip-id]"
+            ]
+          },
+          {
+            "where": "tile",
+            "tile": 0,
+            "participant": "P1",
+            "kind": "icon",
+            "shape": "front_hand",
+            "onScreen": true,
+            "number": 1,
+            "path": ["div", "div", "div", "div", "div"]
+          },
+          {
+            "where": "self-tile",
+            "participant": "P3",
+            "kind": "icon",
+            "shape": "front_hand",
+            "onScreen": true,
+            "number": 3,
+            "path": ["div", "div", "div", "div", "div"]
+          },
+          {
+            "where": "tile",
+            "tile": 2,
+            "participant": "P2",
+            "kind": "icon",
+            "shape": "front_hand",
+            "onScreen": true,
+            "number": 2,
+            "path": ["div", "div", "div", "div", "div"]
+          },
+          {
+            "where": "other",
+            "kind": "icon",
+            "shape": "front_hand",
+            "onScreen": false,
+            "path": ["div[jsname=Y4QCpb]", "div[jsname=vdp2Fc]", "div", "div", "div"]
+          },
+          {
+            "where": "other",
+            "kind": "text",
+            "shape": "Mãos levantadas",
+            "onScreen": false,
+            "number": 3,
+            "path": ["div", "span", "div", "div[jsname=yPG7g][role=button]", "div"]
+          },
+          {
+            "where": "other",
+            "kind": "label",
+            "shape": "Mãos levantadas",
+            "onScreen": false,
+            "path": ["div", "div", "div", "div", "div"]
+          },
+          {
+            "where": "other",
+            "kind": "label",
+            "shape": "[text] mãos levantadas [text]",
+            "onScreen": false,
+            "path": ["span[role=region]", "div", "div", "div", "div"]
+          },
+          {
+            "where": "participant-list",
+            "participant": "P1",
+            "kind": "icon",
+            "shape": "front_hand",
+            "onScreen": false,
+            "path": [
+              "div[jsname=v8MrR]",
+              "div",
+              "div",
+              "div",
+              "div[role=listitem][data-participant-id]"
+            ]
+          },
+          {
+            "where": "participant-list",
+            "participant": "P1",
+            "kind": "label",
+            "shape": "Abaixar a mão de [text]",
+            "onScreen": false,
+            "path": [
+              "div[data-is-touch-wrapper]",
+              "div",
+              "div",
+              "div",
+              "div[role=listitem][data-participant-id]"
+            ]
+          },
+          {
+            "where": "participant-list",
+            "participant": "P2",
+            "kind": "icon",
+            "shape": "front_hand",
+            "onScreen": false,
+            "path": [
+              "div[jsname=v8MrR]",
+              "div",
+              "div",
+              "div",
+              "div[role=listitem][data-participant-id]"
+            ]
+          },
+          {
+            "where": "participant-list",
+            "participant": "P2",
+            "kind": "label",
+            "shape": "Abaixar a mão de [text]",
+            "onScreen": false,
+            "path": [
+              "div[data-is-touch-wrapper]",
+              "div",
+              "div",
+              "div",
+              "div[role=listitem][data-participant-id]"
+            ]
+          },
+          {
+            "where": "participant-list",
+            "participant": "P3",
+            "kind": "icon",
+            "shape": "front_hand",
+            "onScreen": false,
+            "path": [
+              "div[jsname=v8MrR]",
+              "div",
+              "div",
+              "div",
+              "div[role=listitem][data-participant-id]"
+            ]
+          },
+          {
+            "where": "participant-list",
+            "participant": "P3",
+            "kind": "label",
+            "shape": "Abaixar a mão de [text]",
+            "onScreen": false,
+            "path": [
+              "div[data-is-touch-wrapper]",
+              "div",
+              "div",
+              "div",
+              "div[role=listitem][data-participant-id]"
+            ]
+          }
+        ],
+        "hands.people-panel": [
+          {
+            "where": "other",
+            "kind": "text",
+            "shape": "Mãos levantadas",
+            "onScreen": false,
+            "path": [
+              "div",
+              "div[jsname=ocqpFe][role=button][data-tooltip-id]",
+              "div",
+              "span[data-tooltip-anchor-boundary-type][data-hide-mouse-tooltip]",
+              "span[data-is-tooltip-wrapper]"
+            ]
+          },
+          {
+            "where": "other",
+            "kind": "icon",
+            "shape": "front_hand",
+            "onScreen": true,
+            "path": [
+              "div[jsname=QbKf1d]",
+              "div",
+              "div[jsname=nav9Xe]",
+              "div",
+              "div[jsname=ocqpFe][role=button][data-tooltip-id]"
+            ]
+          },
+          {
+            "where": "tile",
+            "tile": 0,
+            "participant": "P1",
+            "kind": "icon",
+            "shape": "front_hand",
+            "onScreen": true,
+            "number": 1,
+            "path": ["div", "div", "div", "div", "div"]
+          },
+          {
+            "where": "tile",
+            "tile": 2,
+            "participant": "P2",
+            "kind": "icon",
+            "shape": "front_hand",
+            "onScreen": true,
+            "number": 2,
+            "path": ["div", "div", "div", "div", "div"]
+          },
+          {
+            "where": "other",
+            "kind": "icon",
+            "shape": "front_hand",
+            "onScreen": false,
+            "path": ["div[jsname=Y4QCpb]", "div[jsname=vdp2Fc]", "div", "div", "div"]
+          },
+          {
+            "where": "other",
+            "kind": "text",
+            "shape": "Mãos levantadas",
+            "onScreen": false,
+            "number": 2,
+            "path": ["div", "span", "div", "div[jsname=yPG7g][role=button]", "div"]
+          },
+          {
+            "where": "other",
+            "kind": "label",
+            "shape": "Mãos levantadas",
+            "onScreen": false,
+            "path": ["div", "div", "div", "div", "div"]
+          },
+          {
+            "where": "other",
+            "kind": "label",
+            "shape": "[text] mãos levantadas [text]",
+            "onScreen": false,
+            "path": ["span[role=region]", "div", "div", "div", "div"]
+          },
+          {
+            "where": "participant-list",
+            "participant": "P1",
+            "kind": "icon",
+            "shape": "front_hand",
+            "onScreen": false,
+            "path": [
+              "div[jsname=v8MrR]",
+              "div",
+              "div",
+              "div",
+              "div[role=listitem][data-participant-id]"
+            ]
+          },
+          {
+            "where": "participant-list",
+            "participant": "P1",
+            "kind": "label",
+            "shape": "Abaixar a mão de [text]",
+            "onScreen": false,
+            "path": [
+              "div[data-is-touch-wrapper]",
+              "div",
+              "div",
+              "div",
+              "div[role=listitem][data-participant-id]"
+            ]
+          },
+          {
+            "where": "participant-list",
+            "participant": "P2",
+            "kind": "icon",
+            "shape": "front_hand",
+            "onScreen": false,
+            "path": [
+              "div[jsname=v8MrR]",
+              "div",
+              "div",
+              "div",
+              "div[role=listitem][data-participant-id]"
+            ]
+          },
+          {
+            "where": "participant-list",
+            "participant": "P2",
+            "kind": "label",
+            "shape": "Abaixar a mão de [text]",
+            "onScreen": false,
+            "path": [
+              "div[data-is-touch-wrapper]",
+              "div",
+              "div",
+              "div",
+              "div[role=listitem][data-participant-id]"
+            ]
+          }
+        ],
+        "hands.first-lowered": [
+          {
+            "where": "other",
+            "kind": "text",
+            "shape": "Mãos levantadas",
+            "onScreen": false,
+            "path": [
+              "div",
+              "div[jsname=ocqpFe][role=button][data-tooltip-id]",
+              "div",
+              "span[data-tooltip-anchor-boundary-type]",
+              "span[data-is-tooltip-wrapper]"
+            ]
+          },
+          {
+            "where": "other",
+            "kind": "icon",
+            "shape": "front_hand",
+            "onScreen": true,
+            "path": [
+              "div[jsname=QbKf1d]",
+              "div",
+              "div[jsname=nav9Xe]",
+              "div",
+              "div[jsname=ocqpFe][role=button][data-tooltip-id]"
+            ]
+          },
+          {
+            "where": "other",
+            "kind": "text",
+            "shape": "Mãos levantadas",
+            "onScreen": true,
+            "path": [
+              "span[data-is-tooltip-wrapper]",
+              "span[data-unique-tt-id]",
+              "div",
+              "div[role=region][data-enable-badge-expansion]",
+              "div"
+            ]
+          },
+          {
+            "where": "tile",
+            "tile": 0,
+            "participant": "P1",
+            "kind": "icon",
+            "shape": "front_hand",
+            "onScreen": true,
+            "number": 1,
+            "path": ["div", "div", "div", "div", "div"]
+          },
+          {
+            "where": "tile",
+            "tile": 2,
+            "participant": "P2",
+            "kind": "icon",
+            "shape": "front_hand",
+            "onScreen": true,
+            "number": 2,
+            "path": ["div", "div", "div", "div", "div"]
+          },
+          {
+            "where": "other",
+            "kind": "icon",
+            "shape": "front_hand",
+            "onScreen": false,
+            "path": ["div[jsname=Y4QCpb]", "div[jsname=vdp2Fc]", "div", "div", "div"]
+          },
+          {
+            "where": "other",
+            "kind": "text",
+            "shape": "Mãos levantadas",
+            "onScreen": true,
+            "number": 2,
+            "path": ["div", "span", "div", "div[jsname=yPG7g][role=button]", "div"]
+          },
+          {
+            "where": "other",
+            "kind": "label",
+            "shape": "Mãos levantadas",
+            "onScreen": true,
+            "path": ["div", "div", "div", "div", "div"]
+          },
+          {
+            "where": "other",
+            "kind": "label",
+            "shape": "[text] mãos levantadas [text]",
+            "onScreen": true,
+            "path": ["span[role=region]", "div", "div", "div", "div"]
+          },
+          {
+            "where": "participant-list",
+            "participant": "P1",
+            "kind": "icon",
+            "shape": "front_hand",
+            "onScreen": true,
+            "path": [
+              "div[jsname=v8MrR]",
+              "div",
+              "div",
+              "div",
+              "div[role=listitem][data-participant-id]"
+            ]
+          },
+          {
+            "where": "participant-list",
+            "participant": "P1",
+            "kind": "label",
+            "shape": "Abaixar a mão de [text]",
+            "onScreen": false,
+            "path": [
+              "div[data-is-touch-wrapper]",
+              "div",
+              "div",
+              "div",
+              "div[role=listitem][data-participant-id]"
+            ]
+          },
+          {
+            "where": "participant-list",
+            "participant": "P2",
+            "kind": "icon",
+            "shape": "front_hand",
+            "onScreen": true,
+            "path": [
+              "div[jsname=v8MrR]",
+              "div",
+              "div",
+              "div",
+              "div[role=listitem][data-participant-id]"
+            ]
+          },
+          {
+            "where": "participant-list",
+            "participant": "P2",
+            "kind": "label",
+            "shape": "Abaixar a mão de [text]",
+            "onScreen": false,
+            "path": [
+              "div[data-is-touch-wrapper]",
+              "div",
+              "div",
+              "div",
+              "div[role=listitem][data-participant-id]"
+            ]
+          },
+          {
+            "where": "other",
+            "kind": "text",
+            "shape": "Mãos levantadas",
+            "onScreen": true,
+            "path": ["div[jsname=ebgt1d]", "div", "body", "html[data-lt-installed]"]
+          }
+        ]
+      }
+    }
+  ],
+  "failedKeys": {}
+}

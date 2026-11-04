@@ -5,7 +5,7 @@ use std::time::Duration;
 
 use islet_core::{
     CapabilitySet, Command, CommandError, CommandFuture, DegradedReason, EndReason, EventSink,
-    Field, Health, Provider, ProviderDetail, ProviderId, ProviderStatus, SessionEvent,
+    Field, Health, Provider, ProviderDetail, ProviderId, ProviderStatus, RaisedHands, SessionEvent,
     SessionHandle, SessionKey, SessionManager, SessionState, SessionStatus, Settings, Speaker,
     Timings, Toggle, UiSnapshot,
 };
@@ -315,6 +315,11 @@ fn named_state() -> SessionState {
         active_speaker: Some(named("Alex Example")),
         participants: vec![named("Alex Example"), named("Sam Example")],
         self_participant: Some(named("Sam Example")),
+        raised_hands: Some(RaisedHands {
+            first: named("Kim Example"),
+            count: 2,
+            since: 1_793_700_060_000,
+        }),
         health: Health::degraded([DegradedReason::Unreadable(Field::Mic)])
             .with_details(ProviderDetail::new("micButton")),
         ..state(Toggle::Unknown)
@@ -338,6 +343,7 @@ async fn hidden_names_and_photos_never_reach_the_snapshot() {
     assert!(!json.contains("Alex"), "{json}");
     assert!(!json.contains("Synthetic title"), "{json}");
     assert!(!json.contains("Sam"), "{json}");
+    assert!(!json.contains("Kim"), "{json}");
     assert!(!json.contains("base64"), "{json}");
     let session = hidden.primary.unwrap();
     // Someone is still speaking; who is not shown.
@@ -345,6 +351,9 @@ async fn hidden_names_and_photos_never_reach_the_snapshot() {
     // The avatar row keeps its size, with generic avatars.
     assert_eq!(session.state.participants, vec![Speaker::anonymous(); 2]);
     assert_eq!(session.state.self_participant, Some(Speaker::anonymous()));
+    // Someone has a hand up; who is not shown.
+    let hands = session.state.raised_hands.unwrap();
+    assert_eq!((hands.first, hands.count), (Speaker::anonymous(), 2));
     assert_eq!(session.state.title, None);
 
     handle.set_settings(Settings::default());
