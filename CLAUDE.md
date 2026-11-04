@@ -263,8 +263,9 @@ Every open item lives here, not in an assistant's memory. Remove an item when it
   manifest is repaired on the next start).
 - **Phase 6 (docs):**
   - `CONTRIBUTING.md`: ways to install pnpm (Homebrew, corepack, npm).
-  - The READMEs' images in `docs/assets/` are renders of the design canvas, with chat and the
-    pre-call reminder removed. Replace them with real screenshots and a demo-mode GIF once the app
+  - The READMEs' images in `docs/assets/` and the Chrome Web Store screenshots in
+    `docs/assets/store/` (1280×800 JPEG, pt-BR) are renders of the design canvas, with chat and
+    the pre-call reminder removed. Replace them with real screenshots and a demo-mode GIF once the app
     ships, and fill the READMEs' remaining `TODO` (the security contact).
   - The READMEs must not link to ADRs, the UI spec or other internal design documents (the
     owner's rule).
