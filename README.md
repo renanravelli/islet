@@ -117,8 +117,10 @@ flowchart LR
 > Islet is new and has been tested mostly in Portuguese calls. Please
 > [report](https://github.com/renanravelli/islet/issues) what you find.
 
+[![Download the latest version](https://img.shields.io/github/v/release/renanravelli/islet?sort=semver&display_name=tag&label=download&logo=apple&color=0B63CE)](https://github.com/renanravelli/islet/releases/latest)
+
 1. **Install the app.** Download `Islet_<version>_universal.dmg` (Apple silicon and Intel) from
-   [GitHub Releases](https://github.com/renanravelli/islet/releases), open it and drag Islet to
+   the [latest release](https://github.com/renanravelli/islet/releases/latest), open it and drag Islet to
    Applications. The builds are not notarized by Apple yet, so macOS may say it cannot verify the app. If it
    does, open **System Settings → Privacy & Security** and click **Open Anyway**.
 2. **Install the Chrome extension.** Add it from the [Chrome Web Store](https://chromewebstore.google.com/detail/lbhmocnfnfmbiplpkllkacnbcjfcmlop). The

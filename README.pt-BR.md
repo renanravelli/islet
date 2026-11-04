@@ -118,8 +118,10 @@ flowchart LR
 > O Islet é novo e foi testado principalmente em calls em português.
 > [Conte](https://github.com/renanravelli/islet/issues) o que encontrar.
 
-1. **Instale o app.** Baixe o `Islet_<versão>_universal.dmg` (Apple silicon e Intel) no
-   [GitHub Releases](https://github.com/renanravelli/islet/releases), abra-o e arraste o Islet
+[![Baixe a versão mais recente](https://img.shields.io/github/v/release/renanravelli/islet?sort=semver&display_name=tag&label=download&logo=apple&color=0B63CE)](https://github.com/renanravelli/islet/releases/latest)
+
+1. **Instale o app.** Baixe o `Islet_<versão>_universal.dmg` (Apple silicon e Intel) na
+   [versão mais recente](https://github.com/renanravelli/islet/releases/latest), abra-o e arraste o Islet
    para Aplicativos. As builds ainda não são notarizadas pela Apple, então o macOS pode dizer que não consegue
    verificar o app. Nesse caso, abra **Ajustes do Sistema → Privacidade e Segurança** e clique em
    **Abrir Mesmo Assim**.
