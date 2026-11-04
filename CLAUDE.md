@@ -129,7 +129,7 @@ onboarding step or settings pane.
 - Every Meet DOM dependency goes through `selectors.json`; nothing in the adapter queries the
   page directly.
 - **Photos (ADR 0007):** the adapter reads a tile's photo only from the `<img>` its entry's
-  `avatar` names, only from `https://*.googleusercontent.com`, by redrawing it on a 48 px canvas
+  `avatar` names, only from `https://*.googleusercontent.com`, by redrawing it on a 72 px canvas
   (WebP data URL); a tainted canvas means no photo. It keeps each tile's last photo
   (`data-participant-id`) for the call and never sends a URL. The core accepts only
   `data:image/(png|jpeg|webp);base64,` up to `MAX_AVATAR_BYTES`. Selector keys are opaque `provider_details` in the core and must match
@@ -298,10 +298,11 @@ Every open item lives here, not in an assistant's memory. Remove an item when it
   from the probe's first report (`docs/meet-adapter/reports/calibration-report.pt-BR.avatars.json`,
   one call, two people, pt-BR): each video tile holds a hidden 75×75
   `<img crossorigin="use-credentials">` a canvas can read; every visible photo is tainted.
-  - **Owner, in a real call:** check that the island shows the right face for each person (the
-    75 px image could be a placeholder), and run `runCalibration("avatars")` again with 3+
-    people, an account without a photo and Meet in English; then mark the tile entries'
-    `avatar` verified in `selectors.json`.
+  - **Seen in a real call (2026-11-04, two people, pt-BR):** the island showed the owner's own
+    photo, and for the iPhone account, which has none, Google's letter image, as Meet does.
+  - **Owner, still to check:** a remote participant with a real photo, 3+ people (the right face
+    for each), and Meet in English (`runCalibration("avatars")` again); then mark the tile
+    entries' `avatar` verified in `selectors.json`.
   - **Owner, Chrome Web Store:** before uploading an extension that reads photos, update the
     listing's privacy form (personal information: participants' photos, used only on the
     device) and its description.

@@ -31,7 +31,8 @@ on, that tile has no photo.
 1. **The extension reads the photo from the page, and only there.** In a video tile it takes the
    image `selectors.json` names (the tile entry's `avatar`, today `img[crossorigin]`), only when
    it is loaded and comes from `https://*.googleusercontent.com` (a profile photo, never a video
-   frame), draws it on a 48 px canvas and sends a WebP data URL, about 1–2 KB. A tainted canvas,
+   frame), draws it on a 72 px canvas (Meet's copy is 75 px; the largest avatar is 44 pt, 88 px on a
+   Retina screen) and sends a WebP data URL of a few KB (0.8–1.9 KB at 48 px in the probe). A tainted canvas,
    a missing image or any error leaves the photo out. No request, no new permission.
 2. **It remembers the last photo per tile** (`data-participant-id`) in the content script's
    memory, for the call: a person who turns the camera on keeps their photo. It reads a photo

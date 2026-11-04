@@ -36,7 +36,8 @@ const MEETING_CODE = /^\/([a-z]{3}-[a-z]{4}-[a-z]{3})(?:[/?#]|$)/;
 export const MAX_PARTICIPANTS = 3;
 
 /** The photo's side in pixels, and the largest data URL sent (islet-core accepts 16 KB). */
-export const AVATAR_SIZE = 48;
+// Meet's copy is 75 px; 72 keeps the 44 pt avatar sharp on a Retina screen.
+export const AVATAR_SIZE = 72;
 const MAX_AVATAR = 12_000;
 /** Profile photos. Anything else (a video frame, a blob) is never read. */
 const PHOTO_HOST = /(^|\.)googleusercontent\.com$/;

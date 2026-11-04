@@ -326,7 +326,7 @@ describe("participant photos (docs/adr/0007)", () => {
     load(FIXTURES.inCallEn);
   });
 
-  it("sends each tile's photo with its name, redrawn at 48 px", () => {
+  it("sends each tile's photo with its name, redrawn at 72 px", () => {
     photo("p1");
     const { state } = withPhotos().readState();
     expect(state.participants).toEqual([

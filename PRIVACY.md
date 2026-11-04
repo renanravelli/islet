@@ -14,7 +14,7 @@ the Meet page:
 
 - the state of Meet's controls: microphone, camera, raised hand and leave;
 - the names and profile photos Meet shows on the participant tiles, and who is speaking. A
-  photo is the image Meet already loaded, redrawn small (48 pixels); the extension never
+  photo is the image Meet already loaded, redrawn small (72 pixels); the extension never
   downloads one;
 - the participant count and the meeting title;
 - Meet's "are you talking?" notice, when you speak while muted.
