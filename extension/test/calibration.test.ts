@@ -313,8 +313,8 @@ describe("runCalibration", () => {
     }
   });
 
-  it("leaves the photo probe out of the whole session", () => {
-    expect(STEPS.filter((s) => s.onDemand).map((s) => s.id)).toEqual(["avatars"]);
+  it("leaves the photo and raised-hand probes out of the whole session", () => {
+    expect(STEPS.filter((s) => s.onDemand).map((s) => s.id)).toEqual(["avatars", "raised-hands"]);
   });
 
   it("skips the lobby when started in a call, and can capture it on its own", async () => {
