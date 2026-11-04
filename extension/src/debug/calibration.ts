@@ -18,6 +18,7 @@ import {
   type SelectorKey,
 } from "../content/meet/selectors";
 import type { TabAction } from "../shared/messages";
+import { type CanvasFactory, probeAvatars, summarize } from "./avatars";
 import { saveFile } from "./save";
 import { captureSnapshot, isInChat, redact, selectorDataAttributes } from "./snapshot";
 import {
@@ -52,6 +53,8 @@ export interface RunnerDeps {
   registry?: Registry;
   prompt?: (message: string, value: string) => string | null;
   save?: (name: string, content: string, type: string) => void;
+  /** For the photo probe; tests pass a fake, since jsdom has no canvas. */
+  makeCanvas?: CanvasFactory;
   log?: Pick<Console, "info" | "warn" | "log" | "group" | "groupEnd" | "table">;
 }
 
@@ -165,7 +168,10 @@ export async function runCalibration(
     log.warn("Islet ▸ the calibration runner is already running.");
     return undefined;
   }
-  const ids = entry === undefined ? STEPS.map((s) => s.id) : (PRESETS[entry] ?? [entry]);
+  const ids =
+    entry === undefined
+      ? STEPS.filter((s) => !s.onDemand).map((s) => s.id)
+      : (PRESETS[entry] ?? [entry]);
   const steps = ids.flatMap((id) => STEPS.filter((step) => step.id === id));
   if (steps.length === 0) {
     const entries = [...Object.keys(PRESETS), ...STEPS.map((s) => s.id)];
@@ -310,6 +316,12 @@ class Runner {
       case "leave":
         await this.leave(record);
         break;
+      case "avatarProbe": {
+        const findings = probeAvatars(this.doc, this.registry, this.deps.makeCanvas);
+        record.measurements[`avatars.${action.label}`] = findings;
+        this.log.info(`Islet ▸ photos (${action.label}): ${summarize(findings)}`);
+        break;
+      }
     }
   }
 

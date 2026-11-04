@@ -278,6 +278,45 @@ describe("runCalibration", () => {
     expect(endedForEveryone).toBe(false);
   });
 
+  it('probes participant photos with runCalibration("avatars"), never saving them', async () => {
+    joinCall();
+    for (const id of ["p1", "p2"]) {
+      document
+        .querySelector(`[data-participant-id='${id}']`)
+        ?.insertAdjacentHTML(
+          "beforeend",
+          `<img src="https://lh3.googleusercontent.com/a/SYNTHETIC-${id}=s192" alt="Sam Example">`,
+        );
+    }
+    const fakeCanvas = () =>
+      ({
+        getContext: () => ({ drawImage() {} }),
+        toDataURL: () => "data:image/webp;base64,AAAA",
+      }) as unknown as HTMLCanvasElement;
+    const [report] = (await drive(
+      runCalibration("avatars", { ...deps(), makeCanvas: fakeCanvas }),
+    )) as Report[];
+
+    expect(saved.at(-1)?.name).toBe("calibration-report.en.avatars.json");
+    const step = report?.steps.find((s) => s.id === "avatars");
+    expect(step?.status).toBe("done");
+    expect(Object.keys(step?.measurements ?? {})).toEqual([
+      "avatars.tiles",
+      "avatars.people-panel",
+      "avatars.camera-on",
+    ]);
+    expect(step?.measurements["avatars.tiles"]).toHaveLength(2);
+    for (const { content } of saved) {
+      for (const secret of ["SYNTHETIC-", "googleusercontent.com", "Sam", "base64"]) {
+        expect(content).not.toContain(secret);
+      }
+    }
+  });
+
+  it("leaves the photo probe out of the whole session", () => {
+    expect(STEPS.filter((s) => s.onDemand).map((s) => s.id)).toEqual(["avatars"]);
+  });
+
   it("skips the lobby when started in a call, and can capture it on its own", async () => {
     joinCall();
     const [report] = (await drive(runCalibration("lobby", deps()))) as Report[];

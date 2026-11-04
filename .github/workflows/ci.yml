@@ -1,31 +1,35 @@
 name: CI
 
+# Release branches get CI from their pull request, or from release.yml, which starts it on a
+# commit that has none (such as the version commit it pushes).
 on:
   push:
-    branches: [main, "release/v*"]
+    branches: [main]
   pull_request:
-  # The release workflow runs it on the version commit it pushes to a release branch.
   workflow_dispatch:
 
 permissions:
   contents: read
 
+# A new push to a pull request replaces its running CI. On main and release branches every
+# commit keeps its run: a release waits for CI on its exact commit.
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  group: ci-${{ github.ref }}-${{ github.event_name == 'pull_request' && 'pr' || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
   # The crates that must build everywhere. islet-desktop needs Tauri's system libraries on
-  # Linux, so it is left to the macOS job.
+  # Linux, so it is left to the macOS job, whose workspace clippy and tests cover these crates
+  # on macOS too.
   portable:
     name: Portable crates (${{ matrix.os }})
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     env:
@@ -54,13 +58,21 @@ jobs:
           node-version-file: .tool-versions
           cache: pnpm
       - run: rustc --version && rustup target add aarch64-apple-darwin x86_64-apple-darwin
+      # Shared with release.yml's build, and saved only from main, whose caches every branch
+      # can read.
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          shared-key: macos-app
+          save-if: ${{ github.ref == 'refs/heads/main' }}
       - run: pnpm install --frozen-lockfile
       - run: cargo clippy --workspace --all-targets -- -D warnings
       - run: cargo test --workspace
       - name: Generated TypeScript types are up to date
         run: git diff --exit-code -- packages/protocol-ts packages/ui-types
+      # The universal app only on main: it checks the bundle and fills the cache release.yml
+      # builds with. Pull requests and release branches skip it; a release builds it anyway.
       - run: pnpm --filter @islet/desktop build:app:universal
+        if: github.ref == 'refs/heads/main'
 
   web:
     name: Extension and UI

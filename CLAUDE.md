@@ -288,6 +288,24 @@ Every open item lives here, not in an assistant's memory. Remove an item when it
   apps. 0.1.1 is published and `latest.json` offers it, so check the whole flow by hand: update
   an installed 0.1.1 beta to 0.1.1 from Settings and from the menu bar, with the ad hoc signature
   (does macOS ask "Open Anyway" again? does launch at login survive?).
+- **Real participant photos (planned 2026-11-04, target 0.2.0):** the island draws initials;
+  the owner wants Meet's profile photos instead.
+  - **Phase 0, the probe (owner, a real call with the iPhone):** `runCalibration("avatars")`
+    (step 12 of `calibration-session.md`) reports where Meet draws the photos (video tiles, own
+    tile, People panel, camera on) and whether the extension can read their pixels from the page
+    (`toDataURL` on a 48 px canvas; "tainted" means a cross-origin image without CORS).
+  - **Only if readable:** the extension sends a small `data:image/...` (about 48 px, a few KB),
+    never a URL: no request from the extension or the app, no new permission. Protocol v1, an
+    optional `avatar` on `Participant` and the active speaker, only for those the island shows;
+    the core accepts only `data:image/(png|jpeg|webp);base64,` under a size cap and redacts it
+    in `Debug`. Photos are treated like names: memory only, never logged, hidden with "show
+    names" off (rename it "names and photos"); a photo comes from the same tile as its name, or
+    the island draws initials. A new `participantAvatar` selector; synthetic images in fixtures
+    and `gallery.html`; the webview's CSP allows `img-src data:`. ADR 0007 first; then
+    `PRIVACY.md`, the READMEs' privacy section, the onboarding and settings privacy text, and the
+    Chrome Web Store privacy form.
+  - **If tainted:** stop. The alternatives (the app or the extension downloads the photo) break
+    "local-first" and need the owner's decision in their own ADR.
 - **Signing (owner):** the release is signed ad hoc until the six `APPLE_*` secrets exist (an
   Apple Developer Program membership); then `release.yml` signs and notarizes.
 - **Extension install:**
@@ -313,22 +331,30 @@ Every open item lives here, not in an assistant's memory. Remove an item when it
 - Conventional Commits. Default branch `main`, remote `origin`.
 - Push to `main` only after checks are green. **Never force push.**
 - **Rulesets** (Settings → Rules): `main` and `updater` refuse force pushes and deletion, for
-  everyone. `main` also needs a pull request with the five CI checks green and linear history
+  everyone. `main` also needs a pull request with the four CI checks green and linear history
   (squash or rebase; no merge commits); repository admins bypass that rule, which is how the
   owner pushes straight to `main`. Only admins move or delete `v*` tags; creating one needs
   write access, which only the owner and the release workflow have (a personal repository cannot
   list GitHub Actions as a ruleset bypass, so tag creation is not restricted further).
-- **CI** (`.github/workflows/ci.yml`): the portable crates on Linux, macOS and Windows (`-p`,
-  since `islet-desktop` needs Tauri's system libraries on Linux); the workspace, a stale
-  generated-types check and the universal app on macOS; lint, typecheck, test and build of the
-  JS packages.
+- **CI** (`.github/workflows/ci.yml`), on pushes to `main` and on pull requests: the portable
+  crates on Linux and Windows (`-p`, since `islet-desktop` needs Tauri's system libraries on
+  Linux); the workspace's clippy and tests (which cover the portable crates on macOS) and a stale
+  generated-types check on macOS; lint, typecheck, test and build of the JS packages, the
+  desktop UI included. macOS runners are the scarce ones, so:
+  - the universal app is built only on `main`, which also fills the Rust cache
+    (`shared-key: macos-app`, saved only from `main`) that `release.yml`'s build reads;
+  - a new push cancels a pull request's running CI, but never a run on `main` or on a release
+    branch, since a release waits for CI on its exact commit;
+  - release branches get CI from their pull request, or from `release.yml`, which starts it on a
+    commit that has none after a minute (the version commit, or before the pull request
+    exists).
 - **Releasing** (`release.yml`), from a branch named for the version, `release/vX.Y.Z`
   (patch, minor or major is the maintainer's choice in that name, never read from commit
   messages):
   - **Betas:** every push to `release/vX.Y.Z` makes a draft pre-release `vX.Y.Z-beta.N`, N
     counting up on its own. The first push also writes X.Y.Z into the version files on the branch
     (`scripts/set-version.mjs`: `Cargo.toml` `workspace.package`, `tauri.conf.json`,
-    `extension/manifest.json`, the `package.json` files) and runs CI on that commit; a beta
+    `extension/manifest.json`, the `package.json` files); a beta
     builds with its full version (the manifest gets `version` X.Y.Z and `version_name`
     X.Y.Z-beta.N, since Chrome takes only numbers). Betas are downloaded by hand: the updater
     never offers them.

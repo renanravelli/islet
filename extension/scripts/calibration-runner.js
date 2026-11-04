@@ -8,6 +8,7 @@
 // Pasting it starts nothing. Then run:
 //   runCalibration()          the whole session (from the lobby, or from the call)
 //   runCalibration("short")   who speaks, the muted notice and leaving as the host
+//   runCalibration("avatars") where Meet draws participant photos, and whether they are readable
 //   runCalibration("lobby")   only the pre-join snapshot
 //   runCalibration("left")    only the after-leaving snapshot, if leaving reloaded the page
 //   runCalibration("<step>")  redo one step; isletDebug.steps lists them

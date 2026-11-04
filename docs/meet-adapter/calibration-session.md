@@ -152,6 +152,25 @@ with its summary printed in the console):
 - **Snapshot:** `meet-real-left.<locale>.html`, on the page shown after leaving.
 - **Expected:** `{"inCall":false}`
 
+### 12. Participant photos
+
+On demand only: the whole session leaves it out; see [Participant photos](#participant-photos).
+
+- **The runner** turns the Mac's mic and camera off, so its own tile shows its photo. Then
+  **you:** "On the iPhone, turn the camera off and stay in the call."
+- **It probes** every likely participant photo on the page: where it is (a video tile, the own
+  tile, the People panel or elsewhere), whether it is an `<img>` or a CSS background, whether it
+  comes from `googleusercontent.com`, its `crossorigin` attribute, its natural and rendered size,
+  its nearest ancestors (tag, `jsname`, `role` and the names of `data-*` attributes), and whether
+  the extension can read its pixels: it draws it on a 48 px canvas and calls `toDataURL`, which
+  fails with `SecurityError` on a cross-origin image without CORS ("tainted"). It saves the data
+  URL's length and format, never the URL, an alt text or the pixels.
+- **Then:** "On the Mac, open the People panel (top bar) and leave it open." and probes again;
+  then "Close the People panel. On the iPhone, turn the camera on." and probes a third time, to
+  see whether a photo stays in the page behind live video.
+- **No snapshot:** snapshots drop every image anyway. The findings are in the report, under
+  `measurements`, as `avatars.tiles`, `avatars.people-panel` and `avatars.camera-on`.
+
 ## Short session
 
 To check only who speaks, the muted notice and leaving as the host, start a call from the Mac
@@ -159,6 +178,14 @@ To check only who speaks, the muted notice and leaving as the host, start a call
 It runs steps 2 and 6 to 11, asks for the names once and saves its reports as
 `calibration-report.<locale>.short.json` and `calibration-report.<locale>.short.after-leave.json`.
 You must be the meeting's host for step 10 to show the leave dialog.
+
+## Participant photos
+
+To find out whether the island can show participants' real photos without any network request
+(the extension would read the photo Meet already shows), start a call from the Mac, paste the
+runner and run `runCalibration("avatars")`. It runs steps 2 and 12 and saves
+`calibration-report.<locale>.avatars.json`. The iPhone account needs a profile photo, and so
+does yours if you can: an account without one shows Google's letter image.
 
 ## Manual alternative
 
