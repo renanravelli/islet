@@ -3,16 +3,6 @@
 All notable changes to Islet. Versions follow [Semantic Versioning](https://semver.org); while
 the version is below 1.0, every release is a beta.
 
-## Unreleased
-
-### Added
-
-- **Others' raised hands.** When someone else raises a hand, the island shows the first in line,
-  with their photo, and "+N" for the others; expanded, it names them and says how many hands are
-  up. When the first in line changes, the island opens for 4 seconds to say so. The order is
-  the one Meet shows; your own hand is left out. With **Mostrar nomes e fotos** off, it says
-  "Someone raised their hand".
-
 ## 0.1.2 — 2026-11-04
 
 ### Added
@@ -21,6 +11,11 @@ the version is below 1.0, every release is a beta.
   extension redraws the image Meet already loaded, small (72 pixels): nothing is downloaded, and
   it needs no new permission. A participant who turns the camera on keeps their photo for the
   rest of the call; without a photo, the island shows initials as before.
+- **Others' raised hands.** When someone else raises a hand, the island shows the first in line,
+  with their photo, and "+N" for the others; expanded, it names them and says how many hands are
+  up. When the first in line changes, the island opens for 4 seconds to say so. The order is
+  the one Meet shows; your own hand is left out. With **Mostrar nomes e fotos** off, it says
+  "Someone raised their hand".
 - **The setup guide detects the extension at once.** Right after it is installed or updated,
   the extension tests its connection with the app, so step 2 shows **Conectada** without a Meet
   tab. If the extension was already installed, **Abrir o Meet para testar** opens Meet to

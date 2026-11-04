@@ -294,7 +294,7 @@ Every open item lives here, not in an assistant's memory. Remove an item when it
   apps. 0.1.1 is published and `latest.json` offers it, so check the whole flow by hand: update
   an installed 0.1.1 beta to 0.1.1 from Settings and from the menu bar, with the ad hoc signature
   (does macOS ask "Open Anyway" again? does launch at login survive?).
-- **Participant photos (ADR 0007, built 2026-11-04 on `feat/participant-photos`, for 0.2.0):**
+- **Participant photos (ADR 0007, in 0.1.2):**
   from the probe's first report (`docs/meet-adapter/reports/calibration-report.pt-BR.avatars.json`,
   one call, two people, pt-BR): each video tile holds a hidden 75×75
   `<img crossorigin="use-credentials">` a canvas can read; every visible photo is tainted.
@@ -306,7 +306,7 @@ Every open item lives here, not in an assistant's memory. Remove an item when it
   - **Owner, Chrome Web Store:** before uploading an extension that reads photos, update the
     listing's privacy form (personal information: participants' photos, used only on the
     device) and its description.
-- **Others' raised hands (2026-11-04, branch `feat/raised-hands`):** the island shows the first
+- **Others' raised hands (in 0.1.2):** the island shows the first
   in line of others' raised hands and how many (prototype approved: the canvas's "Mão levantada"
   board; `docs/design/ui-spec.md` section 5), from the `raisedHand` selector: a `front_hand`
   icon on the tile, and with two or more up, the place in line next to it (probe report
