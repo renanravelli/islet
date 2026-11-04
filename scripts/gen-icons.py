@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Draws Islet's icons with no dependencies: the app icon source (1024 px, then `tauri icon`
 makes every size) and the tray's template images. The mark: a black pill with a green dot.
+The tray's "setup" variant adds a dot at the top right while the onboarding is unfinished.
 With an assets folder, also the logo (docs/assets/logo.svg at 4x) and the 128 px store icon.
 
 Usage: python3 scripts/gen-icons.py <app-icon-output.png> <tray-dir> [assets-dir]
@@ -73,10 +74,17 @@ def logo(scale):
     return pixel
 
 
-def tray(scale):
+def tray(scale, badge=False):
     def pixel(x, y):
         x, y = x / scale, y / scale  # in points, on a 22×22 canvas
         left, top, w, h = 2, 6, 18, 10
+        if badge:
+            # A template image has no color: the dot is solid, cut from the pill by a gap.
+            d = (x - 18.5) ** 2 + (y - 5.5) ** 2
+            if d <= 3.2**2:
+                return (0, 0, 0, 255)
+            if d <= 4.6**2:
+                return (0, 0, 0, 0)
         if (x - (left + 5)) ** 2 + (y - 11) ** 2 <= 2.6 ** 2:
             return (0, 0, 0, 0)  # the dot is a hole, so the menu bar shows through
         if in_round_rect(x, y, left, top, w, h, 5):
@@ -91,6 +99,8 @@ if __name__ == "__main__":
     png(app_out, 1024, 1024, app_icon)
     png(f"{tray_dir}/tray.png", 22, 22, tray(1))
     png(f"{tray_dir}/tray@2x.png", 44, 44, tray(2))
+    png(f"{tray_dir}/tray-setup.png", 22, 22, tray(1, badge=True))
+    png(f"{tray_dir}/tray-setup@2x.png", 44, 44, tray(2, badge=True))
     if len(sys.argv) > 3:
         assets = sys.argv[3]
         png(f"{assets}/logo.png", 640, 352, logo(4))

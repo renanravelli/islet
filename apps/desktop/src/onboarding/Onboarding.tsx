@@ -1,6 +1,6 @@
-// The first-run guide: four steps (docs/design/ui-spec.md, section 3).
+// The first-run guide: five steps (docs/design/ui-spec.md, section 3).
 
-import type { AppInfo, AppSettings, BridgeState, UiSnapshot } from "@islet/ui-types";
+import type { AppInfo, AppSettings, BridgeState, Requirements, UiSnapshot } from "@islet/ui-types";
 import { useEffect, useState } from "react";
 import { rich, useT } from "../i18n/i18n";
 import { useHeldSpeaker, useNow } from "../island/hooks";
@@ -16,13 +16,15 @@ import {
   StepIndicator,
   Switch,
 } from "../shared/components";
-import { CheckIcon, InfoIcon, LockIcon } from "../shared/icons";
-import { meetStatus, PRODUCT } from "../shared/meet";
+import { CheckIcon, InfoIcon, LockIcon, PlugIcon } from "../shared/icons";
+import { CHROME, meetStatus, PRODUCT } from "../shared/meet";
 import "./onboarding.css";
 
-const TOTAL = 4;
+const TOTAL = 5;
 /** After this long waiting for the extension, offer the troubleshooting guide. */
 export const TROUBLESHOOT_AFTER_MS = 60_000;
+/** How often step 2 checks the Mac again while it is open. */
+export const RECHECK_MS = 2_000;
 
 export function Onboarding({
   info,
@@ -47,6 +49,7 @@ export function Onboarding({
     if (meet.connected) setSeen(meet.version ?? "");
   }, [meet.connected, meet.version]);
   const extension = { connected: meet.connected || seen !== null, version: meet.version ?? seen };
+  const checks = useMacChecks(step === 2);
   const next = () => setStep((s) => Math.min(TOTAL, s + 1));
   const back = () => setStep((s) => Math.max(1, s - 1));
 
@@ -56,6 +59,25 @@ export function Onboarding({
       footer = <Button onClick={next}>{t("onb1.cta")}</Button>;
       break;
     case 2:
+      footer = (
+        <>
+          <Button variant="secondary" onClick={back}>
+            {t("common.back")}
+          </Button>
+          {checks.ok ? (
+            <Button onClick={next}>{t("common.continue")}</Button>
+          ) : (
+            <>
+              <Button variant="text" onClick={next}>
+                {t("onb2.skip")}
+              </Button>
+              <Button disabled>{t("common.continue")}</Button>
+            </>
+          )}
+        </>
+      );
+      break;
+    case 3:
       footer = (
         <>
           <Button variant="secondary" onClick={back}>
@@ -74,7 +96,7 @@ export function Onboarding({
         </>
       );
       break;
-    case 3:
+    case 4:
       footer = (
         <>
           <Button variant="secondary" onClick={back}>
@@ -110,9 +132,10 @@ export function Onboarding({
       <div className="titlebar" data-tauri-drag-region />
       <main className="onb-content">
         {step === 1 && <Welcome info={info} preview={preview} />}
-        {step === 2 && <ConnectChrome extension={extension} />}
-        {step === 3 && <PictureInPicture />}
-        {step === 4 && <AllSet info={info} settings={settings} />}
+        {step === 2 && <CheckMac checks={checks} />}
+        {step === 3 && <ConnectChrome extension={extension} />}
+        {step === 4 && <PictureInPicture />}
+        {step === 5 && <AllSet info={info} settings={settings} />}
       </main>
       <footer className="onb-footer">
         <StepIndicator
@@ -165,6 +188,170 @@ function Welcome({ info, preview }: { info: AppInfo; preview: UiSnapshot | undef
   );
 }
 
+interface MacChecks {
+  /** `null` until the first check answers. */
+  requirements: Requirements | null;
+  bridge: BridgeState;
+  retryBridge: () => void;
+  ok: boolean;
+}
+
+/** Step 2's checks. They start when the window opens, so the answer is ready when the person
+ * gets there, and run again every RECHECK_MS while the step is open. The bridge is repaired when
+ * the step opens and again once Chrome appears; never while it could not work. */
+function useMacChecks(open: boolean): MacChecks {
+  const [requirements, setRequirements] = useState<Requirements | null>(null);
+  const [bridge, setBridge] = useState<BridgeState>({ state: "unknown" });
+  useEffect(() => {
+    let live = true;
+    const check = () => {
+      void api.requirements().then((found) => {
+        if (live) setRequirements(found);
+      });
+    };
+    check();
+    const id = open ? setInterval(check, RECHECK_MS) : undefined;
+    return () => {
+      live = false;
+      clearInterval(id);
+    };
+  }, [open]);
+  const canBridge = Boolean(requirements?.chrome && requirements.in_applications);
+  const retryBridge = () => void api.repairBridge().then(setBridge);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: repair on opening and when Chrome appears
+  useEffect(() => {
+    if (open && canBridge) retryBridge();
+  }, [open, canBridge]);
+  return { requirements, bridge, retryBridge, ok: canBridge && bridge.state === "ready" };
+}
+
+function CheckMac({ checks }: { checks: MacChecks }) {
+  const t = useT();
+  const { requirements, bridge } = checks;
+  // The download page opened: wait for Chrome instead of asking again.
+  const [downloading, setDownloading] = useState(false);
+
+  // The bridge has no row of its own: Islet installs it alone, and a failure shows here.
+  let chrome: Check;
+  if (!requirements) chrome = { state: "checking" };
+  else if (requirements.chrome && requirements.in_applications && bridge.state === "error")
+    chrome = {
+      state: "problem",
+      description: t("onb_check.chrome.bridge_error_desc"),
+      action: (
+        <Button variant="outline" onClick={checks.retryBridge}>
+          {t("common.retry")}
+        </Button>
+      ),
+    };
+  else if (requirements.chrome && requirements.in_applications && bridge.state === "unknown")
+    chrome = { state: "checking" };
+  else if (requirements.chrome)
+    chrome = { state: "ok", description: t("onb_check.chrome.ok_desc") };
+  else if (downloading)
+    chrome = {
+      state: "waiting",
+      description: t("onb_check.chrome.waiting_desc"),
+      status: t("onb_check.chrome.waiting"),
+    };
+  else
+    chrome = {
+      state: "problem",
+      description: t("onb_check.chrome.missing_desc"),
+      action: (
+        <Button
+          onClick={() => {
+            setDownloading(true);
+            void api.openLink("download_chrome");
+          }}
+        >
+          {t("onb_check.chrome.download")}
+        </Button>
+      ),
+    };
+
+  let app: Check;
+  if (!requirements) app = { state: "checking" };
+  else if (requirements.in_applications)
+    app = { state: "ok", description: t("onb_check.app.ok_desc") };
+  else app = { state: "problem", description: t("onb_check.app.outside_desc") };
+
+  return (
+    <>
+      <h1 className="onb-title compact-top">{t("onb_check.title")}</h1>
+      <p className="onb-body">{t("onb_check.body")}</p>
+      <div className="onb-group">
+        <Group>
+          <CheckRow label={CHROME} check={chrome} />
+          <CheckRow label={t("onb_check.app.title")} check={app} />
+        </Group>
+      </div>
+      {checks.ok && (
+        <p className="success-banner">
+          <CheckIcon size={16} />
+          {t("onb_check.banner")}
+        </p>
+      )}
+      {requirements?.chrome === false && <p className="note">{t("onb_check.other_browsers")}</p>}
+    </>
+  );
+}
+
+type Check =
+  | { state: "ok"; description: string }
+  | { state: "checking" }
+  | { state: "waiting"; description: string; status: string }
+  | { state: "problem"; description: string; action?: React.ReactNode };
+
+function CheckRow({ label, check }: { label: string; check: Check }) {
+  const t = useT();
+  switch (check.state) {
+    case "ok":
+      return (
+        <Row
+          leading={<StatusCircle tone="success" />}
+          label={label}
+          description={check.description}
+          trailing={<span className="ok-text">{t("onb_check.ok")}</span>}
+        />
+      );
+    case "checking":
+      return (
+        <Row
+          leading={<Spinner />}
+          label={label}
+          trailing={
+            <span className="waiting-text" role="status">
+              {t("onb_check.checking")}
+            </span>
+          }
+        />
+      );
+    case "waiting":
+      return (
+        <Row
+          leading={<Spinner />}
+          label={label}
+          description={check.description}
+          trailing={
+            <span className="waiting-text" role="status">
+              {check.status}
+            </span>
+          }
+        />
+      );
+    case "problem":
+      return (
+        <Row
+          leading={<StatusCircle tone="warning" />}
+          label={label}
+          description={check.description}
+          trailing={check.action}
+        />
+      );
+  }
+}
+
 type ExtensionState = "not_connected" | "waiting" | "connected";
 
 function ConnectChrome({
@@ -173,7 +360,6 @@ function ConnectChrome({
   extension: { connected: boolean; version: string | null };
 }) {
   const t = useT();
-  const [bridge, setBridge] = useState<BridgeState>({ state: "unknown" });
   // What the person opened in Chrome: the store page, or Meet to test an installed extension.
   const [opened, setOpened] = useState<"store" | "meet" | null>(null);
   const [slow, setSlow] = useState(false);
@@ -189,37 +375,11 @@ function ConnectChrome({
   };
 
   useEffect(() => {
-    void api.repairBridge().then(setBridge);
-  }, []);
-  useEffect(() => {
     if (extension !== "waiting") return;
     setSlow(false);
     const id = setTimeout(() => setSlow(true), TROUBLESHOOT_AFTER_MS);
     return () => clearTimeout(id);
   }, [extension]);
-
-  const bridgeRow =
-    bridge.state === "error" ? (
-      <Row
-        leading={<StatusCircle tone="warning" />}
-        label={t("onb2.bridge.title")}
-        description={t("onb2.bridge.error_desc")}
-        trailing={
-          <Button variant="outline" onClick={() => void api.repairBridge().then(setBridge)}>
-            {t("common.retry")}
-          </Button>
-        }
-      />
-    ) : (
-      <Row
-        leading={bridge.state === "ready" ? <StatusCircle tone="success" /> : <Spinner />}
-        label={t("onb2.bridge.title")}
-        description={t("onb2.bridge.ok_desc")}
-        trailing={
-          bridge.state === "ready" && <span className="ok-text">{t("onb2.bridge.ok")}</span>
-        }
-      />
-    );
 
   let extensionRow: React.ReactNode;
   if (extension === "connected") {
@@ -258,7 +418,11 @@ function ConnectChrome({
   } else {
     extensionRow = (
       <Row
-        leading={<span className="number-badge">2</span>}
+        leading={
+          <span className="neutral-circle" aria-hidden="true">
+            <PlugIcon size={16} />
+          </span>
+        }
         label={t("onb2.ext.title")}
         description={t("onb2.ext.idle_desc")}
         trailing={
@@ -281,10 +445,7 @@ function ConnectChrome({
       <h1 className="onb-title compact-top">{t("onb2.title")}</h1>
       <p className="onb-body">{t("onb2.body")}</p>
       <div className="onb-group">
-        <Group>
-          {bridgeRow}
-          {extensionRow}
-        </Group>
+        <Group>{extensionRow}</Group>
       </div>
       {extension === "connected" ? (
         <p className="success-banner">
@@ -292,17 +453,14 @@ function ConnectChrome({
           {t("onb2.banner")}
         </p>
       ) : (
-        <>
-          {opened !== "meet" && (
-            <p className="have-extension">
-              {t("onb2.ext.have_it")}
-              <Button variant="text" onClick={openMeet}>
-                {t("onb2.ext.open_meet")}
-              </Button>
-            </p>
-          )}
-          <p className="note">{t("onb2.other_browsers")}</p>
-        </>
+        opened !== "meet" && (
+          <p className="have-extension">
+            {t("onb2.ext.have_it")}
+            <Button variant="text" onClick={openMeet}>
+              {t("onb2.ext.open_meet")}
+            </Button>
+          </p>
+        )
       )}
     </>
   );

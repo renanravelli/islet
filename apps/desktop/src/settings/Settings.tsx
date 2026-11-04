@@ -310,7 +310,7 @@ function Integrations({ info, snapshot }: { info: AppInfo; snapshot: UiSnapshot 
             <span className="action-result" role="status">
               {toast && t("toast.diagnostics_copied")}
               {!toast && reinstalled === "ok" && t("bridge.reinstalled")}
-              {!toast && reinstalled === "error" && t("onb2.bridge.error_desc")}
+              {!toast && reinstalled === "error" && t("bridge.error")}
             </span>
           </div>
         </Group>

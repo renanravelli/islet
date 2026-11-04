@@ -84,6 +84,18 @@ pub enum BridgeState {
     },
 }
 
+/// What Islet needs on this Mac before the extension can reach it (onboarding step 2).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, TS)]
+#[ts(export, export_to = EXPORT)]
+pub struct Requirements {
+    /// Google Chrome is installed: the stable channel, the only one the bridge is registered
+    /// for.
+    pub chrome: bool,
+    /// Islet runs from an Applications folder. Opened from the disk image, or from where it was
+    /// downloaded, macOS runs a temporary copy, and the bridge would point at it.
+    pub in_applications: bool,
+}
+
 /// What the island tells the shell after each render: the size of its contour.
 #[derive(Debug, Clone, Copy, PartialEq, Deserialize, TS)]
 #[ts(export, export_to = EXPORT)]
@@ -141,8 +153,10 @@ pub const EXTENSION_STORE_URL: &str =
 #[ts(export, export_to = EXPORT)]
 pub enum Link {
     InstallExtension,
-    /// Meet's home page: loading it connects an installed extension (onboarding step 2).
+    /// Meet's home page: loading it connects an installed extension (onboarding step 3).
     OpenMeet,
+    /// Chrome's download page, in the default browser (onboarding step 2, without Chrome).
+    DownloadChrome,
     Troubleshooting,
     Source,
     License,
@@ -154,6 +168,7 @@ impl Link {
         match self {
             Self::InstallExtension => EXTENSION_STORE_URL,
             Self::OpenMeet => "https://meet.google.com/",
+            Self::DownloadChrome => "https://www.google.com/chrome/",
             Self::Troubleshooting => concat!(
                 "https://github.com/renanravelli/islet",
                 "/blob/main/docs/install-extension.md#troubleshooting"

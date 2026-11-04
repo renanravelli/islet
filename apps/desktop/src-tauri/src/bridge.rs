@@ -102,7 +102,18 @@ pub fn repair_manifest() -> crate::model::BridgeState {
             summary: "the app's own location is unknown".to_owned(),
         };
     };
-    match islet_bridge::manifest::ensure_chrome_manifest(&host) {
+    use islet_bridge::manifest;
+    // Chrome installed but never opened has no profile folder yet. Launch Services knows it is
+    // there, so the folder it will read the manifest from is created for it.
+    let result = if crate::platform::chrome_installed() {
+        std::env::var_os("HOME")
+            .ok_or(manifest::ManifestError::HomeUnknown)
+            .and_then(|home| manifest::chrome_hosts_dir(std::path::Path::new(&home)))
+            .and_then(|dir| manifest::ensure_manifest(&dir, &host))
+    } else {
+        manifest::ensure_chrome_manifest(&host)
+    };
+    match result {
         Ok(outcome) => {
             tracing::info!(?outcome, "Chrome bridge manifest checked");
             BridgeState::Ready

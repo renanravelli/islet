@@ -100,7 +100,7 @@ The visual reference is the project's private design canvas. **This document is 
 | Section label    | 12/600, uppercase, letter-spacing 0.04em, `--text-tertiary`, margin `0 0 8 4`                                                                                                                                                                            |
 | Status pill      | Radius 999, padding `4 10`, 12/600, 7px dot. Variants: success, warning, neutral (`--bg-subtle` / `--text-secondary`)                                                                                                                                    |
 | Badge            | Radius 6, padding `2 8`, 11/600. Experimental uses the warning colors                                                                                                                                                                                    |
-| Step indicator   | Four dots, 6×6 radius 3, `--dot-inactive`; the active one is 18×6 `--text-primary`. Text "Passo N de 4" 12 `--text-tertiary`                                                                                                                             |
+| Step indicator   | One dot per step (five), 6×6 radius 3, `--dot-inactive`; the active one is 18×6 `--text-primary`. Text "Passo N de 5" 12 `--text-tertiary`                                                                                                              |
 | Icons            | Inline stroke SVG, 2px stroke, round caps and joins. Decorative icons get `aria-hidden="true"`                                                                                                                                                           |
 
 Every interactive element is a real `<button>`, `<a href>`, `<input>` or `<select>` with a label. Icon-only buttons have an `aria-label`.
@@ -121,13 +121,21 @@ Every interactive element is a real `<button>`, `<a href>`, `<input>` or `<selec
   - Right: the buttons, gap 10.
 
 **When it opens:**
-- **First launch:** automatically, when there is no `onboarding.completed_at` yet.
+- **First launch:** automatically, when there is no `onboarding.completed_at` yet, in front of
+  every other app's windows, with no click on the menu bar. Islet is then opened from Finder or
+  from System Settings ("Open Anyway"), and macOS 14+ may refuse to activate it, so the window
+  is also ordered front on its own (the canvas's "Primeira abertura" board).
 - **On demand:** from the tray ("Rever onboarding") and from Settings → Privacidade e sobre.
 
 **Closing early:**
 - Allowed.
-- The tray shows "Concluir configuração…" until onboarding is completed.
-- The window never reopens automatically after the first launch.
+- Until onboarding is completed:
+  - the tray icon carries a dot at its top right (`tray-setup`). The canvas draws it amber, but
+    the tray icon is a template image, which has no color: the dot takes the icon's color;
+  - the menu shows "Concluir configuração…" and not "Rever onboarding", which opens the same
+    guide.
+- Opening Islet again (Finder, Spotlight) brings the guide back. It never reopens on its own
+  after the first launch.
 
 ### Step 1 — Welcome
 
@@ -142,23 +150,44 @@ Every interactive element is a real `<button>`, `<a href>`, `<input>` or `<selec
 - **Privacy line:** lock icon 16 + text 13 `--text-secondary`.
 - **Footer:** "Começar" (primary) goes to step 2.
 
-### Step 2 — Connect Chrome
+### Step 2 — Check the Mac
 
-A group card with two rows. The row states are driven by real events, never by timers.
+What the extension needs, checked before it is installed. A group card with two rows. The
+checks start when the window opens, so the answer is ready when the person gets here, and run
+again every 2 s while the step is open. Rows are driven by real checks, never by timers.
 
-**Row A — Chrome bridge:**
-- When the step mounts, the app runs the manifest install/repair routine (the same routine as Settings → "Reinstalar ponte do Chrome").
-- **OK state:** success circle with a check; status "Pronto" in `--success-text`.
-- **Error state:**
-  - warning icon in a `--warning-bg` circle;
-  - error summary as the description;
-  - outline button "Tentar novamente".
+| Row                                              | OK                                         | Not OK                                                                                                                                                                                                                                                         |
+| ------------------------------------------------ | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Google Chrome (a product name, from `meet.ts`)   | `onb_check.chrome.ok_desc`                 | Warning circle, `onb_check.chrome.missing_desc`, primary button `onb_check.chrome.download`: it opens Chrome's download page in the default browser, then the row waits with a spinner, `onb_check.chrome.waiting_desc` and `onb_check.chrome.waiting` until Chrome is found. Chrome found but the bridge failed: warning circle, `onb_check.chrome.bridge_error_desc`, outline button "Tentar novamente" |
+| `onb_check.app.title`                            | `onb_check.app.ok_desc`                    | Warning circle, `onb_check.app.outside_desc`. No button: the person drags Islet to Applications and opens it from there                                                                                                                                       |
 
-**Row B — Islet extension:**
+- **OK:** success circle with a check; status `onb_check.ok` in `--success-text`. While a check
+  has not answered yet: a spinner and `onb_check.checking`.
+- **Chrome:** the stable channel only (`com.google.Chrome`), the only one the bridge is
+  registered for, found through Launch Services wherever it is installed.
+- **Applications:** the bundle sits in /Applications or ~/Applications, at any depth. Opened from
+  the disk image, or translocated by macOS from where it was downloaded, Islet runs a temporary
+  copy and the bridge would point at it. Development builds always pass.
+- **Bridge:** no row of its own (the owner's decision, 2026-11-04): it is an implementation
+  detail Islet handles alone, and read as if it were the extension. The manifest
+  install/repair routine (the same as Settings → "Reinstalar ponte do Chrome") runs when the
+  step mounts and again when Chrome appears, only with Chrome found and Islet in Applications.
+  Until it answers, the Chrome row shows the spinner; a failure shows in the Chrome row. Chrome
+  installed but never opened has no profile folder yet: the routine creates the folder Chrome
+  will read the manifest from.
+- **Below the card:** all OK: the success banner `onb_check.banner`. Chrome missing: the
+  other-browsers note (12 `--text-tertiary`).
+- **Footer:** "Voltar" (secondary). Not all OK: "Pular por enquanto" (text button) and a
+  disabled "Continuar". All OK: "Continuar" (primary).
+
+### Step 3 — Connect Chrome
+
+A group card with one row, the Islet extension. Its states are driven by real events, never by
+timers.
 
 | State           | Leading icon                                         | Description                                         | Trailing element                                    |
 | --------------- | ---------------------------------------------------- | --------------------------------------------------- | --------------------------------------------------- |
-| `not_connected` | numbered badge "2" (`--bg-subtle`)                   | `onb2.ext.idle_desc`                                | primary button "Instalar extensão"                  |
+| `not_connected` | plug icon in a `--bg-subtle` circle                  | `onb2.ext.idle_desc`                                | primary button "Instalar extensão"                  |
 | `waiting`       | 16px spinner (2px ring, `--accent-fill` top segment) | `onb2.ext.waiting_desc_store`, `_meet` or `_manual` | status text "Aguardando conexão…" (`role="status"`) |
 | `connected`     | success circle with check                            | `onb2.ext.connected_desc`                           | status text "Conectada" in `--success-text`         |
 
@@ -174,14 +203,14 @@ A group card with two rows. The row states are driven by real events, never by t
 - **Below the card:**
   - when connected: the success banner (`--success-bg`, text `--success-banner-text`, 13);
   - when connected: the banner starts with a 16px check in `--success-text`;
-  - otherwise: the "Já tem a extensão?" line (13 `--text-secondary`, hidden once Meet was opened) and the other-browsers note (12 `--text-tertiary`).
+  - otherwise: the "Já tem a extensão?" line (13 `--text-secondary`, hidden once Meet was opened).
 
 **Footer:**
 - Always: "Voltar" (secondary).
 - Not connected: "Pular por enquanto" (text button) and a disabled "Continuar".
 - Connected: "Continuar" (primary).
 
-### Step 3 — Meet's automatic Picture-in-Picture
+### Step 4 — Meet's automatic Picture-in-Picture
 
 - **Two columns, gap 24:**
   - **Left — the steps:** an ordered list of three steps. Each has a 26px number circle (`--accent-fill`, white 13/700) and text at 14, line height 1.45, with the UI names in bold.
@@ -192,10 +221,10 @@ A group card with two rows. The row states are driven by real events, never by t
     - **Never write the text of the other options:** we can't verify Meet's exact copy.
 - **Tip box:** `--bg-preview`, radius 10, info icon, 12, line height 1.5.
 - **Footer:** "Voltar", "Fazer depois" (text button) and "Já desliguei" (primary).
-  - Both advance to step 4.
+  - Both advance to step 5.
   - "Já desliguei" stores `meet_pip_tip_ack = true`. We can't verify Meet's setting; the flag only keeps the tip from repeating.
 
-### Step 4 — All set
+### Step 5 — All set
 
 - **Success circle:** 48px, check icon 24.
 - **Title and body.**
@@ -293,7 +322,7 @@ The pane shows only integrations that work: no planned or upcoming apps.
   - Código-fonte (link, opens in the browser);
   - Licença.
 - **Section "Atualizações"** (`updates.section`, ADR 0006), right below the statement card:
-  - switch row `updates.auto` with `updates.auto_desc`, the same setting as onboarding step 4;
+  - switch row `updates.auto` with `updates.auto_desc`, the same setting as onboarding step 5;
   - status row: the text for the update state (`updates.status_*`; idle shows the installed
     version) and one button: `updates.install` (primary) when a version is available,
     `updates.check_now` (outline) otherwise, disabled while checking or installing.
@@ -346,12 +375,23 @@ All UI text comes from this dictionary. `{x}` marks an interpolation; `**…**` 
 | `onb1.preview_caption`         | Pré-visualização em modo demo                                                                                                                                 | Demo mode preview                                                                                                                             |
 | `onb1.privacy`                 | Tudo roda no seu Mac. Sem contas e sem telemetria.                                                                                                            | Everything runs on your Mac. No accounts, no telemetry.                                                                                       |
 | `onb1.cta`                     | Começar                                                                                                                                                       | Get started                                                                                                                                   |
+| `onb_check.title`                       | Antes de começar                                                                                                                                              | Before you start                                                                                                                              |
+| `onb_check.body`                        | O Islet confere sozinho o que precisa para funcionar no seu Mac. Esta tela atualiza quando algo muda.                                                       | Islet checks what it needs to work on your Mac. This screen updates when something changes.                                                   |
+| `onb_check.ok`                          | Pronto                                                                                                                                                        | Ready                                                                                                                                         |
+| `onb_check.checking`                    | Verificando…                                                                                                                                                  | Checking…                                                                                                                                     |
+| `onb_check.chrome.ok_desc`              | Instalado neste Mac.                                                                                                                                          | Installed on this Mac.                                                                                                                        |
+| `onb_check.chrome.missing_desc`         | Não encontrado. Por enquanto, o Islet só funciona com ele.                                                                                                    | Not found. For now, Islet only works with it.                                                                                                 |
+| `onb_check.chrome.download`             | Baixar o Chrome                                                                                                                                               | Download Chrome                                                                                                                               |
+| `onb_check.chrome.waiting_desc`         | Na página que abriu, baixe e instale o Chrome.                                                                                                                | On the page that opened, download and install Chrome.                                                                                         |
+| `onb_check.chrome.waiting`              | Aguardando o Chrome…                                                                                                                                          | Waiting for Chrome…                                                                                                                           |
+| `onb_check.app.title`                   | Islet na pasta Aplicativos                                                                                                                                    | Islet in the Applications folder                                                                                                              |
+| `onb_check.app.ok_desc`                 | Aberto da pasta Aplicativos.                                                                                                                                  | Opened from the Applications folder.                                                                                                          |
+| `onb_check.app.outside_desc`            | Arraste o Islet para Aplicativos e abra de lá.                                                                                                                | Drag Islet to Applications and open it from there.                                                                                            |
+| `onb_check.chrome.bridge_error_desc`    | Não foi possível conectar o Islet ao Chrome.                                                                                                                  | Couldn't connect Islet to Chrome.                                                                                                             |
+| `onb_check.banner`                      | Tudo certo com o seu Mac. Agora falta a extensão.                                                                                                             | Your Mac is all set. Next, the extension.                                                                                                     |
+| `onb_check.other_browsers`              | Usa Brave, Edge ou Arc? O suporte a outros navegadores chega numa próxima versão.                                                                             | Using Brave, Edge or Arc? Support for other browsers is coming in a future release.                                                           |
 | `onb2.title`                   | Conecte o Islet ao Google Meet                                                                                                                                | Connect Islet to Google Meet                                                                                                                  |
 | `onb2.body`                    | Uma extensão do Chrome lê o estado da reunião e envia os seus comandos para ela. A extensão só tem acesso a meet.google.com.                                  | A Chrome extension reads the meeting state and sends your commands to it. The extension only has access to meet.google.com.                   |
-| `onb2.bridge.title`            | Ponte com o Chrome                                                                                                                                            | Chrome bridge                                                                                                                                 |
-| `onb2.bridge.ok_desc`          | Instalada automaticamente pelo Islet.                                                                                                                         | Installed automatically by Islet.                                                                                                             |
-| `onb2.bridge.ok`               | Pronto                                                                                                                                                        | Ready                                                                                                                                         |
-| `onb2.bridge.error_desc`       | Não foi possível instalar a ponte.                                                                                                                            | Couldn't install the bridge.                                                                                                                  |
 | `onb2.ext.title`               | Extensão do Islet                                                                                                                                             | Islet extension                                                                                                                               |
 | `onb2.ext.idle_desc`           | Abre a página da extensão no Chrome.                                                                                                                          | Opens the extension page in Chrome.                                                                                                           |
 | `onb2.ext.install`             | Instalar extensão                                                                                                                                             | Install extension                                                                                                                             |
@@ -365,7 +405,6 @@ All UI text comes from this dictionary. `{x}` marks an interpolation; `**…**` 
 | `onb2.ext.connected_desc`      | Versão {version} · respondeu ao teste de conexão.                                                                                                             | Version {version} · passed the connection test.                                                                                               |
 | `onb2.ext.connected`           | Conectada                                                                                                                                                     | Connected                                                                                                                                     |
 | `onb2.banner`                  | Tudo certo. Na próxima call do Meet, a ilha aparece sozinha.                                                                                                  | All set. Your next Meet call will appear in the island automatically.                                                                         |
-| `onb2.other_browsers`          | Usa Brave, Edge ou Arc? O suporte a outros navegadores chega numa próxima versão.                                                                             | Using Brave, Edge or Arc? Support for other browsers is coming in a future release.                                                           |
 | `onb2.skip`                    | Pular por enquanto                                                                                                                                            | Skip for now                                                                                                                                  |
 | `onb3.title`                   | Desligue o Picture-in-Picture automático                                                                                                                      | Turn off automatic Picture-in-Picture                                                                                                         |
 | `onb3.body`                    | Com a ilha no notch, a janela flutuante do Meet não é mais necessária. Desligá-la evita que ela abra toda vez que você troca de aba.                          | With the island in the notch, Meet's floating window is no longer needed. Turning it off stops it from opening every time you switch tabs.    |
@@ -424,6 +463,7 @@ All UI text comes from this dictionary. `{x}` marks an interpolation; `**…**` 
 | `toast.diagnostics_copied`                    | Diagnóstico copiado, sem dados pessoais.                                                                                                                                                                                                 | Diagnostics copied, no personal data included.                                                                                                                                                                                |
 | `action.reinstall_bridge`                     | Reinstalar ponte do Chrome                                                                                                                                                                                                               | Reinstall Chrome bridge                                                                                                                                                                                                       |
 | `bridge.reinstalled`                          | Ponte reinstalada.                                                                                                                                                                                                                       | Bridge reinstalled.                                                                                                                                                                                                           |
+| `bridge.error`                                | Não foi possível instalar a ponte.                                                                                                                                                                                                       | Couldn't install the bridge.                                                                                                                                                                                                  |
 | `badge.experimental`                          | Experimental                                                                                                                                                                                                                             | Experimental                                                                                                                                                                                                                  |
 | `settings.privacy.card_title`                 | Tudo fica no seu Mac                                                                                                                                                                                                                     | Everything stays on your Mac                                                                                                                                                                                                  |
 | `settings.privacy.card_body`                  | O Islet não usa contas e não envia nada sobre você. A única conexão de rede é a busca por atualizações, quando você permite. O estado da reunião fica só na memória do app, e os nomes e fotos dos participantes nunca vão para os logs. | Islet uses no accounts and sends nothing about you. Its only network connection is the update check, when you allow it. The meeting state stays in the app's memory, and participants' names and photos never reach the logs. |
@@ -508,7 +548,10 @@ works for real.
 - [ ] Onboarding and settings render correctly in light and dark. Switching the macOS appearance while a window is open updates it without reopening.
 - [ ] No white flash when opening a window in dark mode.
 - [ ] Island and pill stay black in both themes; the tray icon is a template image.
-- [ ] Step 2 reaches `connected` only on a real `hello`; the 60 s troubleshooting link appears.
+- [ ] A fresh install opens the guide in front of Finder, and of System Settings after "Open Anyway", with no click on the menu bar.
+- [ ] Step 2 flags a missing Chrome and an Islet opened from the disk image, and turns green on its own once Chrome is installed.
+- [ ] Until onboarding is completed, the tray icon has its dot and the menu shows only "Concluir configuração…".
+- [ ] Step 3 reaches `connected` only on a real `hello`; the 60 s troubleshooting link appears.
 - [ ] Turning "Mostrar nomes dos participantes" off removes names from the `UiSnapshot` itself (covered by a core test), not just from the UI.
 - [ ] "Copiar diagnóstico" output contains no names, titles or meeting codes (covered by a test).
 - [ ] Changing the language in Settings updates every window and the island immediately.

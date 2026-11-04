@@ -84,6 +84,7 @@ pub fn run() {
             commands::window_ready,
             commands::open_window,
             commands::repair_bridge,
+            commands::requirements,
             commands::autostart,
             commands::set_autostart,
             commands::diagnostics,

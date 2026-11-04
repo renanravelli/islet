@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { LocaleProvider } from "../src/i18n/i18n";
 import { IslandView } from "../src/island/IslandView";
 import type { Mode } from "../src/island/model";
-import { Onboarding } from "../src/onboarding/Onboarding";
+import { Onboarding, RECHECK_MS } from "../src/onboarding/Onboarding";
 import { api } from "../src/shared/api";
 import { Switch } from "../src/shared/components";
 
@@ -213,7 +213,7 @@ describe("switch", () => {
   });
 });
 
-describe("onboarding step 2", () => {
+describe("onboarding", () => {
   const info: AppInfo = {
     version: "0.1.1",
     system_language: "en",
@@ -237,7 +237,7 @@ describe("onboarding step 2", () => {
       { id: "meet", connected, client_version: connected ? "0.1.1" : null, last_health: null },
     ],
   });
-  const step2 = (snapshot: UiSnapshot) =>
+  const at = (initialStep: number, snapshot: UiSnapshot) =>
     act(() =>
       root.render(
         <LocaleProvider locale="en">
@@ -246,26 +246,106 @@ describe("onboarding step 2", () => {
             settings={settings}
             snapshot={snapshot}
             preview={undefined}
-            initialStep={2}
+            initialStep={initialStep}
           />
         </LocaleProvider>,
       ),
     );
+  const step3 = (snapshot: UiSnapshot) => at(3, snapshot);
+  /** Lets the shell's answers (promises) land. */
+  const settle = () => act(async () => {});
   const button = (text: string) =>
     [...container.querySelectorAll("button")].find((b) => b.textContent === text);
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.useRealTimers();
+  });
+
+  it("checks the Mac and lets the person go on only when all is ready", async () => {
+    vi.spyOn(api, "requirements").mockResolvedValue({ chrome: true, in_applications: true });
+    const repair = vi.spyOn(api, "repairBridge").mockResolvedValue({ state: "ready" });
+    at(2, meet(false));
+    expect(container.textContent).toContain("Checking…");
+    expect(button("Continue")?.disabled).toBe(true);
+    await settle();
+    await settle();
+    expect(repair).toHaveBeenCalledTimes(1);
+    expect(container.textContent).toContain("Installed on this Mac.");
+    expect(container.textContent).toContain("Opened from the Applications folder.");
+    expect(container.textContent).not.toContain("bridge");
+    expect(container.textContent).toContain("Your Mac is all set. Next, the extension.");
+    expect(button("Continue")?.disabled).toBe(false);
+  });
+
+  it("asks for Chrome, waits for it, then installs the bridge", async () => {
+    vi.useFakeTimers();
+    const requirements = vi
+      .spyOn(api, "requirements")
+      .mockResolvedValue({ chrome: false, in_applications: true });
+    const repair = vi.spyOn(api, "repairBridge").mockResolvedValue({ state: "ready" });
+    const open = vi.spyOn(api, "openLink").mockResolvedValue(undefined);
+    at(2, meet(false));
+    await settle();
+    expect(container.textContent).toContain("Not found. For now, Islet only works with it.");
+    expect(container.textContent).toContain("Using Brave, Edge or Arc?");
+    expect(repair).not.toHaveBeenCalled();
+    expect(button("Continue")?.disabled).toBe(true);
+    expect(button("Skip for now")).toBeDefined();
+
+    act(() => button("Download Chrome")?.click());
+    expect(open).toHaveBeenCalledWith("download_chrome");
+    expect(container.textContent).toContain("Waiting for Chrome…");
+
+    requirements.mockResolvedValue({ chrome: true, in_applications: true });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(RECHECK_MS);
+    });
+    await settle();
+    expect(repair).toHaveBeenCalledTimes(1);
+    expect(button("Continue")?.disabled).toBe(false);
+  });
+
+  it("asks to open Islet from Applications, with no button to do it", async () => {
+    vi.spyOn(api, "requirements").mockResolvedValue({ chrome: true, in_applications: false });
+    const repair = vi.spyOn(api, "repairBridge").mockResolvedValue({ state: "ready" });
+    at(2, meet(false));
+    await settle();
+    expect(container.textContent).toContain("Drag Islet to Applications and open it from there.");
+    expect(container.textContent).toContain("Installed on this Mac.");
+    expect(container.textContent).not.toContain("Using Brave, Edge or Arc?");
+    expect(repair).not.toHaveBeenCalled();
+    expect(button("Continue")?.disabled).toBe(true);
+  });
+
+  it("shows a failed bridge in Chrome's row, with a retry", async () => {
+    vi.spyOn(api, "requirements").mockResolvedValue({ chrome: true, in_applications: true });
+    const repair = vi
+      .spyOn(api, "repairBridge")
+      .mockResolvedValue({ state: "error", summary: "synthetic" });
+    at(2, meet(false));
+    await settle();
+    await settle();
+    expect(container.textContent).toContain("Couldn't connect Islet to Chrome.");
+    expect(button("Continue")?.disabled).toBe(true);
+    repair.mockResolvedValue({ state: "ready" });
+    await act(async () => button("Try again")?.click());
+    expect(container.textContent).toContain("Installed on this Mac.");
+    expect(button("Continue")?.disabled).toBe(false);
+  });
+
   it("stays connected after the connection test closes the bridge", () => {
-    step2(meet(false));
+    step3(meet(false));
     expect(container.textContent).not.toContain("Version 0.1.1");
-    step2(meet(true));
-    step2(meet(false));
+    step3(meet(true));
+    step3(meet(false));
     expect(container.textContent).toContain("Version 0.1.1 · passed the connection test.");
     expect(button("Continue")?.disabled).toBe(false);
   });
 
   it("opens Meet to test an extension installed earlier", () => {
     const open = vi.spyOn(api, "openLink").mockResolvedValue(undefined);
-    step2(meet(false));
+    step3(meet(false));
     expect(container.textContent).toContain("Already have the extension?");
     act(() => button("Open Meet to test it")?.click());
     expect(open).toHaveBeenCalledWith("open_meet");

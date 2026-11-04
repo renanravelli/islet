@@ -1,13 +1,13 @@
-//! macOS: screen geometry, system language, app activation and opening files and links.
+//! macOS: screen geometry, system language, app activation, finding Chrome and opening files
+//! and links.
 //!
-//! The crate denies `unsafe` everywhere but here (CLAUDE.md, "Unsafe code"). The AppKit and
-//! Foundation calls used so far are safe in objc2 0.6, so this module needs none yet; any
-//! `unsafe` block added later must carry a `// SAFETY:` comment.
+//! The crate denies `unsafe` everywhere but here (CLAUDE.md, "Unsafe code"). Every `unsafe`
+//! block carries a `// SAFETY:` comment.
 #![allow(unsafe_code)]
 
 use objc2::MainThreadMarker;
-use objc2_app_kit::{NSApplication, NSScreen};
-use objc2_foundation::{NSLocale, NSRect};
+use objc2_app_kit::{NSApplication, NSScreen, NSWindow, NSWorkspace};
+use objc2_foundation::{NSLocale, NSRect, NSString};
 
 use crate::geometry::{Rect, ScreenInfo};
 
@@ -58,6 +58,34 @@ pub fn activate() {
     // `activate` exists only from macOS 14 on; this one works on 13 too.
     #[allow(deprecated)]
     NSApplication::sharedApplication(mtm).activateIgnoringOtherApps(true);
+}
+
+/// Shows a window, activates Islet and puts the window in front of every app's. macOS 14+ may
+/// refuse the activation when it does not come from a click (the first launch, from Finder or
+/// System Settings), so the window is also ordered front on its own. Main thread only.
+pub fn bring_to_front(window: &tauri::WebviewWindow) {
+    activate();
+    let _ = window.show();
+    let _ = window.set_focus();
+    let Some(_mtm) = MainThreadMarker::new() else {
+        return;
+    };
+    let Ok(pointer) = window.ns_window() else {
+        return;
+    };
+    // SAFETY: `ns_window` is the window's own NSWindow, which Tauri keeps alive while the window
+    // exists; it is used only during this call, on the main thread (checked above).
+    let ns_window = unsafe { &*pointer.cast::<NSWindow>() };
+    ns_window.orderFrontRegardless();
+}
+
+/// Whether Google Chrome (the stable channel, whose bridge Islet registers) is installed,
+/// wherever it is: Launch Services knows the apps on the Mac.
+pub fn chrome_installed() -> bool {
+    let id = NSString::from_str("com.google.Chrome");
+    NSWorkspace::sharedWorkspace()
+        .URLForApplicationWithBundleIdentifier(&id)
+        .is_some()
 }
 
 /// Opens a file, folder or URL with the default app (`/usr/bin/open`).

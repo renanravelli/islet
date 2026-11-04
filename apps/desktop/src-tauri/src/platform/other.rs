@@ -12,6 +12,16 @@ pub fn preferred_language() -> String {
 
 pub fn activate() {}
 
+pub fn bring_to_front(window: &tauri::WebviewWindow) {
+    let _ = window.show();
+    let _ = window.set_focus();
+}
+
+/// Chrome is looked for only on macOS.
+pub fn chrome_installed() -> bool {
+    false
+}
+
 pub fn open_in_chrome(target: &str) -> std::io::Result<()> {
     open(target)
 }
