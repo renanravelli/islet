@@ -1,7 +1,7 @@
 // Draws the island for a given state. No timers or shell calls here: the window (Island.tsx)
 // and the onboarding preview drive it.
 
-import type { Geometry, MeetingSession, Speaker } from "@islet/ui-types";
+import type { Geometry, MeetingSession, RaisedHands, Speaker } from "@islet/ui-types";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import type { CSSProperties, ReactNode } from "react";
 import { useT } from "../i18n/i18n";
@@ -77,12 +77,13 @@ export function IslandView(props: IslandViewProps) {
     geometry,
     props.hovered,
     earWidth(props.session, mode, props.now, props.endedDuration),
+    props.session.raised_hands != null,
   );
   const pill = !geometry.has_notch;
   const radius =
     mode === "expanded"
       ? SIZE.expandedRadius
-      : mode === "alert"
+      : mode === "alert" || mode === "notice"
         ? SIZE.alertRadius
         : pill
           ? height / 2
@@ -110,6 +111,8 @@ export function IslandView(props: IslandViewProps) {
             <Expanded {...props} />
           ) : mode === "alert" ? (
             <Alert {...props} />
+          ) : mode === "notice" ? (
+            <Notice {...props} />
           ) : pill ? (
             <Pill {...props} />
           ) : (
@@ -125,16 +128,19 @@ function Avatar({
   speaker,
   size,
   speaking = speaker !== null,
+  raised = false,
 }: {
   speaker: Speaker | null;
   size: number;
   /** The green ring; off for the last speaker. */
   speaking?: boolean;
+  /** The amber ring of the first one in the line of raised hands. */
+  raised?: boolean;
 }) {
   const letters = initials(speaker?.display_name);
   return (
     <span
-      className={`avatar ${speaking ? "is-speaking" : ""}`}
+      className={`avatar ${speaking ? "is-speaking" : ""} ${raised ? "is-raised" : ""}`}
       style={{
         width: size,
         height: size,
@@ -214,6 +220,34 @@ function HandStatus({ session }: { session: MeetingSession }) {
   return (
     <span className="status-icon attention" role="img" aria-label={t("island.hand_lower")}>
       <HandIcon size={14} />
+    </span>
+  );
+}
+
+/** "Bruno Lima levantou a mão", or "Alguém levantou a mão" with names off. */
+function useRaisedBy(): (hands: RaisedHands) => string {
+  const t = useT();
+  return (hands) =>
+    hands.first.display_name
+      ? t("island.hand_raised_by", { name: hands.first.display_name })
+      : t("island.hand_raised_someone");
+}
+
+/** Others' raised hands, after the speaker: the hand, the first in line and "+N" for the rest. */
+function HandsChip({ session }: { session: MeetingSession }) {
+  const t = useT();
+  const raisedBy = useRaisedBy();
+  const hands = session.raised_hands;
+  if (!hands) return null;
+  const label =
+    hands.count > 1
+      ? `${raisedBy(hands)}, ${t("island.hands_count", { n: hands.count })}`
+      : raisedBy(hands);
+  return (
+    <span className="hands-chip" role="img" aria-label={label}>
+      <HandIcon size={12} />
+      <Avatar speaker={hands.first} speaking={false} raised size={18} />
+      {hands.count > 1 && <span className="hands-more tabular">+{hands.count - 1}</span>}
     </span>
   );
 }
@@ -299,6 +333,7 @@ function Compact(props: IslandViewProps) {
           <>
             <Avatar speaker={shownSpeaker(props)} speaking={props.speaker !== null} size={20} />
             <Wave bars={WAVE.compact} active={props.speaker !== null} />
+            <HandsChip session={session} />
           </>
         )}
       </span>
@@ -330,6 +365,7 @@ function Pill(props: IslandViewProps) {
           </>
         )}
       </span>
+      {!ended && <HandsChip session={session} />}
       <span className="pill-title">{ended ? "" : (session.title ?? "")}</span>
       <span className="pill-side">
         {!ended && <HandStatus session={session} />}
@@ -423,6 +459,7 @@ function Expanded(props: IslandViewProps) {
           <Participants session={session} />
         </div>
       </div>
+      <HandsRow session={session} />
       <div className="controls">
         {controls(session).map((control) => {
           const pending = props.pending === control.command;
@@ -470,6 +507,24 @@ function Participants({ session }: { session: MeetingSession }) {
       )}
       {count !== null && t("island.participants", { n: count })}
     </span>
+  );
+}
+
+/** The expanded island's line of raised hands: the first in line and how many. */
+function HandsRow({ session }: { session: MeetingSession }) {
+  const t = useT();
+  const raisedBy = useRaisedBy();
+  const hands = session.raised_hands;
+  if (!hands) return null;
+  return (
+    <div className="hands-row">
+      <HandIcon size={16} />
+      <Avatar speaker={hands.first} speaking={false} raised size={24} />
+      <span className="hands-by">{raisedBy(hands)}</span>
+      {hands.count > 1 && (
+        <span className="hands-count">{t("island.hands_count", { n: hands.count })}</span>
+      )}
+    </div>
   );
 }
 
@@ -524,6 +579,50 @@ function Alert(props: IslandViewProps) {
           {t("island.alert_unmute")}
         </button>
       </div>
+    </div>
+  );
+}
+
+/** A new first one in the line of raised hands, for a few seconds; a click expands. */
+function Notice(props: IslandViewProps) {
+  const t = useT();
+  const raisedBy = useRaisedBy();
+  const session = props.session as MeetingSession;
+  const hands = session.raised_hands;
+  if (!hands) return null;
+  const body = (
+    <>
+      <TopStrip
+        geometry={props.geometry}
+        inner={ALERT_INNER}
+        left={
+          <span className="notice-tag">
+            <HandIcon size={14} />
+            {t("island.hands_notice")}
+          </span>
+        }
+        right={<Timer session={session} now={props.now} />}
+      />
+      <span className="notice-body">
+        <Avatar speaker={hands.first} speaking={false} raised size={36} />
+        <span className="notice-text">
+          <span className="notice-by">{raisedBy(hands)}</span>
+          {hands.count > 1 && (
+            <span className="notice-count">{t("island.hands_count", { n: hands.count })}</span>
+          )}
+        </span>
+      </span>
+    </>
+  );
+  return (
+    <div className="notice-live" role="status">
+      {props.interactive ? (
+        <button type="button" className="notice" onClick={props.onExpand}>
+          {body}
+        </button>
+      ) : (
+        <div className="notice">{body}</div>
+      )}
     </div>
   );
 }

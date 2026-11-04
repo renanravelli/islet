@@ -84,6 +84,8 @@ pub struct SessionState {
     pub participants: Vec<Speaker>,
     /// The user, when the provider can tell; the island shows them before anyone speaks.
     pub self_participant: Option<Speaker>,
+    /// Other participants with a raised hand; `None` when nobody else has one.
+    pub raised_hands: Option<RaisedHands>,
     pub signals: Signals,
     /// Commands this session supports right now. The UI renders only these.
     pub capabilities: CapabilitySet,
@@ -102,6 +104,7 @@ impl fmt::Debug for SessionState {
             .field("participant_count", &self.participant_count)
             .field("participants", &self.participants)
             .field("self_participant", &self.self_participant)
+            .field("raised_hands", &self.raised_hands)
             .field("signals", &self.signals)
             .field("capabilities", &self.capabilities)
             .field("health", &self.health)
@@ -179,6 +182,20 @@ impl fmt::Debug for Speaker {
             .field("avatar", &self.avatar.as_ref().map(|_| Redacted))
             .finish()
     }
+}
+
+/// The line of raised hands, the user left out. The island shows the first one in line and how
+/// many there are; `Debug` redacts the name and photo through [`Speaker`].
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, TS)]
+#[ts(export, export_to = "ui-types/src/generated/ui.ts")]
+pub struct RaisedHands {
+    /// Of those with a hand up, who raised it first.
+    pub first: Speaker,
+    /// How many have a hand up, `first` included; at least 1.
+    pub count: u32,
+    /// When `first` became the first in line, in milliseconds since the Unix epoch.
+    #[ts(type = "number")]
+    pub since: u64,
 }
 
 /// Experimental signals. A signal is `true` only when the provider observed it.

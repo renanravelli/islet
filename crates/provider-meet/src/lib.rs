@@ -11,7 +11,7 @@ use std::sync::{Arc, Mutex, MutexGuard};
 use islet_core::{
     CapabilitySet, Command, CommandError, CommandFuture, DegradedReason, EndReason, EventSink,
     Field, Health, MAX_PARTICIPANTS, Provider, ProviderDetail, ProviderId, ProviderStatus,
-    SessionEvent, SessionState, Signals, Speaker, Toggle,
+    RaisedHands, SessionEvent, SessionState, Signals, Speaker, Toggle,
 };
 use islet_protocol as wire;
 use islet_protocol::{AppMessage, ExtensionMessage};
@@ -340,6 +340,14 @@ fn session_state(update: wire::SessionUpdate) -> SessionState {
             .map(speaker)
             .collect(),
         self_participant: update.self_participant.map(speaker),
+        raised_hands: update
+            .raised_hands
+            .filter(|hands| hands.count > 0)
+            .map(|hands| RaisedHands {
+                first: speaker(hands.first),
+                count: hands.count,
+                since: hands.since,
+            }),
         signals: Signals {
             speaking_while_muted: update.signals.speaking_while_muted == Some(true),
         },

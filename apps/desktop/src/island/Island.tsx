@@ -6,7 +6,15 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { api, on } from "../shared/api";
 import { useEndedDuration, useHeldSpeaker, useLastSpeaker, useNow } from "./hooks";
 import { IslandView } from "./IslandView";
-import { contour, earWidth, IDLE_COLLAPSE_MS, mode as modeOf, type UiState } from "./model";
+import {
+  announces,
+  contour,
+  earWidth,
+  HAND_NOTICE_MS,
+  IDLE_COLLAPSE_MS,
+  mode as modeOf,
+  type UiState,
+} from "./model";
 
 /** The island's resize transition: the panel shrinks once it is over. */
 const SHRINK_DELAY_MS = 280;
@@ -53,11 +61,25 @@ export function Island({
 
   // Tell the shell the contour; it moves and resizes the panel to match. Growing, the panel
   // resizes first and the island animates inside it; shrinking, the island animates first.
+  // A new first one in the line of raised hands: announce it for a few seconds, unless the line
+  // was there before (the app started or reconnected).
+  const handsSince = session?.raised_hands?.since;
+  useEffect(() => {
+    if (handsSince === undefined || !announces(handsSince, Date.now())) {
+      setUi((u) => (u.handNotice ? { ...u, handNotice: false } : u));
+      return;
+    }
+    setUi((u) => ({ ...u, handNotice: true }));
+    const id = setTimeout(() => setUi((u) => ({ ...u, handNotice: false })), HAND_NOTICE_MS);
+    return () => clearTimeout(id);
+  }, [handsSince]);
+
   const { width, height } = contour(
     mode,
     info.geometry,
     hovered,
     earWidth(session, mode, now, endedDuration),
+    session?.raised_hands != null,
   );
   const shown = useRef({ width: 0, height: 0 });
   useEffect(() => {
@@ -68,7 +90,8 @@ export function Island({
         width,
         height,
         focused: mode === "expanded",
-        shadow: mode === "expanded" || mode === "alert" || !info.geometry.has_notch,
+        shadow:
+          mode === "expanded" || mode === "alert" || mode === "notice" || !info.geometry.has_notch,
       });
     };
     const shrinks = width < shown.current.width || height < shown.current.height;

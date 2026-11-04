@@ -19,6 +19,11 @@
     { "display_name": "Sam Example" }
   ],
   "self_participant": { "display_name": "Sam Example" },
+  "raised_hands": {
+    "first": { "display_name": "Kim Example" },
+    "count": 2,
+    "since": 1793700060000
+  },
   "signals": { "speaking_while_muted": false },
   "capabilities": ["toggle_mic", "toggle_cam", "toggle_hand", "leave", "focus_tab"],
   "health": "ok"

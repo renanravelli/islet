@@ -230,6 +230,9 @@ impl Actor {
             for participant in &mut session.state.participants {
                 *participant = Speaker::anonymous();
             }
+            if let Some(hands) = &mut session.state.raised_hands {
+                hands.first = Speaker::anonymous();
+            }
         }
         let providers = self
             .statuses

@@ -26,6 +26,7 @@ const base: MeetingSession = {
     display_name,
   })),
   self_participant: { display_name: "Carla Mendes" },
+  raised_hands: null,
   signals: { speaking_while_muted: false },
   capabilities: ["toggle_mic", "toggle_cam", "toggle_hand", "leave", "focus_tab"],
   health: { status: "ok" },
@@ -47,6 +48,11 @@ const withPhotos: Partial<MeetingSession> = {
     // No photo (camera on since the start, or an account without one): initials.
     { display_name: "Carla Mendes" },
   ],
+};
+
+/** Bruno raised his hand first, and someone else after him. */
+const hands: Partial<MeetingSession> = {
+  raised_hands: { first: { display_name: "Bruno Lima" }, count: 2, since: now },
 };
 
 const notch: Geometry = { has_notch: true, notch_width: 186, top_inset: 32 };
@@ -75,6 +81,24 @@ const CANVAS: Case[] = [
   ],
   ["Sem notch · monitor externo", "compact", {}, noNotch, 96],
   ["Encerrada", "ended", { status: { phase: "ended", reason: "call_ended" } }, notch, 96],
+];
+
+/** The canvas's "Mão levantada" board, in its order and with its frame heights. */
+const HANDS: Case[] = [
+  ["Compacta · mão levantada", "compact", hands, notch, 96],
+  ["Aviso · nova primeira da fila", "notice", hands, notch, 140],
+  ["Expandida · mão levantada", "expanded", hands, notch, 340],
+  ["Sem notch · mão levantada", "compact", hands, noNotch, 96],
+  [
+    "Nomes e fotos desligados",
+    "compact",
+    {
+      active_speaker: { display_name: null },
+      raised_hands: { first: { display_name: null }, count: 2, since: now },
+    },
+    notch,
+    96,
+  ],
 ];
 
 /** States the canvas does not draw. */
@@ -139,6 +163,41 @@ const EXTRA: Case[] = [
   ["Photos", "compact", withPhotos, notch, 96],
   ["Photos, expanded; one without a photo", "expanded", withPhotos, notch, 300],
   ["Photos, pill", "compact", withPhotos, noNotch, 96],
+  [
+    "One raised hand, with a photo",
+    "compact",
+    {
+      ...withPhotos,
+      raised_hands: {
+        first: { display_name: "Bruno Lima", avatar: PHOTOS.bruno },
+        count: 1,
+        since: now,
+      },
+    },
+    notch,
+    96,
+  ],
+  [
+    "Others' hands and your own, camera on: wider ears",
+    "compact",
+    { ...hands, hand: "on", cam: "on" },
+    notch,
+    96,
+  ],
+  [
+    "Notice, names hidden, one hand",
+    "notice",
+    { raised_hands: { first: { display_name: null }, count: 1, since: now } },
+    notch,
+    140,
+  ],
+  [
+    "Expanded, one raised hand",
+    "expanded",
+    { ...hands, raised_hands: { first: { display_name: "Bruno Lima" }, count: 1, since: now } },
+    notch,
+    340,
+  ],
 ];
 
 const locale = (new URLSearchParams(location.search).get("locale") as Locale) || "pt-BR";
@@ -209,6 +268,9 @@ function Gallery() {
         }}
       >
         {CANVAS.map((c) => (
+          <Frame key={c[0]} c={c} />
+        ))}
+        {HANDS.map((c) => (
           <Frame key={c[0]} c={c} />
         ))}
         {EXTRA.map((c) => (

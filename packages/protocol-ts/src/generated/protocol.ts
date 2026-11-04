@@ -75,6 +75,24 @@ avatar?: string, };
  */
 export type ProtocolVersion = 1;
 
+/**
+ * The line of raised hands, the user left out. `Debug` redacts the first one's name and photo.
+ */
+export type RaisedHands = { 
+/**
+ * The first in line: of those with a hand up, who raised it first.
+ */
+first: Participant, 
+/**
+ * How many have a hand up, `first` included.
+ */
+count: number, 
+/**
+ * When `first` became the first in line, in milliseconds since the Unix epoch. The island
+ * announces a new first one.
+ */
+since: number, };
+
 export type SelfState = { mic: Toggle, cam: Toggle, hand: Toggle, };
 
 export type SessionEnded = { tab_id: number, reason: EndReason, };
@@ -99,7 +117,12 @@ participants?: Array<Participant>,
 /**
  * The user, as Meet names them, when the adapter can tell which tile is theirs.
  */
-self_participant?: Participant, signals: Signals, 
+self_participant?: Participant, 
+/**
+ * Other participants with a raised hand. Absent when nobody else has one, or when the
+ * adapter cannot tell.
+ */
+raised_hands?: RaisedHands, signals: Signals, 
 /**
  * Actions this tab can perform right now.
  */

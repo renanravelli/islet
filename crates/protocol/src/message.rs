@@ -26,6 +26,9 @@ pub struct AppEnvelope {
 }
 
 /// Extension → app.
+// A `SessionUpdate` (photos included, ADR 0007) is far larger than the other variants. Messages
+// are decoded one at a time and handed on, so boxing it would only add an allocation.
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[serde(tag = "type")]
 #[ts(export, export_to = "protocol-ts/src/generated/protocol.ts")]
@@ -134,6 +137,10 @@ pub struct SessionUpdate {
     /// The user, as Meet names them, when the adapter can tell which tile is theirs.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub self_participant: Option<Participant>,
+    /// Other participants with a raised hand. Absent when nobody else has one, or when the
+    /// adapter cannot tell.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub raised_hands: Option<RaisedHands>,
     pub signals: Signals,
     /// Actions this tab can perform right now.
     pub capabilities: Vec<Action>,
@@ -155,6 +162,7 @@ impl fmt::Debug for SessionUpdate {
             .field("participant_count", &self.participant_count)
             .field("participants", &self.participants)
             .field("self_participant", &self.self_participant)
+            .field("raised_hands", &self.raised_hands)
             .field("signals", &self.signals)
             .field("capabilities", &self.capabilities)
             .field("health", &self.health)
@@ -226,6 +234,20 @@ impl fmt::Debug for Participant {
             .field("avatar", &self.avatar.as_ref().map(|_| Redacted))
             .finish()
     }
+}
+
+/// The line of raised hands, the user left out. `Debug` redacts the first one's name and photo.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[ts(export, export_to = "protocol-ts/src/generated/protocol.ts")]
+pub struct RaisedHands {
+    /// The first in line: of those with a hand up, who raised it first.
+    pub first: Participant,
+    /// How many have a hand up, `first` included.
+    pub count: u32,
+    /// When `first` became the first in line, in milliseconds since the Unix epoch. The island
+    /// announces a new first one.
+    #[ts(type = "number")]
+    pub since: u64,
 }
 
 /// Experimental signals. A missing field means the adapter could not read it.

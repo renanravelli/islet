@@ -306,6 +306,17 @@ Every open item lives here, not in an assistant's memory. Remove an item when it
   - **Owner, Chrome Web Store:** before uploading an extension that reads photos, update the
     listing's privacy form (personal information: participants' photos, used only on the
     device) and its description.
+- **Others' raised hands (2026-11-04, branch `feat/raised-hands`):** the island shows the first
+  in line of others' raised hands and how many (prototype approved: the canvas's "Mão levantada"
+  board; `docs/design/ui-spec.md` section 5). Done: protocol v1's optional `raised_hands` (first
+  in line, count, `since`), the core (anonymized with names off, dropped when stale), the
+  island (compact, pill, expanded row, the 4 s notice), demo mode and `gallery.html`. Open:
+  - **Calibration (owner):** `runCalibration("hands")` in a call with three participants
+    (step 13 of `calibration-session.md`): how Meet marks someone else's raised hand, on the
+    tile, in the People panel or both, and whether it shows the order.
+  - **Then:** the `raisedHand` selector and the adapter (the user left out; the order Meet
+    shows, else the order the extension saw hands go up, in memory), `PRIVACY.md`, the
+    READMEs and the CHANGELOG.
 - **Signing (owner):** the release is signed ad hoc until the six `APPLE_*` secrets exist (an
   Apple Developer Program membership); then `release.yml` signs and notarizes.
 - **Extension install:**
