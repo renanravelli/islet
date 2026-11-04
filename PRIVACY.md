@@ -13,7 +13,9 @@ The extension runs only on `https://meet.google.com/*`. While you are in a call,
 the Meet page:
 
 - the state of Meet's controls: microphone, camera, raised hand and leave;
-- the names Meet shows on the participant tiles, and who is speaking;
+- the names and profile photos Meet shows on the participant tiles, and who is speaking. A
+  photo is the image Meet already loaded, redrawn small (72 pixels); the extension never
+  downloads one;
 - the participant count and the meeting title;
 - Meet's "are you talking?" notice, when you speak while muted.
 
@@ -25,15 +27,16 @@ app.
 
 The extension sends what it reads to the Islet app on the same Mac, through Chrome's native
 messaging, and nowhere else. The app keeps it in memory only while the call lasts, to draw the
-island, and discards it when the call ends. Names, titles and meeting codes are never written to
-disk. With **Show participant names** off in Settings, the app does not display them at all.
+island, and discards it when the call ends. Names, photos, titles and meeting codes are never
+written to disk. With **Show names and photos** off in Settings, the app does not display them
+at all.
 
 ## What is stored on your Mac
 
 - **Settings**, in `~/Library/Application Support/io.github.renanravelli.islet/settings.json`:
   language, island behavior and whether the setup guide was completed. No call data.
 - **Logs**, in `~/Library/Logs/io.github.renanravelli.islet/`: technical events such as
-  connections and errors, without names, titles or meeting codes. They rotate daily, and only
+  connections and errors, without names, photos, titles or meeting codes. They rotate daily, and only
   the last 7 files are kept.
 - **The Chrome bridge registration**, in
   `~/Library/Application Support/Google/Chrome/NativeMessagingHosts/io.github.renanravelli.islet.json`.

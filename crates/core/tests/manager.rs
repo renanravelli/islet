@@ -302,12 +302,19 @@ async fn commands_need_an_active_session() {
     assert!(provider.executed().is_empty());
 }
 
+/// A synthetic 1×1 PNG, standing in for a participant's photo.
+const PHOTO: &str = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+
+fn named(name: &str) -> Speaker {
+    Speaker::new(name).with_avatar(Some(PHOTO.into()))
+}
+
 fn named_state() -> SessionState {
     SessionState {
         title: Some("Synthetic title".into()),
-        active_speaker: Some(Speaker::new("Alex Example")),
-        participants: vec![Speaker::new("Alex Example"), Speaker::new("Sam Example")],
-        self_participant: Some(Speaker::new("Sam Example")),
+        active_speaker: Some(named("Alex Example")),
+        participants: vec![named("Alex Example"), named("Sam Example")],
+        self_participant: Some(named("Sam Example")),
         health: Health::degraded([DegradedReason::Unreadable(Field::Mic)])
             .with_details(ProviderDetail::new("micButton")),
         ..state(Toggle::Unknown)
@@ -315,7 +322,7 @@ fn named_state() -> SessionState {
 }
 
 #[tokio::test(start_paused = true)]
-async fn hidden_names_never_reach_the_snapshot() {
+async fn hidden_names_and_photos_never_reach_the_snapshot() {
     let provider = FakeProvider::new(CapabilitySet::all(), Answer::Confirm);
     let handle = SessionManager::new(Timings::default())
         .with_settings(Settings {
@@ -331,6 +338,7 @@ async fn hidden_names_never_reach_the_snapshot() {
     assert!(!json.contains("Alex"), "{json}");
     assert!(!json.contains("Synthetic title"), "{json}");
     assert!(!json.contains("Sam"), "{json}");
+    assert!(!json.contains("base64"), "{json}");
     let session = hidden.primary.unwrap();
     // Someone is still speaking; who is not shown.
     assert_eq!(session.state.active_speaker, Some(Speaker::anonymous()));
@@ -341,9 +349,11 @@ async fn hidden_names_never_reach_the_snapshot() {
 
     handle.set_settings(Settings::default());
     let shown = next(&mut snapshot).await.primary.unwrap();
+    assert_eq!(shown.state.active_speaker, Some(named("Alex Example")));
     assert_eq!(
-        shown.state.active_speaker,
-        Some(Speaker::new("Alex Example"))
+        shown.state.participants[0].avatar.as_deref(),
+        Some(PHOTO),
+        "photos are shown with names"
     );
 }
 
@@ -365,7 +375,7 @@ async fn diagnostics_have_no_personal_data() {
     let text = diagnostics.to_string();
     let json = serde_json::to_string(&diagnostics).unwrap();
     for out in [&text, &json] {
-        for secret in ["Alex", "Synthetic title", "fake:1", "\"1\""] {
+        for secret in ["Alex", "Synthetic title", "fake:1", "\"1\"", "base64"] {
             assert!(!out.contains(secret), "{secret} in {out}");
         }
     }

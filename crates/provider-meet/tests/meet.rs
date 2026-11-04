@@ -16,6 +16,9 @@ use islet_provider_meet::{BridgeEvent, MEET, MeetProvider};
 use tokio::sync::{mpsc, watch};
 use tokio::time::timeout;
 
+/// A synthetic 1×1 PNG, standing in for a participant's photo.
+const PHOTO: &str = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+
 struct Harness {
     seen: Option<MeetingSession>,
     handle: SessionHandle,
@@ -105,6 +108,7 @@ fn update(tab_id: u32) -> SessionUpdate {
         },
         active_speaker: Some(ActiveSpeaker {
             display_name: "Alex Example".into(),
+            avatar: Some(PHOTO.into()),
         }),
         participant_count: Some(4),
         participants: Some(
@@ -112,11 +116,18 @@ fn update(tab_id: u32) -> SessionUpdate {
                 .into_iter()
                 .map(|name| Participant {
                     display_name: name.into(),
+                    // A URL is never accepted: the island must not load anything.
+                    avatar: Some(if name.starts_with("Sam") {
+                        "https://lh3.googleusercontent.com/a/photo".into()
+                    } else {
+                        PHOTO.into()
+                    }),
                 })
                 .collect(),
         ),
         self_participant: Some(Participant {
             display_name: "Jo Example".into(),
+            avatar: None,
         }),
         signals: Signals {
             speaking_while_muted: Some(true),
@@ -140,14 +151,18 @@ async fn maps_session_updates() {
     assert_eq!(session.state.cam, Toggle::Off);
     assert_eq!(session.state.hand, Toggle::Unknown);
     assert_eq!(
-        session.state.active_speaker.and_then(|s| s.display_name),
-        Some("Alex Example".to_owned())
+        session.state.active_speaker,
+        Some(Speaker::new("Alex Example").with_avatar(Some(PHOTO.into())))
     );
     assert_eq!(session.state.participant_count, Some(4));
-    // The avatar row shows three; the rest are dropped.
+    // The avatar row shows three; the rest are dropped. Sam's photo was a URL: dropped too.
     assert_eq!(
         session.state.participants,
-        ["Alex Example", "Sam Example", "Jo Example"].map(Speaker::new)
+        [
+            Speaker::new("Alex Example").with_avatar(Some(PHOTO.into())),
+            Speaker::new("Sam Example"),
+            Speaker::new("Jo Example").with_avatar(Some(PHOTO.into())),
+        ]
     );
     assert_eq!(
         session.state.self_participant,

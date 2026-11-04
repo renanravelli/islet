@@ -81,7 +81,9 @@ controls one click away.
 - **Honest states.** When Islet cannot read a state, it shows it as unknown, never as on. If Meet
   changes its interface, a small amber dot says some data may be missing.
 - **Works while Chrome is in the background**, which is the point: you are in another app.
-- **Names are optional.** Turn them off and the island shows speaking activity only.
+- **Faces, not just initials.** The island shows the photos Meet shows, read from the page:
+  nothing is downloaded. Names and photos are optional: turn them off and the island shows
+  speaking activity only.
 - **Feels native.** Global shortcuts, a menu bar item, launch at login, light and dark
   appearance, English and Portuguese.
 
@@ -95,8 +97,8 @@ flowchart LR
     app --> island["Island around the notch"]
 ```
 
-- **The extension** reads only Meet's call controls, the participant tiles' names, the
-  participant count and the meeting title. It never reads the chat and never captures audio or
+- **The extension** reads only Meet's call controls, the participant tiles' names and photos,
+  the participant count and the meeting title. It never reads the chat and never captures audio or
   video.
 - **The app** turns what the extension reports into the island, and sends your commands back.
   It only shows a state after Meet confirms it.
@@ -188,7 +190,7 @@ Shortcuts are fixed in v0.1. If one is already taken by another app, the menu ba
 
 The Islet menu shows whether the extension is connected, opens **Settings…** and the setup guide,
 and offers **Install version … and restart** when an update is available. In Settings you can
-turn on expand on hover, hide participant names, turn on the speaking-while-muted alert, change
+turn on expand on hover, hide participant names and photos, turn on the speaking-while-muted alert, change
 the language, check for updates and reinstall the Chrome bridge.
 
 <p align="center">
@@ -202,13 +204,13 @@ connection is the update check, when you allow it: it asks this repository's Git
 for a new version, sends nothing about you, and installs only when you click **Install and
 restart**.
 
-|                              |                                                                                                                                                               |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **What the extension reads** | Meet's call controls (mic, camera, hand, leave), the participant tiles' names, the participant count, the meeting title and Meet's "are you talking?" notice. |
-| **What it never reads**      | The chat, audio, video, your other tabs or any site other than `meet.google.com`.                                                                             |
-| **Where data lives**         | In the app's memory, only during the call. Names never reach the logs.                                                                                        |
-| **Updates**                  | Off until you turn them on (in the setup guide or Settings → Privacy & About). Every update is signed and checked before it installs.                         |
-| **Logs**                     | Local files in `~/Library/Logs/io.github.renanravelli.islet/`, without names, titles or meeting codes.                                                        |
+|                              |                                                                                                                                                                                                                             |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **What the extension reads** | Meet's call controls (mic, camera, hand, leave), the participant tiles' names and photos (the images Meet already loaded, never downloaded), the participant count, the meeting title and Meet's "are you talking?" notice. |
+| **What it never reads**      | The chat, audio, video, your other tabs or any site other than `meet.google.com`.                                                                                                                                           |
+| **Where data lives**         | In the app's memory, only during the call. Names and photos never reach the logs or the disk.                                                                                                                               |
+| **Updates**                  | Off until you turn them on (in the setup guide or Settings → Privacy & About). Every update is signed and checked before it installs.                                                                                       |
+| **Logs**                     | Local files in `~/Library/Logs/io.github.renanravelli.islet/`, without names, photos, titles or meeting codes.                                                                                                              |
 
 The extension asks for two permissions, and nothing else:
 
@@ -328,7 +330,7 @@ Contributions are welcome: bug reports, fixes, and support for new meeting apps 
 
 No. Islet never captures audio or video, and the extension makes no network connections. The
 app's only connection is the update check, when you allow it. The extension only
-reads the state of Meet's controls and the names Meet already shows on screen.
+reads the state of Meet's controls and the names and photos Meet already shows on screen.
 </details>
 
 <details>

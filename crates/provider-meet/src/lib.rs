@@ -23,6 +23,9 @@ pub const MEET: ProviderId = ProviderId::from_static("meet");
 pub type ConnectionId = u64;
 
 /// What the shell's bridge server tells the provider.
+// A session update (photos included, ADR 0007) is about 250 bytes; events go through a channel
+// one at a time, so boxing it would only add an allocation.
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug)]
 pub enum BridgeEvent {
     /// A native host connected. Messages for it go to `outbox`.
@@ -327,24 +330,27 @@ fn session_state(update: wire::SessionUpdate) -> SessionState {
         hand: toggle(update.self_state.hand),
         active_speaker: update
             .active_speaker
-            .map(|speaker| Speaker::new(speaker.display_name)),
+            .map(|speaker| Speaker::new(speaker.display_name).with_avatar(speaker.avatar)),
         participant_count: update.participant_count,
         participants: update
             .participants
             .unwrap_or_default()
             .into_iter()
             .take(MAX_PARTICIPANTS)
-            .map(|participant| Speaker::new(participant.display_name))
+            .map(speaker)
             .collect(),
-        self_participant: update
-            .self_participant
-            .map(|participant| Speaker::new(participant.display_name)),
+        self_participant: update.self_participant.map(speaker),
         signals: Signals {
             speaking_while_muted: update.signals.speaking_while_muted == Some(true),
         },
         capabilities: update.capabilities.into_iter().map(command).collect(),
         health,
     }
+}
+
+/// The name and, when the core accepts it, the photo (docs/adr/0007).
+fn speaker(participant: wire::Participant) -> Speaker {
+    Speaker::new(participant.display_name).with_avatar(participant.avatar)
 }
 
 fn toggle(toggle: wire::Toggle) -> Toggle {

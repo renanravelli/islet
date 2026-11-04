@@ -1,7 +1,7 @@
 {
   "$comment": "Every DOM dependency of the Meet adapter (docs/adr/0004). Strategies are tried in order; regexes are case-insensitive and every locale is tried. A key is verified only when it was confirmed in a real call; verifiedIn lists the Meet languages it was confirmed in. jsname/jscontroller values come from the owner's inspection and the calibration runner in a real pt-BR call on 2026-11-03 (docs/meet-adapter/reports/); Google can rename them, so each key keeps a label-based fallback. Unverified strategies are educated guesses. See docs/meet-adapter/calibration.md.",
-  "version": 8,
-  "updated": "2026-11-03",
+  "version": 9,
+  "updated": "2026-11-04",
   "keys": {
     "leaveButton": {
       "verified": true,
@@ -146,6 +146,14 @@
           "css": "span.notranslate:not(.google-symbols)"
         }
       ],
+      "avatar": [
+        {
+          "css": "img[crossorigin='use-credentials']"
+        },
+        {
+          "css": "img[crossorigin]"
+        }
+      ],
       "$comment": "UNVERIFIED, from one sample: when the iPhone spoke, two [jsname='QgSmzd'] elements in its tile gained the class wEsLMd (and lost gjg47c). Obfuscated classes change with Meet releases; needs more samples (alternate speakers). data-speaking, data-self-name and data-participant-name do not exist. The name is probably the tile's span.notranslate. Only video tiles (jsname E2KThb, or data-tile-media-id): with the People panel open its list items are [data-participant-id] too, and their span.notranslate is not always a name (2026-11-03)."
     },
     "participantCount": {
@@ -230,7 +238,7 @@
       "verifiedIn": ["pt-BR"]
     },
     "participantTile": {
-      "$comment": "UNVERIFIED: the video tiles, for the island's avatar row; not the People panel's list items, which also carry data-participant-id (2026-11-03: one of them gave a stray initial). The name is the tile's span.notranslate, never an icon.",
+      "$comment": "UNVERIFIED: the video tiles, for the island's avatar row; not the People panel's list items, which also carry data-participant-id (2026-11-03: one of them gave a stray initial). The name is the tile's span.notranslate, never an icon. The photo (avatar, also in activeSpeaker and selfTile) is a hidden 75 px copy Meet loads with crossorigin='use-credentials', which a canvas can read; every visible photo is tainted (photo probe, 2026-11-04, one call, pt-BR; docs/adr/0007).",
       "verified": false,
       "required": false,
       "strategies": [
@@ -244,6 +252,14 @@
       "name": [
         {
           "css": "span.notranslate:not(.google-symbols)"
+        }
+      ],
+      "avatar": [
+        {
+          "css": "img[crossorigin='use-credentials']"
+        },
+        {
+          "css": "img[crossorigin]"
         }
       ]
     },
@@ -259,6 +275,14 @@
       "name": [
         {
           "css": "span.notranslate:not(.google-symbols)"
+        }
+      ],
+      "avatar": [
+        {
+          "css": "img[crossorigin='use-credentials']"
+        },
+        {
+          "css": "img[crossorigin]"
         }
       ]
     }

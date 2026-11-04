@@ -30,6 +30,25 @@ const base: MeetingSession = {
   capabilities: ["toggle_mic", "toggle_cam", "toggle_hand", "leave", "focus_tab"],
   health: { status: "ok" },
 };
+/** Synthetic "photos": a gradient and a shape, never a face (docs/adr/0007). */
+function photo(from: string, to: string): string {
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'><defs><linearGradient id='g' x2='1' y2='1'><stop stop-color='${from}'/><stop offset='1' stop-color='${to}'/></linearGradient></defs><rect width='48' height='48' fill='url(#g)'/><circle cx='24' cy='20' r='9' fill='#fff' fill-opacity='.55'/><ellipse cx='24' cy='46' rx='17' ry='13' fill='#fff' fill-opacity='.55'/></svg>`;
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+}
+const PHOTOS = {
+  ana: photo("#5E5CE6", "#BF5AF2"),
+  bruno: photo("#FF9F0A", "#FF375F"),
+};
+const withPhotos: Partial<MeetingSession> = {
+  active_speaker: { display_name: "Ana Souza", avatar: PHOTOS.ana },
+  participants: [
+    { display_name: "Ana Souza", avatar: PHOTOS.ana },
+    { display_name: "Bruno Lima", avatar: PHOTOS.bruno },
+    // No photo (camera on since the start, or an account without one): initials.
+    { display_name: "Carla Mendes" },
+  ],
+};
+
 const notch: Geometry = { has_notch: true, notch_width: 186, top_inset: 32 };
 const noNotch: Geometry = { has_notch: false, notch_width: 0, top_inset: 25 };
 
@@ -117,6 +136,9 @@ const EXTRA: Case[] = [
     300,
   ],
   ["Pill expanded", "expanded", {}, noNotch, 300],
+  ["Photos", "compact", withPhotos, notch, 96],
+  ["Photos, expanded; one without a photo", "expanded", withPhotos, notch, 300],
+  ["Photos, pill", "compact", withPhotos, noNotch, 96],
 ];
 
 const locale = (new URLSearchParams(location.search).get("locale") as Locale) || "pt-BR";

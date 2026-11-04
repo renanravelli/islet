@@ -139,10 +139,14 @@ show_participant_names: boolean, };
 export type Signals = { speaking_while_muted: boolean, };
 
 /**
- * A participant. `display_name` is `None` when names are hidden
- * ([`Settings::show_participant_names`](crate::Settings)); `Debug` redacts it.
+ * A participant. `display_name` and `avatar` are `None` when names are hidden
+ * ([`Settings::show_participant_names`](crate::Settings)); `Debug` redacts both.
  */
-export type Speaker = { display_name: string | null, };
+export type Speaker = { display_name: string | null, 
+/**
+ * Their photo as a small `data:image/(png|jpeg|webp);base64,` URL; never a URL to load.
+ */
+avatar?: string, };
 
 /**
  * A media or hand state. `Unknown` means the provider could not tell, and it is never shown as

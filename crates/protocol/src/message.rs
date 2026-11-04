@@ -181,32 +181,49 @@ pub enum Toggle {
     Unknown,
 }
 
-// `Debug` redacts the name.
+// `Debug` redacts the name and the photo.
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
-#[ts(export, export_to = "protocol-ts/src/generated/protocol.ts")]
+#[ts(
+    export,
+    export_to = "protocol-ts/src/generated/protocol.ts",
+    optional_fields
+)]
 pub struct ActiveSpeaker {
     pub display_name: String,
+    /// The photo Meet shows for them, read from the page as a small `data:image/...` URL
+    /// (docs/adr/0007). Never a URL to fetch.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub avatar: Option<String>,
 }
 
 impl fmt::Debug for ActiveSpeaker {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("ActiveSpeaker")
             .field("display_name", &Redacted)
+            .field("avatar", &self.avatar.as_ref().map(|_| Redacted))
             .finish()
     }
 }
 
-// `Debug` redacts the name.
+// `Debug` redacts the name and the photo.
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
-#[ts(export, export_to = "protocol-ts/src/generated/protocol.ts")]
+#[ts(
+    export,
+    export_to = "protocol-ts/src/generated/protocol.ts",
+    optional_fields
+)]
 pub struct Participant {
     pub display_name: String,
+    /// As [`ActiveSpeaker::avatar`].
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub avatar: Option<String>,
 }
 
 impl fmt::Debug for Participant {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Participant")
             .field("display_name", &Redacted)
+            .field("avatar", &self.avatar.as_ref().map(|_| Redacted))
             .finish()
     }
 }

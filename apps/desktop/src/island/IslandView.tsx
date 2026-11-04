@@ -144,7 +144,12 @@ function Avatar({
       }}
       aria-hidden="true"
     >
-      {letters ?? <PersonIcon size={Math.round(size * 0.6)} />}
+      {/* The photo Meet shows, a small data URL the core checked (docs/adr/0007). */}
+      {speaker?.avatar ? (
+        <img className="avatar-photo" src={speaker.avatar} alt="" draggable={false} />
+      ) : (
+        (letters ?? <PersonIcon size={Math.round(size * 0.6)} />)
+      )}
     </span>
   );
 }

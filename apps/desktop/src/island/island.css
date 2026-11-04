@@ -110,6 +110,13 @@ div.pill-body {
   font-weight: 700;
   transition: box-shadow 0.2s ease;
 }
+.avatar-photo {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+}
 .compact .avatar.is-speaking,
 .pill-body .avatar.is-speaking {
   box-shadow: 0 0 0 1.5px var(--island-speaking);
