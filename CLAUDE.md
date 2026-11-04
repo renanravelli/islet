@@ -311,10 +311,9 @@ Every open item lives here, not in an assistant's memory. Remove an item when it
   board; `docs/design/ui-spec.md` section 5), from the `raisedHand` selector: a `front_hand`
   icon on the tile, and with two or more up, the place in line next to it (probe report
   `docs/meet-adapter/reports/calibration-report.pt-BR.hands.json`, three people, pt-BR). The
-  adapter leaves the user's tile out and falls back to the order it saw hands go up in. Open:
-  - **Owner, in a real call:** see the island follow it (who is first, "+N", the 4 s notice when
-    the first lowers the hand: the probe's last step caught no lowering), then mark
-    `raisedHand` verified; Meet in English.
+  adapter leaves the user's tile out and falls back to the order it saw hands go up in. Seen
+  working in a real call by the owner (2026-11-04, pt-BR). Open:
+  - Meet in English (`runCalibration("hands")`), then add `en` to `verifiedIn`.
   - Only tiles on screen are read: in a call bigger than the grid, a hand raised off screen is
     missed. The People panel lists every raised hand ("Abaixar a mão de …", maybe the host's
     control only) and is a possible fallback.

@@ -287,8 +287,9 @@
       ]
     },
     "raisedHand": {
-      "$comment": "UNVERIFIED, from the raised-hands probe (2026-11-04, one call, three people, pt-BR; docs/meet-adapter/reports/): a raised hand shows on its tile as a front_hand icon (an i.google-material-icons), and once two or more are up, next to it the place in line (1, 2, 3, the user's own included). It is absent from a tile whose hand is down. The People panel lists them too (\"Abaixar a mão de …\"), but that control may be the host's only. Only tiles on screen are seen.",
-      "verified": false,
+      "$comment": "From the raised-hands probe (2026-11-04, one call, three people, pt-BR; docs/meet-adapter/reports/), then confirmed by the owner driving the island in a real call the same day: a raised hand shows on its tile as a front_hand icon (an i.google-material-icons), and once two or more are up, next to it the place in line (1, 2, 3, the user's own included). It is absent from a tile whose hand is down. The People panel lists them too (\"Abaixar a mão de …\"), but that control may be the host's only. Only tiles on screen are seen.",
+      "verified": true,
+      "verifiedIn": ["pt-BR"],
       "required": false,
       "strategies": [
         {
