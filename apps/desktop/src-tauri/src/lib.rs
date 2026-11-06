@@ -8,6 +8,7 @@ pub mod geometry;
 mod logging;
 pub mod model;
 mod platform;
+mod prompt;
 mod settings;
 mod shortcuts;
 mod state;
@@ -93,6 +94,9 @@ pub fn run() {
             commands::update_state,
             commands::check_for_updates,
             commands::install_update,
+            commands::update_prompt,
+            commands::update_prompt_layout,
+            commands::update_prompt_answer,
         ])
         .setup(move |app| {
             setup(app.handle(), demo_at_start)?;
@@ -140,6 +144,7 @@ fn setup(app: &AppHandle, demo_at_start: bool) -> tauri::Result<()> {
         anchor: Mutex::new(None),
         layout: Mutex::new(None),
         update: Mutex::new(Default::default()),
+        prompt: Mutex::new(Default::default()),
     });
 
     if isolated() {
@@ -153,21 +158,32 @@ fn setup(app: &AppHandle, demo_at_start: bool) -> tauri::Result<()> {
         shortcuts::register(app);
     }
     tray::create(app)?;
-    if !isolated() {
+    // A fake update (development) never reaches the network, so it runs isolated too.
+    if !isolated() || updates::faking() {
         updates::schedule(app);
     }
 
-    // Every snapshot goes to every window; connection changes also update the tray.
+    // Every snapshot goes to every window; connection changes also update the tray, and a call
+    // starting or ending hides or shows the update balloon.
     let mut updates = sessions.snapshot();
     let handle = app.clone();
     tauri::async_runtime::spawn(async move {
         let mut connected = None;
+        let mut in_call = false;
         while updates.changed().await.is_ok() {
             let snapshot = updates.borrow_and_update().clone();
             let now = snapshot
                 .providers
                 .iter()
                 .any(|p| p.id == islet_provider_meet::MEET && p.connected);
+            let call = snapshot
+                .primary
+                .as_ref()
+                .is_some_and(|s| s.status == islet_core::SessionStatus::Active);
+            if call != in_call {
+                in_call = call;
+                prompt::refresh(&handle);
+            }
             // Media states and counts only: never names or titles.
             if let Some(s) = &snapshot.primary {
                 tracing::debug!(
@@ -196,6 +212,8 @@ fn setup(app: &AppHandle, demo_at_start: bool) -> tauri::Result<()> {
             let _ = handle.run_on_main_thread(move || {
                 windows::refresh_geometry(&inner);
             });
+            // The menu bar icon moves when other icons come and go.
+            prompt::refresh(&handle);
         }
     });
 

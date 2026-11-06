@@ -111,6 +111,7 @@ pnpm --filter @islet/desktop dev:app                 # the app with hot reload (
 pnpm --filter @islet/desktop strings                 # regenerate the UI strings from the UI spec
 pnpm --filter @islet/desktop build:app               # Islet.app with the native host inside
 pnpm --filter @islet/desktop build:app:universal     # the same, universal (lipo'd sidecar)
+ISLET_FAKE_UPDATE=0.1.5 ./target/debug/islet         # dev: every check finds 0.1.5, offline; installing it fails
 ```
 
 `http://localhost:1420/gallery.html?locale=pt-BR` on the dev server shows every island state
@@ -173,8 +174,12 @@ warnings. UI changes must also be checked in demo mode (`--demo`), with and with
   it is macOS's default "Select next source in Input menu". If a shortcut fails to register,
   the tray shows a warning instead of failing silently.
 - **Lifecycle numbers:** `Ended` lasts 5 s, then `Idle`; no heartbeat for 10 s → `degraded`
-  (`stale`); command timeout 2 s; extension confirms a command within 1.5 s; DOM observer debounce
-  150 ms; heartbeat every 5 s; messages over 64 KB rejected.
+  (`stale`); command timeout 2 s; extension confirms a command within 1.5 s; the DOM is read at
+  the first change, then at most every 150 ms while it keeps changing (a throttle, never a
+  debounce: Meet's level meter never goes quiet while someone talks), and the call ends only when
+  Leave is still missing 150 ms later; the adapter reuses a control it found for 5 s at most
+  (`SELECTOR_TTL_MS`, counted from when it was found) and checks it on every read; heartbeat
+  every 5 s; messages over 64 KB rejected.
 - **Native host:** the `connectNative` port is open only while a `meet.google.com` tab exists and
   closes 30 s after the last one (ADR 0002).
 - **Design tokens (approved mock):** background `#000000`, text `#FFFFFF`, secondary text
@@ -261,6 +266,15 @@ Every open item lives here, not in an assistant's memory. Remove an item when it
     - One `toggle_mic` was not confirmed in 1.5 s in step 6 (it worked every other time, in
       53 to 59 ms). Probable cause, per the owner: the mic was also toggled by hand around then.
       Watch for it in the next session.
+  - **Speaker latency (2026-11-06):** the content script now reads at the first DOM change and at
+    most every 150 ms after (it used a debounce, which a test showed delayed a change by as long as
+    mutations kept coming), and caches the controls for 5 s. Still to measure in a real call:
+    mutations per second and the longest gap between them while someone talks, tab visible and
+    hidden; how often `keep-rendering.ts`'s 16 ms timer really runs while hidden, silent and
+    while someone talks (Chrome may not throttle an audible or WebRTC tab, which ADR 0005
+    assumed); `readState`'s cost in Chrome on Meet's full page; and each hop's delay, mutation
+    to island. For the last one, decide between an optional `observed_at` in `session.update`
+    (allowed within `v: 1`) and development-only logs.
   - **Later:** the English round; until then no key lists `en` in `verifiedIn`.
   - With Chrome in the background (ADR 0005): confirm the island stays in sync after 10+
     minutes hidden, and whether the active speaker is detected while hidden.
@@ -294,6 +308,15 @@ Every open item lives here, not in an assistant's memory. Remove an item when it
   apps. 0.1.1 is published and `latest.json` offers it, so check the whole flow by hand: update
   an installed 0.1.1 beta to 0.1.1 from Settings and from the menu bar, with the ad hoc signature
   (does macOS ask "Open Anyway" again? does launch at login survive?).
+- **Update balloon (in 0.1.4, owner, by hand):** seen working in development on 2026-11-06 with
+  `ISLET_FAKE_UPDATE` (under the icon, the arrow on it; hidden during the demo's call and shown
+  once it ended). Still to check on the Mac: "Atualizar" and "Depois" by click (the fake install
+  fails after 3 s and shows the failure), the menu's install opening it, light and dark, VoiceOver,
+  an icon hidden behind the notch or by a menu bar manager (Ice, Bartender) and a full-screen app
+  (it must fall back to the top right), an external display, and the real flow from 0.1.4 to the
+  next release. macOS reported a status item drawn in the menu bar as not visible through
+  `occlusionState`, so only its frame tells a hidden icon; confirm that a hidden icon's frame is
+  off screen or behind the notch.
 - **Participant photos (ADR 0007, in 0.1.2):**
   from the probe's first report (`docs/meet-adapter/reports/calibration-report.pt-BR.avatars.json`,
   one call, two people, pt-BR): each video tile holds a hidden 75×75

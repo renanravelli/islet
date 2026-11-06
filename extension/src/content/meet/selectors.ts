@@ -123,27 +123,39 @@ function attributeSelector(name: string, value?: string): string {
   return value === undefined ? `[${name}]` : `[${name}=${JSON.stringify(value)}]`;
 }
 
+/** The CSS part of a strategy. */
+function selectorOf(strategy: Strategy): string {
+  if ("ariaLabel" in strategy) return strategy.css ?? "[aria-label]";
+  if ("attribute" in strategy) {
+    return attributeSelector(strategy.attribute.name, strategy.attribute.value);
+  }
+  return strategy.css;
+}
+
+/** The part of a strategy CSS cannot express: a label or a text. */
+function passes(el: Element, strategy: Strategy): boolean {
+  if ("ariaLabel" in strategy) return matchesAny(el.getAttribute("aria-label"), strategy.ariaLabel);
+  if ("labelledBy" in strategy) {
+    return labelTargets(el).some((target) =>
+      matchesAny(target.textContent?.trim() ?? null, strategy.labelledBy),
+    );
+  }
+  if ("text" in strategy) return matchesAny(el.textContent, strategy.text);
+  return true;
+}
+
 /** Every element one strategy finds, in document order. */
 export function matchAll(root: ParentNode, strategy: Strategy): Element[] {
-  if ("ariaLabel" in strategy) {
-    return query(root, strategy.css ?? "[aria-label]").filter((el) =>
-      matchesAny(el.getAttribute("aria-label"), strategy.ariaLabel),
-    );
+  return query(root, selectorOf(strategy)).filter((el) => passes(el, strategy));
+}
+
+/** Whether one strategy would find `el`: how a cached element is checked before it is used. */
+export function matches(el: Element, strategy: Strategy): boolean {
+  try {
+    return el.matches(selectorOf(strategy)) && passes(el, strategy);
+  } catch {
+    return false;
   }
-  if ("labelledBy" in strategy) {
-    return query(root, strategy.css).filter((el) =>
-      labelTargets(el).some((target) =>
-        matchesAny(target.textContent?.trim() ?? null, strategy.labelledBy),
-      ),
-    );
-  }
-  if ("text" in strategy) {
-    return query(root, strategy.css).filter((el) => matchesAny(el.textContent, strategy.text));
-  }
-  if ("attribute" in strategy) {
-    return query(root, attributeSelector(strategy.attribute.name, strategy.attribute.value));
-  }
-  return query(root, strategy.css);
 }
 
 /** The elements an element's `aria-labelledby` points to. */

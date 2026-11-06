@@ -14,18 +14,22 @@ import type {
   Toggle,
 } from "@islet/protocol-ts";
 import type { TabAction, TabState } from "../../shared/messages";
+import { TtlCache } from "./cache";
 import {
   DEGRADED_REASON,
   isOnScreen,
   matchAll,
+  matches,
   type Registry,
   type ReportedKey,
   readToggle,
   resolve,
+  resolveWith,
   SELECTORS,
   type SelectorKey,
   type Strategy,
 } from "./selectors";
+import { HEARTBEAT_MS } from "./session";
 
 /** How long a command waits to see its effect before reporting `not_confirmed`. */
 export const CONFIRM_TIMEOUT_MS = 1500;
@@ -48,6 +52,24 @@ export const AVATAR_SIZE = 72;
 const MAX_AVATAR = 12_000;
 /** Profile photos. Anything else (a video frame, a blob) is never read. */
 const PHOTO_HOST = /(^|\.)googleusercontent\.com$/;
+
+/**
+ * How long a control found in the page is reused before the page is searched again in full: the
+ * heartbeat's interval, so a wrong element is read for at most one heartbeat. Counted from when
+ * it was found, never renewed by a read.
+ */
+export const SELECTOR_TTL_MS = HEARTBEAT_MS;
+
+/** Controls that stay in the page for the whole call: the element found is reused, checked on
+ * every read against the strategy that found it. */
+const CACHED_KEYS: ReadonlySet<SelectorKey> = new Set([
+  "leaveButton",
+  "micButton",
+  "camButton",
+  "handButton",
+  "participantCount",
+  "meetingTitle",
+]);
 
 export type CanvasFactory = () => HTMLCanvasElement;
 
@@ -78,21 +100,55 @@ export class MeetAdapter {
   private handsSeq = 0;
   /** The first in line and since when. */
   private firstHand: { id: string; since: number } | undefined;
+  /** CACHED_KEYS: the element found and the strategy that found it. */
+  private readonly found: TtlCache<SelectorKey, { element: Element; strategy: number }>;
+  /** The meeting the caches belong to. */
+  private code: string | undefined;
 
   constructor(
     private readonly root: Document,
     private readonly registry: Registry = SELECTORS,
     private readonly makeCanvas: CanvasFactory = () => root.createElement("canvas"),
     private readonly now: () => number = Date.now,
-  ) {}
-
-  private find(key: SelectorKey): Element | null {
-    const entry = this.registry.keys[key];
-    return resolve(this.root, entry.strategies, entry.onScreen ? isOnScreen : undefined);
+  ) {
+    this.found = new TtlCache(SELECTOR_TTL_MS, now);
   }
 
-  private toggle(key: SelectorKey): { value: Toggle; found: boolean } {
-    const el = this.find(key);
+  /** Forgets every element found, so the next read searches the page in full. */
+  refresh(): void {
+    this.found.clear();
+  }
+
+  /** `fresh` searches the page even when a cached element would do: commands use it. */
+  private find(key: SelectorKey, fresh = false): Element | null {
+    const entry = this.registry.keys[key];
+    const accept = entry.onScreen ? isOnScreen : undefined;
+
+    if (CACHED_KEYS.has(key)) {
+      const cached = fresh ? undefined : this.found.get(key);
+      if (cached) {
+        const strategy = entry.strategies[cached.strategy];
+        const { element } = cached;
+        if (
+          element.isConnected &&
+          strategy !== undefined &&
+          matches(element, strategy) &&
+          (accept?.(element) ?? true)
+        ) {
+          return element;
+        }
+        this.found.delete(key);
+      }
+      const hit = resolveWith(this.root, entry.strategies, accept);
+      if (hit) this.found.set(key, hit);
+      return hit?.element ?? null;
+    }
+
+    return resolve(this.root, entry.strategies, accept);
+  }
+
+  private toggle(key: SelectorKey, fresh = false): { value: Toggle; found: boolean } {
+    const el = this.find(key, fresh);
     if (!el) return { value: "unknown", found: false };
     return { value: readToggle(el, this.registry.keys[key].state ?? []), found: true };
   }
@@ -108,6 +164,12 @@ export class MeetAdapter {
       if (this.registry.keys[key].required) failed.add(key);
     };
 
+    const code = meetingCode(this.root.location?.pathname ?? "");
+    if (code !== this.code) {
+      this.code = code;
+      this.refresh();
+    }
+
     const leave = this.find("leaveButton");
     if (!leave) {
       fail("leaveButton");
@@ -115,6 +177,7 @@ export class MeetAdapter {
       this.unreadable.clear();
       this.handsSeen.clear();
       this.firstHand = undefined;
+      this.refresh();
     }
 
     const self: TabState["self"] = { mic: "unknown", cam: "unknown", hand: "unknown" };
@@ -133,8 +196,10 @@ export class MeetAdapter {
     const title = text(this.find("meetingTitle"));
     if (title === undefined) fail("meetingTitle");
 
+    // One search for the tiles; the speaker, the user and the raised hands are found among them.
+    const tiles = this.tiles();
     let activeSpeaker: Named | undefined;
-    const tile = this.find("activeSpeaker");
+    const tile = this.tileFor(tiles, "activeSpeaker");
     if (tile) {
       activeSpeaker = this.named(tile, this.registry.keys.activeSpeaker);
       if (activeSpeaker === undefined) fail("activeSpeaker");
@@ -148,44 +213,60 @@ export class MeetAdapter {
     if (participants === undefined) fail("participantCount");
 
     const degraded: DegradedReason[] = [...failed].map((key) => DEGRADED_REASON[key]);
+    // Meet shows the notice only with the mic off; with it on, the page is not searched for it.
+    const speakingWhileMuted = self.mic !== "on" && this.find("mutedSpeakingNotice") !== null;
     const state: Reading["state"] = {
-      meeting_code: meetingCode(this.root.location?.pathname ?? ""),
+      meeting_code: code,
       self,
-      signals: { speaking_while_muted: this.find("mutedSpeakingNotice") !== null },
+      signals: { speaking_while_muted: speakingWhileMuted },
       capabilities,
       health: degraded.length > 0 ? "degraded" : "ok",
     };
     if (title !== undefined) state.title = title;
     if (activeSpeaker !== undefined) state.active_speaker = activeSpeaker;
     if (participants !== undefined) state.participant_count = participants;
-    const people = this.participants();
+    const people = this.participants(tiles);
     if (people.length > 0) state.participants = people;
-    const ownTile = this.find("selfTile");
+    const ownTile = this.tileFor(tiles, "selfTile");
     const selfParticipant = ownTile ? this.named(ownTile, this.registry.keys.selfTile) : undefined;
     if (selfParticipant !== undefined) state.self_participant = selfParticipant;
-    const hands = this.raisedHands(ownTile);
+    const hands = this.raisedHands(tiles, ownTile);
     if (hands !== undefined) state.raised_hands = hands;
     if (degraded.length > 0) state.degraded_reasons = degraded;
     return { state, failed: [...failed] };
   }
 
-  /** Up to MAX_PARTICIPANTS people from the participant tiles, in page order, each once. */
-  private participants(): Named[] {
-    const entry = this.registry.keys.participantTile;
-    for (const strategy of entry.strategies) {
+  /** The participant tiles, in page order, from the first strategy that finds any. */
+  private tiles(): Element[] {
+    for (const strategy of this.registry.keys.participantTile.strategies) {
       const tiles = matchAll(this.root, strategy);
-      if (tiles.length === 0) continue;
-      const people: Named[] = [];
-      for (const tile of tiles) {
-        const person = this.named(tile, entry);
-        if (person && !people.some((p) => p.display_name === person.display_name)) {
-          people.push(person);
-        }
-        if (people.length === MAX_PARTICIPANTS) break;
-      }
-      return people;
+      if (tiles.length > 0) return tiles;
     }
     return [];
+  }
+
+  /** The first tile a key's strategies match, trying them in order. The speaker and the user are
+   * participant tiles, so only those are checked, not the whole page. */
+  private tileFor(tiles: Element[], key: "activeSpeaker" | "selfTile"): Element | null {
+    for (const strategy of this.registry.keys[key].strategies) {
+      const tile = tiles.find((t) => matches(t, strategy));
+      if (tile) return tile;
+    }
+    return null;
+  }
+
+  /** Up to MAX_PARTICIPANTS people from the participant tiles, in page order, each once. */
+  private participants(tiles: Element[]): Named[] {
+    const entry = this.registry.keys.participantTile;
+    const people: Named[] = [];
+    for (const tile of tiles) {
+      const person = this.named(tile, entry);
+      if (person && !people.some((p) => p.display_name === person.display_name)) {
+        people.push(person);
+      }
+      if (people.length === MAX_PARTICIPANTS) break;
+    }
+    return people;
   }
 
   /**
@@ -193,25 +274,20 @@ export class MeetAdapter {
    * left out. The order is the place in line Meet shows, else the order this adapter saw the
    * hands go up in. `since` changes only when the first in line does.
    */
-  private raisedHands(ownTile: Element | null): RaisedHands | undefined {
+  private raisedHands(tiles: Element[], ownTile: Element | null): RaisedHands | undefined {
     const tileEntry = this.registry.keys.participantTile;
     const handEntry = this.registry.keys.raisedHand;
     const ownId = ownTile?.getAttribute("data-participant-id") ?? null;
     const raised = new Map<string, { tile: Element; place: number | undefined }>();
-    for (const strategy of tileEntry.strategies) {
-      const tiles = matchAll(this.root, strategy);
-      if (tiles.length === 0) continue;
-      for (const tile of tiles) {
-        const id = tile.getAttribute("data-participant-id");
-        if (id === null || id === ownId || tile === ownTile || raised.has(id)) continue;
-        const mark = resolve(tile, handEntry.strategies);
-        if (!mark) continue;
-        const place = mark.parentElement
-          ? resolve(mark.parentElement, handEntry.position ?? [])
-          : null;
-        raised.set(id, { tile, place: place ? firstNumber(place) : undefined });
-      }
-      break;
+    for (const tile of tiles) {
+      const id = tile.getAttribute("data-participant-id");
+      if (id === null || id === ownId || tile === ownTile || raised.has(id)) continue;
+      const mark = resolve(tile, handEntry.strategies);
+      if (!mark) continue;
+      const place = mark.parentElement
+        ? resolve(mark.parentElement, handEntry.position ?? [])
+        : null;
+      raised.set(id, { tile, place: place ? firstNumber(place) : undefined });
     }
 
     for (const id of this.handsSeen.keys()) if (!raised.has(id)) this.handsSeen.delete(id);
@@ -291,12 +367,12 @@ export class MeetAdapter {
 
     const key = TOGGLES.find((toggle) => toggle.action === action)?.key;
     if (!key) return "unsupported";
-    const el = this.find(key);
+    const el = this.find(key, true);
     if (!el) return "control_not_found";
     const before = this.toggle(key).value;
     click(el);
     const confirmed = await this.waitFor(() => {
-      const now = this.toggle(key).value;
+      const now = this.toggle(key, true).value;
       return now !== "unknown" && now !== before;
     });
     return confirmed ? null : "not_confirmed";
@@ -307,21 +383,19 @@ export class MeetAdapter {
    * everyone, it picks the plain "leave" choice. Both clicks share the 1.5 s confirmation.
    */
   private async leave(): Promise<CommandErrorCode | null> {
-    const leave = this.find("leaveButton");
+    const leave = this.find("leaveButton", true);
     if (!leave) return "control_not_found";
+    const inCall = () => this.find("leaveButton", true) !== null;
     const deadline = Date.now() + CONFIRM_TIMEOUT_MS;
     click(leave);
-    await this.waitFor(
-      () => !this.detectInCall() || this.find("justLeaveButton") !== null,
-      deadline,
-    );
-    if (!this.detectInCall()) return null;
+    await this.waitFor(() => !inCall() || this.find("justLeaveButton") !== null, deadline);
+    if (!inCall()) return null;
 
     const justLeave = this.find("justLeaveButton");
     // A dialog this adapter does not recognize stays on screen for the person to answer.
     if (!justLeave || endsForEveryone(justLeave)) return "not_confirmed";
     click(justLeave);
-    return (await this.waitFor(() => !this.detectInCall(), deadline)) ? null : "not_confirmed";
+    return (await this.waitFor(() => !inCall(), deadline)) ? null : "not_confirmed";
   }
 
   private async waitFor(

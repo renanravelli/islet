@@ -24,7 +24,10 @@ on 2026-11-03, as an explicit exception to principle 4.
    a day. "Check now" always works, setting or not.
 3. **The person decides when it installs.** A new version shows in Settings and in the menu bar
    ("Install and restart"); the app never installs or restarts by itself, so it never interrupts
-   the island during a call.
+   the island during a call. Since 2026-11-06, a version an automatic check finds is also
+   offered in a balloon under the menu bar icon, with "Atualizar" and "Depois"
+   (`docs/design/ui-spec.md`, section 4). It is still only an offer: it waits for a call to end,
+   installs only on "Atualizar", and after "Depois" comes back with the next automatic check.
 4. **Only this repository.** `tauri-plugin-updater` (Tauri's official updater) reads
    `https://raw.githubusercontent.com/renanravelli/islet/updater/latest.json` and downloads the
    bundle that file names from the repository's GitHub releases. A test pins the endpoint.

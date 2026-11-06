@@ -22,6 +22,7 @@ pub struct AppState {
     pub anchor: Mutex<Option<Anchor>>,
     pub layout: Mutex<Option<IslandLayout>>,
     pub update: Mutex<UpdateState>,
+    pub prompt: Mutex<crate::prompt::Prompt>,
 }
 
 /// Locks, recovering from a poisoned lock: the data is plain values.
