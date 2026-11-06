@@ -1,7 +1,11 @@
 //! In-app updates (ADR 0006), the app's only network access. It asks GitHub for the update
 //! manifest when the person allows it (`check_for_updates`: at start and once a day) or clicks
-//! "Check now", and installs only when they click "Install and restart": never by itself, so it
-//! never restarts the island during a call.
+//! "Check now", and installs only when they click "Atualizar" in the update balloon or "Install
+//! and restart": never by itself, so it never restarts the island during a call.
+//!
+//! Development builds only: `ISLET_FAKE_UPDATE=<version>` makes every check find that version
+//! without the network, even with automatic checks off, and installing it fail after a few
+//! seconds, so the balloon and the settings can be tried without a release or a settings change.
 
 use std::time::Duration;
 
@@ -10,50 +14,75 @@ use tauri_plugin_updater::UpdaterExt as _;
 
 use crate::model::UpdateState;
 use crate::state::{AppState, lock};
-use crate::tray;
+use crate::{prompt, tray};
 
 /// The first automatic check waits for the app to settle.
 const FIRST_CHECK: Duration = Duration::from_secs(10);
 const CHECK_EVERY: Duration = Duration::from_secs(24 * 60 * 60);
+/// How long a fake install takes before it fails.
+const FAKE_INSTALL: Duration = Duration::from_secs(3);
 
-/// Checks at start and once a day while `check_for_updates` is on.
+/// Whether `ISLET_FAKE_UPDATE` is set (development builds only).
+pub fn faking() -> bool {
+    fake_version().is_some()
+}
+
+/// `ISLET_FAKE_UPDATE`, in development builds only.
+fn fake_version() -> Option<String> {
+    cfg!(debug_assertions)
+        .then(|| std::env::var("ISLET_FAKE_UPDATE").ok())
+        .flatten()
+        .filter(|version| !version.is_empty())
+}
+
+/// Checks at start and once a day while `check_for_updates` is on (or a fake update is set).
 pub fn schedule(app: &AppHandle) {
     let app = app.clone();
     tauri::async_runtime::spawn(async move {
         tokio::time::sleep(FIRST_CHECK).await;
         loop {
-            if lock(&app.state::<AppState>().settings).check_for_updates {
-                check(&app).await;
+            let allowed = lock(&app.state::<AppState>().settings).check_for_updates;
+            if allowed || fake_version().is_some() {
+                check(&app, true).await;
             }
             tokio::time::sleep(CHECK_EVERY).await;
         }
     });
 }
 
-/// Asks for the manifest and publishes the result. Does nothing while installing.
-pub async fn check(app: &AppHandle) -> UpdateState {
+/// Asks for the manifest and publishes the result. Does nothing while installing. A version
+/// found by an `automatic` check is also offered in the update balloon; one found by "Check
+/// now" shows only where the person asked.
+pub async fn check(app: &AppHandle, automatic: bool) -> UpdateState {
     if !set(app, UpdateState::Checking, |s| {
         *s != UpdateState::Installing
     }) {
         return current(app);
     }
-    let result = match app.updater() {
-        Ok(updater) => updater.check().await,
-        Err(error) => Err(error),
-    };
-    let state = match result {
-        Ok(Some(update)) => {
-            tracing::info!(version = %update.version, "an update is available");
-            UpdateState::Available {
-                version: update.version,
+    let state = if let Some(version) = fake_version() {
+        UpdateState::Available { version }
+    } else {
+        let result = match app.updater() {
+            Ok(updater) => updater.check().await,
+            Err(error) => Err(error),
+        };
+        match result {
+            Ok(Some(update)) => {
+                tracing::info!(version = %update.version, "an update is available");
+                UpdateState::Available {
+                    version: update.version,
+                }
+            }
+            Ok(None) => UpdateState::UpToDate,
+            Err(error) => {
+                tracing::warn!(%error, "cannot check for updates");
+                UpdateState::CheckFailed
             }
         }
-        Ok(None) => UpdateState::UpToDate,
-        Err(error) => {
-            tracing::warn!(%error, "cannot check for updates");
-            UpdateState::CheckFailed
-        }
     };
+    if automatic && matches!(state, UpdateState::Available { .. }) {
+        lock(&app.state::<AppState>().prompt).pending = true;
+    }
     set(app, state.clone(), |_| true);
     state
 }
@@ -63,6 +92,12 @@ pub async fn install(app: &AppHandle) {
     if !set(app, UpdateState::Installing, |s| {
         *s != UpdateState::Installing
     }) {
+        return;
+    }
+    if fake_version().is_some() {
+        tokio::time::sleep(FAKE_INSTALL).await;
+        tracing::info!("fake update: the install fails, as configured");
+        set(app, UpdateState::InstallFailed, |_| true);
         return;
     }
     let result = async {
@@ -96,7 +131,8 @@ pub fn current(app: &AppHandle) -> UpdateState {
     lock(&app.state::<AppState>().update).clone()
 }
 
-/// Replaces the state if `allow` accepts the current one, and tells the windows and the tray.
+/// Replaces the state if `allow` accepts the current one, and tells the windows, the tray and
+/// the update balloon.
 fn set(app: &AppHandle, state: UpdateState, allow: impl FnOnce(&UpdateState) -> bool) -> bool {
     {
         let app_state = app.state::<AppState>();
@@ -108,6 +144,7 @@ fn set(app: &AppHandle, state: UpdateState, allow: impl FnOnce(&UpdateState) -> 
     }
     let _ = app.emit("update", &state);
     tray::refresh(app);
+    prompt::refresh(app);
     true
 }
 

@@ -1,6 +1,7 @@
 //! Commands the UI invokes, and the events the shell emits to every window:
 //! `snapshot` (UiSnapshot), `preview` (the onboarding's demo UiSnapshot), `settings`
-//! (AppSettings), `app-info` (AppInfo) and `update` (UpdateState).
+//! (AppSettings), `app-info` (AppInfo) and `update` (UpdateState); and to the update balloon
+//! only, `update-prompt` (PromptView or null).
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -14,11 +15,12 @@ use tauri_plugin_autostart::ManagerExt as _;
 
 use crate::bridge;
 use crate::model::{
-    AppInfo, AppSettings, BridgeState, Geometry, IslandLayout, Link, Requirements, UpdateState,
+    AppInfo, AppSettings, BridgeState, Geometry, IslandLayout, Link, PromptAnswer, PromptView,
+    Requirements, UpdateState,
 };
 use crate::platform;
 use crate::state::{AppState, lock};
-use crate::{tray, updates, windows};
+use crate::{prompt, tray, updates, windows};
 
 pub fn info(app: &AppHandle) -> AppInfo {
     let state = app.state::<AppState>();
@@ -97,7 +99,7 @@ pub fn set_settings(app: AppHandle, settings: AppSettings) -> AppSettings {
     // Turning automatic checks on checks right away, instead of up to a day later.
     if settings.check_for_updates && !was_checking {
         let app = app.clone();
-        tauri::async_runtime::spawn(async move { updates::check(&app).await });
+        tauri::async_runtime::spawn(async move { updates::check(&app, false).await });
     }
     if let Err(error) = state.settings_file.save(&settings) {
         tracing::warn!(%error, "cannot save the settings");
@@ -129,7 +131,8 @@ pub fn island_layout(app: AppHandle, layout: IslandLayout) {
 /// A window's page has painted: show it (see `windows`).
 #[tauri::command]
 pub fn window_ready(window: WebviewWindow) {
-    if window.label() != windows::ISLAND {
+    // The island and the update balloon show themselves once laid out, without activating Islet.
+    if window.label() != windows::ISLAND && window.label() != prompt::LABEL {
         windows::reveal(&window);
     }
 }
@@ -266,7 +269,7 @@ pub fn update_state(app: AppHandle) -> UpdateState {
 
 #[tauri::command]
 pub async fn check_for_updates(app: AppHandle) -> UpdateState {
-    updates::check(&app).await
+    updates::check(&app, false).await
 }
 
 /// Starts the download and returns at once; `update` events report progress, and the app
@@ -274,6 +277,31 @@ pub async fn check_for_updates(app: AppHandle) -> UpdateState {
 #[tauri::command]
 pub fn install_update(app: AppHandle) {
     tauri::async_runtime::spawn(async move { updates::install(&app).await });
+}
+
+/// What the update balloon should draw; its page asks once it has loaded, then follows the
+/// `update-prompt` event.
+#[tauri::command]
+pub fn update_prompt(app: AppHandle) -> Option<PromptView> {
+    prompt::current(&app)
+}
+
+/// The balloon's page drew it at `height`: the shell shows it there.
+#[tauri::command]
+pub fn update_prompt_layout(app: AppHandle, height: f64) {
+    if height.is_finite() && height > 0.0 {
+        prompt::laid_out(&app, height);
+    }
+}
+
+/// "Atualizar" installs, and the balloon follows the install; "Depois" closes it until the next
+/// automatic check.
+#[tauri::command]
+pub fn update_prompt_answer(app: AppHandle, answer: PromptAnswer) {
+    match answer {
+        PromptAnswer::Update => install_update(app),
+        PromptAnswer::Later => prompt::later(&app),
+    }
 }
 
 /// UTC, to the second, without a date library.

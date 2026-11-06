@@ -7,6 +7,10 @@ the version is below 1.0, every release is a beta.
 
 ### Added
 
+- **A balloon tells you about a new version.** When Islet finds an update on its own, a balloon
+  opens under its menu bar icon with **Atualizar** and **Depois**. It never opens during a call,
+  and after **Depois** it comes back with the next check. It shows the progress when you install
+  from the menu, too.
 - **The setup guide checks your Mac first.** A new step confirms that Google Chrome is installed
   and that Islet was opened from the Applications folder, and updates on its own once you fix
   either. The guide now has five steps.

@@ -328,6 +328,31 @@ The pane shows only integrations that work: no planned or upcoming apps.
     `updates.check_now` (outline) otherwise, disabled while checking or installing.
 - **Tray:** while a version is available the menu adds `tray.update_available`, which installs
   it; while installing, a disabled `tray.updating`. The app never installs by itself.
+- **Update balloon** (the owner's request, 2026-11-06; the canvas's "Atualização disponível"
+  board): a 300 pt balloon under the menu bar icon, with an arrow pointing at it.
+  - **When:** an automatic check (at start or the daily one) finds a version. "Procurar agora"
+    does not open it: the settings show that result. Installing from the menu
+    (`tray.update_available`) opens it, to show the progress.
+  - **Never during a call:** it waits for the call to end, so it never shows in a shared screen.
+    One already open hides when a call starts and comes back when it ends.
+  - **Offer:** the app icon (36 pt, black, radius 9), `update_prompt.title` (13/600) and
+    `update_prompt.body` (12, `--text-secondary`) with the version; below, at the right, two
+    small buttons (an exception to the 44 pt buttons of section 2, as macOS draws them in
+    popovers): height 28, padding `0 14`, radius 7, 13 pt: `update_prompt.later` (`--bg-subtle`,
+    500) and `update_prompt.update` (`--accent-fill`, white, 600).
+  - **Installing:** a spinner and `updates.status_installing`, no buttons. The app restarts when
+    it is done.
+  - **Failed:** `updates.status_install_failed` in `--warning-text`, and both buttons again.
+  - **Closing:** only through its buttons. `update_prompt.later` closes it until the next
+    automatic check; nothing is saved. Esc, a click elsewhere and time do not close it.
+  - **Placement:** 2 pt below the icon and centered on it, kept 8 pt inside the screen; the arrow
+    moves to keep pointing at the icon. When macOS does not draw the icon (no room beside the
+    notch, a menu bar manager) or the menu bar is hidden (a full-screen app), the balloon sits at
+    the top right of the island's screen, 8 pt in, without the arrow.
+  - **Look:** `--bg-group`, radius 12, a 1 px `--border` ring and the macOS window shadow; it
+    follows the appearance like the windows. Clicking it does not activate Islet.
+  - **Accessibility:** `role="dialog"`, labelled by the title and described by the body; the
+    progress is `role="status"` and the failure `role="alert"`.
 
 ---
 
@@ -506,6 +531,17 @@ works for real.
 | `tray.update_available` | Instalar a versão {version} e reiniciar | Install version {version} and restart |
 | `tray.updating`         | Instalando atualização…                 | Installing update…                    |
 
+### Update balloon
+
+Installing and failing reuse `updates.status_installing` and `updates.status_install_failed`.
+
+| Key                    | pt-BR                                                                              | en                                                                      |
+| ---------------------- | ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `update_prompt.title`  | Nova versão do Islet                                                               | New version of Islet                                                    |
+| `update_prompt.body`   | A versão {version} está pronta para instalar. O Islet reinicia em poucos segundos. | Version {version} is ready to install. Islet restarts in a few seconds. |
+| `update_prompt.update` | Atualizar                                                                          | Update                                                                  |
+| `update_prompt.later`  | Depois                                                                             | Later                                                                   |
+
 ### Island
 
 | Key                          | pt-BR                                                                        | en                                                                      |
@@ -557,3 +593,6 @@ works for real.
 - [ ] Changing the language in Settings updates every window and the island immediately.
 - [ ] Every string comes from the pt-BR/en dictionary. No hard-coded UI copy.
 - [ ] VoiceOver reads every control; switches announce their on/off state.
+- [ ] The update balloon opens under the menu bar icon after an automatic check finds a version,
+  never during a call, in light and dark; it falls back to the top right when the icon is
+  hidden; VoiceOver reads it; "Atualizar" installs and "Depois" closes it until the next check.

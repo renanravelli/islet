@@ -2,12 +2,13 @@
 // data, for reviewing the design without a call. Open /gallery.html?locale=pt-BR on the dev
 // server.
 
-import type { Geometry, MeetingSession } from "@islet/ui-types";
+import type { Geometry, MeetingSession, PromptView } from "@islet/ui-types";
 import { createRoot } from "react-dom/client";
 import { type Locale, LocaleProvider } from "../i18n/i18n";
 import { IslandView } from "../island/IslandView";
 import type { Mode } from "../island/model";
 import "../shared/tokens.css";
+import { UpdatePrompt } from "../update/UpdatePrompt";
 
 // The same data as the approved canvas ("Estados da ilha"), so both can be compared 1:1.
 const DURATION_MS = (32 * 60 + 10) * 1000;
@@ -254,6 +255,41 @@ function Frame({ c: [label, mode, overrides, geometry, height, last] }: { c: Cas
   );
 }
 
+/** The update balloon (the canvas's "Atualização disponível" board), under a menu bar icon. */
+const PROMPTS: [string, PromptView][] = [
+  ["Update balloon · offer", { mode: "offer", version: "0.1.5", width: 300, arrow: 150 }],
+  ["Update balloon · installing", { mode: "installing", version: null, width: 300, arrow: 150 }],
+  ["Update balloon · failed", { mode: "failed", version: null, width: 300, arrow: 150 }],
+  [
+    "Update balloon · icon hidden: top right, no arrow",
+    { mode: "offer", version: "0.1.5", width: 300, arrow: null },
+  ],
+];
+
+function PromptFrame({ c: [label, view] }: { c: [string, PromptView] }) {
+  return (
+    <div style={{ display: "flex", gap: 40, alignItems: "flex-start" }}>
+      <div style={{ width: 300, font: "600 18px var(--font)", color: "#1D1D1F" }}>{label}</div>
+      <div
+        style={{
+          position: "relative",
+          width: 860,
+          height: 200,
+          border: "1px solid #E3E3E8",
+          borderRadius: 12,
+          overflow: "hidden",
+          background: "#34404F",
+        }}
+      >
+        <div style={{ height: 32, background: "#1B1F26" }} />
+        <div style={{ position: "absolute", top: view.arrow === null ? 40 : 34, right: 8 }}>
+          <UpdatePrompt view={view} onAnswer={() => {}} onLayout={() => {}} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Gallery() {
   return (
     <LocaleProvider locale={locale}>
@@ -275,6 +311,9 @@ function Gallery() {
         ))}
         {EXTRA.map((c) => (
           <Frame key={c[0]} c={c} />
+        ))}
+        {PROMPTS.map((c) => (
+          <PromptFrame key={c[0]} c={c} />
         ))}
       </div>
     </LocaleProvider>

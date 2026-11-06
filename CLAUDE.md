@@ -111,6 +111,7 @@ pnpm --filter @islet/desktop dev:app                 # the app with hot reload (
 pnpm --filter @islet/desktop strings                 # regenerate the UI strings from the UI spec
 pnpm --filter @islet/desktop build:app               # Islet.app with the native host inside
 pnpm --filter @islet/desktop build:app:universal     # the same, universal (lipo'd sidecar)
+ISLET_FAKE_UPDATE=0.1.5 ./target/debug/islet         # dev: every check finds 0.1.5, offline; installing it fails
 ```
 
 `http://localhost:1420/gallery.html?locale=pt-BR` on the dev server shows every island state
@@ -307,6 +308,15 @@ Every open item lives here, not in an assistant's memory. Remove an item when it
   apps. 0.1.1 is published and `latest.json` offers it, so check the whole flow by hand: update
   an installed 0.1.1 beta to 0.1.1 from Settings and from the menu bar, with the ad hoc signature
   (does macOS ask "Open Anyway" again? does launch at login survive?).
+- **Update balloon (in 0.1.4, owner, by hand):** seen working in development on 2026-11-06 with
+  `ISLET_FAKE_UPDATE` (under the icon, the arrow on it; hidden during the demo's call and shown
+  once it ended). Still to check on the Mac: "Atualizar" and "Depois" by click (the fake install
+  fails after 3 s and shows the failure), the menu's install opening it, light and dark, VoiceOver,
+  an icon hidden behind the notch or by a menu bar manager (Ice, Bartender) and a full-screen app
+  (it must fall back to the top right), an external display, and the real flow from 0.1.4 to the
+  next release. macOS reported a status item drawn in the menu bar as not visible through
+  `occlusionState`, so only its frame tells a hidden icon; confirm that a hidden icon's frame is
+  off screen or behind the notch.
 - **Participant photos (ADR 0007, in 0.1.2):**
   from the probe's first report (`docs/meet-adapter/reports/calibration-report.pt-BR.avatars.json`,
   one call, two people, pt-BR): each video tile holds a hidden 75×75

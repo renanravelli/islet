@@ -78,6 +78,27 @@ export type Language = "auto" | "pt-BR" | "en";
 export type Link = "install_extension" | "open_meet" | "download_chrome" | "troubleshooting" | "source" | "license";
 
 /**
+ * The person's answer in the update balloon.
+ */
+export type PromptAnswer = "update" | "later";
+
+/**
+ * What the update balloon under the menu bar icon shows (ADR 0006).
+ */
+export type PromptMode = "offer" | "installing" | "failed";
+
+/**
+ * The update balloon, as the shell placed it. `arrow` is the arrow's center from the balloon's
+ * left edge, or `None` when the menu bar icon cannot be found and the balloon sits at the
+ * screen's top right without one.
+ */
+export type PromptView = { mode: PromptMode, 
+/**
+ * The version offered: only with `Offer`.
+ */
+version: string | null, width: number, arrow: number | null, };
+
+/**
  * What Islet needs on this Mac before the extension can reach it (onboarding step 2).
  */
 export type Requirements = { 

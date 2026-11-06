@@ -1,8 +1,14 @@
 //! Stubs for the platforms v0.1 does not support yet (Windows, Linux).
 
 use crate::geometry::ScreenInfo;
+use crate::prompt::TrayItem;
 
 pub fn screen_info() -> Option<ScreenInfo> {
+    None
+}
+
+/// The update balloon then has nowhere to go and stays hidden.
+pub fn tray_item(_app: &tauri::AppHandle) -> Option<TrayItem> {
     None
 }
 
@@ -69,4 +75,16 @@ pub fn place_island(
             let _ = window.show();
         }
     }
+}
+
+/// A plain always-on-top window stands in for the macOS panel.
+pub fn create_prompt(app: &AppHandle, label: &str, url: &str) -> tauri::Result<()> {
+    if app.get_webview_window(label).is_some() {
+        return Ok(());
+    }
+    create_island(app, label, url)
+}
+
+pub fn place_prompt(app: &AppHandle, label: &str, place: Option<((f64, f64), (f64, f64))>) {
+    place_island(app, label, place, false, false);
 }
