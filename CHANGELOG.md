@@ -13,6 +13,9 @@ the version is below 1.0, every release is a beta.
 
 ### Fixed
 
+- **The island shows who is speaking sooner.** With Meet in front, Islet waited for the page to
+  stop changing before reading it, and Meet's page keeps changing while someone talks: the
+  speaker could show up seconds late. Islet also does less work each time it reads the page.
 - On the first launch, the setup guide could open behind other windows.
 - With Chrome installed but never opened, Islet could not connect itself to Chrome.
 - Until setup is finished, the menu bar icon shows a dot, and the menu shows only **Concluir

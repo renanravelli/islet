@@ -4,6 +4,7 @@ import {
   CONFIRM_TIMEOUT_MS,
   MeetAdapter,
   meetingCode,
+  SELECTOR_TTL_MS,
 } from "../src/content/meet/adapter";
 import { SELECTORS } from "../src/content/meet/selectors";
 import { button, FIXTURES, load } from "./dom";
@@ -129,6 +130,88 @@ describe("the speaking-while-muted notice", () => {
       '<div aria-live="polite">Seu microfone está desativado.</div>',
     );
     expect(muted()).toBe(false);
+  });
+});
+
+describe("the element cache", () => {
+  const mic = (meet: MeetAdapter) => meet.readState().state.self.mic;
+
+  it("reads a replaced control at once", () => {
+    load(FIXTURES.inCallEn);
+    const meet = adapter();
+    expect(mic(meet)).toBe("on");
+    const old = button(/microphone/);
+    const replacement = old.cloneNode() as HTMLElement;
+    replacement.setAttribute("data-is-muted", "true");
+    old.replaceWith(replacement);
+    expect(mic(meet)).toBe("off");
+  });
+
+  it("drops a control that no longer matches the strategy that found it", () => {
+    load(FIXTURES.inCallEn);
+    const meet = adapter();
+    expect(mic(meet)).toBe("on");
+    const el = button(/microphone/);
+    // Meet renders it again without the attributes the first strategy needs.
+    el.removeAttribute("jsname");
+    el.removeAttribute("data-is-muted");
+    el.setAttribute("aria-label", "Turn on microphone (⌘ + d)");
+    expect(mic(meet)).toBe("off");
+  });
+
+  it("searches the page again in full once the cached element expires", () => {
+    load(FIXTURES.inCallPtBr);
+    let now = 0;
+    const meet = new MeetAdapter(document, SELECTORS, undefined, () => now);
+    // Found by its pt-BR label, the fallback strategy.
+    expect(mic(meet)).toBe("off");
+    // A control the first strategy prefers shows up; the cached one is used until it expires.
+    document
+      .querySelector("[role=toolbar]")
+      ?.insertAdjacentHTML("afterbegin", '<button jsname="hw0c9" data-is-muted="false"></button>');
+    now = SELECTOR_TTL_MS - 1;
+    expect(mic(meet)).toBe("off");
+    now = SELECTOR_TTL_MS;
+    expect(mic(meet)).toBe("on");
+  });
+
+  it("forgets every element on refresh and when the meeting changes", () => {
+    load(FIXTURES.inCallPtBr);
+    const meet = adapter();
+    expect(mic(meet)).toBe("off");
+    const preferred = '<button jsname="hw0c9" data-is-muted="false"></button>';
+    const toolbar = document.querySelector("[role=toolbar]");
+    toolbar?.insertAdjacentHTML("afterbegin", preferred);
+    meet.refresh();
+    expect(mic(meet)).toBe("on");
+
+    toolbar?.firstElementChild?.remove();
+    expect(mic(meet)).toBe("off");
+    toolbar?.insertAdjacentHTML("afterbegin", preferred);
+    window.history.replaceState(null, "", "/xyz-abcd-efg");
+    expect(mic(meet)).toBe("on");
+  });
+
+  it("searches the whole page only for the tiles once the controls are known", () => {
+    load(FIXTURES.inCallEn);
+    const meet = adapter();
+    meet.readState();
+    const scans = vi.spyOn(document, "querySelectorAll");
+    const { state } = meet.readState();
+    expect(scans.mock.calls).toEqual([["[data-participant-id][jsname='E2KThb']"]]);
+    scans.mockRestore();
+    // The same reading as without the cache.
+    expect(state.active_speaker).toEqual({ display_name: "Alex Example" });
+    expect(state.self.mic).toBe("on");
+    expect(state.participant_count).toBe(5);
+  });
+
+  it("does not look for the speaking-while-muted notice with the mic on", () => {
+    load(FIXTURES.inCallPtBr);
+    const meet = adapter();
+    expect(meet.readState().state.signals.speaking_while_muted).toBe(true);
+    button(/microfone/).setAttribute("aria-label", "Desativar microfone (⌘ + d)");
+    expect(meet.readState().state.signals.speaking_while_muted).toBe(false);
   });
 });
 
