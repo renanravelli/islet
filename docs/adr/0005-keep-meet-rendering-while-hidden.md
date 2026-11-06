@@ -34,8 +34,8 @@ island followed every change with Chrome in the background.
 ## Consequences
 
 - The island stays in sync while Chrome is in the background, with up to about a second of delay.
-  While hidden, the content script reads the page as soon as a render's mutations arrive,
-  without the 150 ms debounce, which Chrome would stretch to a second.
+  While hidden, the content script reads the page as soon as a render's mutations arrive: a
+  read is never left waiting on a timer, which Chrome would stretch to a second.
 - Meet keeps running its frame callbacks while hidden, at about once a second: a little more CPU
   than Chrome's default.
 - The page can tell that `requestAnimationFrame` was replaced. If Meet stops using animation

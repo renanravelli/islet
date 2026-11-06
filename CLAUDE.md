@@ -173,8 +173,12 @@ warnings. UI changes must also be checked in demo mode (`--demo`), with and with
   it is macOS's default "Select next source in Input menu". If a shortcut fails to register,
   the tray shows a warning instead of failing silently.
 - **Lifecycle numbers:** `Ended` lasts 5 s, then `Idle`; no heartbeat for 10 s → `degraded`
-  (`stale`); command timeout 2 s; extension confirms a command within 1.5 s; DOM observer debounce
-  150 ms; heartbeat every 5 s; messages over 64 KB rejected.
+  (`stale`); command timeout 2 s; extension confirms a command within 1.5 s; the DOM is read at
+  the first change, then at most every 150 ms while it keeps changing (a throttle, never a
+  debounce: Meet's level meter never goes quiet while someone talks), and the call ends only when
+  Leave is still missing 150 ms later; the adapter reuses a control it found for 5 s at most
+  (`SELECTOR_TTL_MS`, counted from when it was found) and checks it on every read; heartbeat
+  every 5 s; messages over 64 KB rejected.
 - **Native host:** the `connectNative` port is open only while a `meet.google.com` tab exists and
   closes 30 s after the last one (ADR 0002).
 - **Design tokens (approved mock):** background `#000000`, text `#FFFFFF`, secondary text
@@ -261,6 +265,15 @@ Every open item lives here, not in an assistant's memory. Remove an item when it
     - One `toggle_mic` was not confirmed in 1.5 s in step 6 (it worked every other time, in
       53 to 59 ms). Probable cause, per the owner: the mic was also toggled by hand around then.
       Watch for it in the next session.
+  - **Speaker latency (2026-11-06):** the content script now reads at the first DOM change and at
+    most every 150 ms after (it used a debounce, which a test showed delayed a change by as long as
+    mutations kept coming), and caches the controls for 5 s. Still to measure in a real call:
+    mutations per second and the longest gap between them while someone talks, tab visible and
+    hidden; how often `keep-rendering.ts`'s 16 ms timer really runs while hidden, silent and
+    while someone talks (Chrome may not throttle an audible or WebRTC tab, which ADR 0005
+    assumed); `readState`'s cost in Chrome on Meet's full page; and each hop's delay, mutation
+    to island. For the last one, decide between an optional `observed_at` in `session.update`
+    (allowed within `v: 1`) and development-only logs.
   - **Later:** the English round; until then no key lists `en` in `verifiedIn`.
   - With Chrome in the background (ADR 0005): confirm the island stays in sync after 10+
     minutes hidden, and whether the active speaker is detected while hidden.
