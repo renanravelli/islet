@@ -9,6 +9,8 @@ import type {
   CommandError,
   IslandLayout,
   Link,
+  PromptAnswer,
+  PromptView,
   Requirements,
   SessionKey,
   UiSnapshot,
@@ -29,6 +31,8 @@ export type Events = {
   "island-blur": null;
   /** The pointer entered (true) or left (false) the island panel. */
   "island-hover": boolean;
+  /** To the update balloon only: what to draw, or null once hidden. */
+  "update-prompt": PromptView | null;
 };
 
 const fallback = {
@@ -90,6 +94,11 @@ export const api = {
   checkForUpdates: () =>
     call<UpdateState>("check_for_updates", undefined, (): UpdateState => ({ state: "up_to_date" })),
   installUpdate: () => call<void>("install_update", undefined, () => undefined),
+  updatePrompt: () => call<PromptView | null>("update_prompt", undefined, () => null),
+  updatePromptLayout: (height: number) =>
+    call<void>("update_prompt_layout", { height }, () => undefined),
+  updatePromptAnswer: (answer: PromptAnswer) =>
+    call<void>("update_prompt_answer", { answer }, () => undefined),
 };
 
 /** Subscribes to a shell event; returns the unsubscribe function. */

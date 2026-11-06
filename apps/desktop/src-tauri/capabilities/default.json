@@ -2,6 +2,6 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
   "description": "What every Islet window may use: core events and window APIs. App commands are allowed by default.",
-  "windows": ["island", "onboarding", "settings"],
+  "windows": ["island", "onboarding", "settings", "update"],
   "permissions": ["core:default"]
 }

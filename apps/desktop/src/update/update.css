@@ -1,0 +1,147 @@
+/* The update balloon (docs/design/ui-spec.md, section 4). The window is the balloon's exact
+   size: the page is transparent around the card and its arrow. */
+
+body.window-prompt,
+body.window-prompt #root {
+  background: transparent;
+  overflow: hidden;
+}
+
+.prompt {
+  position: relative;
+  font-family: var(--font);
+  color: var(--text-primary);
+}
+
+/* Room for the arrow above the card. */
+.prompt.has-arrow {
+  padding-top: 9px;
+}
+
+.prompt-card {
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-group);
+}
+
+/* A square turned 45°: its top half sticks out of the card, its bottom half covers the card's
+   border where they meet. Two of its sides carry the border. */
+.prompt-arrow {
+  position: absolute;
+  top: 3px;
+  width: 12px;
+  height: 12px;
+  margin-left: -6px;
+  background: var(--bg-group);
+  border-top: 1px solid var(--border);
+  border-left: 1px solid var(--border);
+  border-top-left-radius: 2px;
+  transform: rotate(45deg);
+}
+
+.prompt-main {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.prompt-icon {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  background: #000000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.prompt-icon-pill {
+  position: relative;
+  width: 22px;
+  height: 12px;
+  border-radius: 6px;
+  background: var(--island-control);
+}
+
+.prompt-icon-dot {
+  position: absolute;
+  left: 4px;
+  top: 4px;
+  width: 4px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--island-speaking);
+}
+
+.prompt-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.prompt-title {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 18px;
+}
+
+.prompt-body {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--text-secondary);
+}
+
+.prompt-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.prompt-progress .spinner {
+  flex: none;
+  width: 14px;
+  height: 14px;
+}
+
+.prompt-failed {
+  color: var(--warning-text);
+}
+
+.prompt-actions {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* Small, as macOS draws them in popovers (an exception to section 2's 44 pt buttons). */
+.prompt-btn {
+  height: 28px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 7px;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.prompt-btn:focus-visible {
+  outline: 2px solid var(--accent-text);
+  outline-offset: 2px;
+}
+
+.prompt-later {
+  background: var(--bg-subtle);
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.prompt-update {
+  background: var(--accent-fill);
+  color: #ffffff;
+  font-weight: 600;
+}

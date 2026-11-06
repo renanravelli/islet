@@ -11,7 +11,7 @@ use crate::state::{AppState, lock};
 use crate::strings::t;
 use crate::windows;
 
-const TRAY: &str = "main";
+pub const TRAY: &str = "main";
 
 fn icon(app: &AppHandle) -> tauri::Result<Image<'static>> {
     let onboarded = lock(&app.state::<AppState>().settings)
@@ -40,6 +40,8 @@ pub fn create(app: &AppHandle) -> tauri::Result<()> {
                 crate::commands::emit_info(app);
             }
             "update" => {
+                // The balloon opens to show the progress.
+                crate::prompt::follow_install(app);
                 let app = app.clone();
                 tauri::async_runtime::spawn(async move { crate::updates::install(&app).await });
             }

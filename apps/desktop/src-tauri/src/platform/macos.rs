@@ -1,5 +1,5 @@
-//! macOS: screen geometry, system language, app activation, finding Chrome and opening files
-//! and links.
+//! macOS: screen geometry, the menu bar icon's place, system language, app activation, finding
+//! Chrome and opening files and links, and the island and update balloon panels.
 //!
 //! The crate denies `unsafe` everywhere but here (CLAUDE.md, "Unsafe code"). Every `unsafe`
 //! block carries a `// SAFETY:` comment.
@@ -8,8 +8,10 @@
 use objc2::MainThreadMarker;
 use objc2_app_kit::{NSApplication, NSScreen, NSWindow, NSWorkspace};
 use objc2_foundation::{NSLocale, NSRect, NSString};
+use tauri::AppHandle;
 
 use crate::geometry::{Rect, ScreenInfo};
+use crate::prompt::TrayItem;
 
 fn rect(r: NSRect) -> Rect {
     Rect {
@@ -31,14 +33,42 @@ pub fn screen_info() -> Option<ScreenInfo> {
         Some(screen) => screen,
         None => NSScreen::mainScreen(mtm)?,
     };
-    Some(ScreenInfo {
+    Some(screen_of(&screen, primary_height))
+}
+
+fn screen_of(screen: &NSScreen, primary_height: f64) -> ScreenInfo {
+    ScreenInfo {
         frame: rect(screen.frame()),
         visible_frame: rect(screen.visibleFrame()),
         safe_top: screen.safeAreaInsets().top,
         left_area: rect(screen.auxiliaryTopLeftArea()),
         right_area: rect(screen.auxiliaryTopRightArea()),
         primary_height,
+    }
+}
+
+/// Where the menu bar icon is, from its status item's window, and whether macOS draws it. Main
+/// thread only: `None` elsewhere.
+pub fn tray_item(app: &AppHandle) -> Option<TrayItem> {
+    MainThreadMarker::new()?;
+    let tray = app.tray_by_id(crate::tray::TRAY)?;
+    tray.with_inner_tray_icon(|icon| {
+        let mtm = MainThreadMarker::new()?;
+        let item = icon.ns_status_item()?;
+        let window = item.button(mtm)?.window()?;
+        let screen = window.screen()?;
+        let primary_height = NSScreen::screens(mtm).firstObject()?.frame().size.height;
+        Some(TrayItem {
+            frame: rect(window.frame()),
+            screen: screen_of(&screen, primary_height),
+            // Not `occlusionState`: a status item drawn in the menu bar reported no `Visible` bit
+            // (macOS 15, 2026-11-06). Where macOS puts an icon it has no room for is checked
+            // from the frame instead (`prompt::placement`).
+            visible: item.isVisible() && window.isVisible(),
+        })
     })
+    .ok()
+    .flatten()
 }
 
 /// The first of the user's preferred languages, as a BCP 47 tag ("pt-BR", "en-US").
@@ -120,9 +150,9 @@ pub fn open_in_chrome(url: &str) -> std::io::Result<()> {
     Ok(())
 }
 
-// --- The island panel -------------------------------------------------------------------------
+// --- The island and update balloon panels ----------------------------------------------------
 
-pub use island::{create_island, place_island};
+pub use island::{create_island, create_prompt, place_island, place_prompt};
 
 /// In its own module: `tauri_panel!` brings its own imports into scope. Its `panel_event!`
 /// syntax requires `-> ()`.
@@ -154,6 +184,15 @@ mod island {
                         .mouse_entered_and_exited(),
                     auto_resize: true
                 }
+            }
+        })
+
+        // The update balloon: clickable without activating Islet, never key on its own.
+        panel!(PromptPanel {
+            config: {
+                can_become_key_window: true,
+                can_become_main_window: false,
+                is_floating_panel: true
             }
         })
 
@@ -233,6 +272,61 @@ mod island {
                     }
                 });
             });
+        }
+    }
+
+    /// Creates the update balloon's panel once, hidden: borderless, transparent, non-activating,
+    /// on every Space and over full-screen apps. macOS draws its shadow from the page's pixels.
+    pub fn create_prompt(app: &AppHandle, label: &str, url: &str) -> tauri::Result<()> {
+        if app.get_webview_panel(label).is_ok() {
+            return Ok(());
+        }
+        PanelBuilder::<Wry, PromptPanel>::new(app, label)
+            .url(WebviewUrl::App(url.into()))
+            .level(PanelLevel::Status)
+            .transparent(true)
+            .has_shadow(true)
+            .opaque(false)
+            .hides_on_deactivate(false)
+            .becomes_key_only_if_needed(true)
+            .no_activate(true)
+            .style_mask(StyleMask::empty().borderless().nonactivating_panel())
+            .collection_behavior(
+                CollectionBehavior::new()
+                    .can_join_all_spaces()
+                    .stationary()
+                    .full_screen_auxiliary()
+                    .ignores_cycle(),
+            )
+            .with_window(|window| {
+                window
+                    .transparent(true)
+                    .decorations(false)
+                    .resizable(false)
+                    .visible(false)
+                    .skip_taskbar(true)
+                    .inner_size(1.0, 1.0)
+            })
+            .build()
+            .map(drop)
+    }
+
+    /// Shows the update balloon at `origin` with `size`, or hides it. Main thread only.
+    pub fn place_prompt(app: &AppHandle, label: &str, place: Option<((f64, f64), (f64, f64))>) {
+        let Ok(panel) = app.get_webview_panel(label) else {
+            return;
+        };
+        let Some(window) = app.get_webview_window(label) else {
+            return;
+        };
+        match place {
+            None => panel.hide(),
+            Some(((x, y), (width, height))) => {
+                let _ = window.set_size(LogicalSize::new(width, height));
+                let _ = window.set_position(LogicalPosition::new(x, y));
+                panel.show();
+                refresh_shadow(app, label);
+            }
         }
     }
 

@@ -9,7 +9,12 @@ export default defineConfig({
   build: {
     target: "safari16",
     rollupOptions: {
-      input: { island: "island.html", onboarding: "onboarding.html", settings: "settings.html" },
+      input: {
+        island: "island.html",
+        onboarding: "onboarding.html",
+        settings: "settings.html",
+        update: "update.html",
+      },
     },
   },
 });

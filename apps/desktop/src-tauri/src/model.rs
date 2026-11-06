@@ -142,6 +142,41 @@ pub enum UpdateState {
     InstallFailed,
 }
 
+/// What the update balloon under the menu bar icon shows (ADR 0006).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, TS)]
+#[serde(rename_all = "snake_case")]
+#[ts(export, export_to = EXPORT)]
+pub enum PromptMode {
+    /// A new version, with "Atualizar" and "Depois".
+    Offer,
+    /// Downloading and installing; the app restarts when it is done.
+    Installing,
+    /// The install failed, with "Atualizar" (to try again) and "Depois".
+    Failed,
+}
+
+/// The update balloon, as the shell placed it. `arrow` is the arrow's center from the balloon's
+/// left edge, or `None` when the menu bar icon cannot be found and the balloon sits at the
+/// screen's top right without one.
+#[derive(Debug, Clone, PartialEq, Serialize, TS)]
+#[ts(export, export_to = EXPORT)]
+pub struct PromptView {
+    pub mode: PromptMode,
+    /// The version offered: only with `Offer`.
+    pub version: Option<String>,
+    pub width: f64,
+    pub arrow: Option<f64>,
+}
+
+/// The person's answer in the update balloon.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, TS)]
+#[serde(rename_all = "snake_case")]
+#[ts(export, export_to = EXPORT)]
+pub enum PromptAnswer {
+    Update,
+    Later,
+}
+
 /// The extension's Chrome Web Store page (unlisted), which "Install extension" opens. The
 /// manual "Load unpacked" guide stays in docs/install-extension.md.
 pub const EXTENSION_STORE_URL: &str =
